@@ -1,0 +1,36 @@
+{
+  "host": "0.0.0.0",
+  "port": 8800,
+  "username": "admin",
+  "password_hash": "",
+  "connections_per_file": 6,
+  "max_concurrent": 2,
+  "max_speed_mbps": 0,
+  "require_mount": true,
+  "disks": [
+    {
+      "id": "pendrive",
+      "label": "Pendrive 256GB",
+      "subtitle": "Plex Media Share",
+      "mount": "/plex_media",
+      "movies": "/plex_media/Plex/Movies",
+      "tv": "/plex_media/Plex/TV Shows"
+    },
+    {
+      "id": "ssd512",
+      "label": "Dysk SSD 512GB",
+      "subtitle": "Plex Media Share 512",
+      "mount": "/plex_media_512",
+      "movies": "/plex_media_512/Plex 512/Movies",
+      "tv": "/plex_media_512/Plex 512/TV Shows"
+    },
+    {
+      "id": "ssd1024",
+      "label": "Dysk SSD 1024GB",
+      "subtitle": "Plex Media Share 1024",
+      "mount": "/plex_media_1024",
+      "movies": "/plex_media_1024/Plex 1T/Movies",
+      "tv": "/plex_media_1024/Plex 1T/TV Shows"
+    }
+  ]
+}

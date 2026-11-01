@@ -1,0 +1,23 @@
+# konfiguracja lokalna (hasło, klucze sesji)
+config.json
+config.json.tmp
+
+# baza zadań
+*.db
+*.db-journal
+*.db.lock
+*.sqlite
+
+# środowisko Pythona
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# sesje / logi
+*.session
+*.log
+flask_session/
+
+# system
+.DS_Store

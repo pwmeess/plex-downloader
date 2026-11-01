@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1a1f28">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Plex Downloader</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%232a2214'/%3E%3Cpath d='M9 5h4l5 7-5 7H9l5-7z' fill='%23e5a00d'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v={{ version }}">
+</head>
+<body>
+{% include "_icons.html" %}
+
+<header class="topbar">
+  <div class="brand"><span class="brand-mark"><svg class="i"><use href="#i-logo"/></svg></span><span class="t">Plex Downloader</span></div>
+  <div class="conn"><span class="dot" id="connDot"></span><span id="connText">Połączono z <span class="host" id="hostName"></span></span></div>
+  <div class="spacer"></div>
+  <button class="btn-ghost" id="openSettings" type="button" title="Ustawienia"><svg class="i"><use href="#i-gear"/></svg><span class="lbl">Ustawienia</span></button>
+  <button class="btn-soft" id="logoutBtn" type="button" title="Wyloguj"><svg class="i"><use href="#i-logout"/></svg><span class="lbl">Wyloguj</span></button>
+</header>
+
+<main class="layout">
+  <!-- formularz -->
+  <section class="card">
+    <h2>Dodaj nowe pobieranie</h2>
+    <form id="addForm" autocomplete="off">
+      <div class="field">
+        <div class="field-label"><label for="url">Link do pliku wideo</label>
+          <button class="btn-soft small" type="button" id="clearBtn">Wyczyść</button></div>
+        <input class="input url-input" id="url" type="url" inputmode="url" placeholder="https://…/Film.2024.1080p.mkv" required>
+        <div class="hint" id="probeInfo"></div>
+      </div>
+
+      <div class="field">
+        <div class="segmented" role="tablist">
+          <button type="button" class="on" data-kind="movie"><svg class="i"><use href="#i-film"/></svg>Film</button>
+          <button type="button" data-kind="tv"><svg class="i"><use href="#i-tv"/></svg>Serial</button>
+        </div>
+      </div>
+
+      <div class="field" id="movieFields">
+        <label class="field-label" for="name">Nazwa folderu i pliku</label>
+        <div class="input-group">
+          <input class="input" id="name" placeholder="Tytuł Filmu (YYYY)">
+          <input class="suffix ext" id="extMovie" placeholder=".mkv" maxlength="6" aria-label="Rozszerzenie">
+        </div>
+        <div class="hint" id="nameHint"></div>
+      </div>
+
+      <div class="field" id="tvFields" hidden>
+        <div class="tv-grid">
+          <div><label class="small-label" for="show">Nazwa serialu</label><input class="input" id="show" placeholder="Nazwa Serialu (YYYY)"></div>
+          <div><label class="small-label" for="season">Sezon</label><input class="input num" id="season" type="number" min="0" max="99" inputmode="numeric" value="1"></div>
+          <div><label class="small-label" for="episode">Odcinek</label><input class="input num" id="episode" type="number" min="0" max="999" inputmode="numeric" value="1"></div>
+        </div>
+        <div style="margin-top:12px">
+          <label class="small-label" for="epTitle">Tytuł odcinka (opcjonalnie)</label>
+          <div class="input-group">
+            <input class="input" id="epTitle" placeholder="np. Pilot">
+            <input class="suffix ext" id="extTv" placeholder=".mkv" maxlength="6" aria-label="Rozszerzenie">
+          </div>
+        </div>
+      </div>
+
+      <div class="preview" id="preview" hidden></div>
+
+      <div class="field-label" style="margin-bottom:10px">Lokalizacja zapisu</div>
+      <div class="disks" id="disks"></div>
+
+      <button class="btn-primary" id="submitBtn" type="submit">POBIERZ PLIK</button>
+      <div class="form-msg" id="formMsg"></div>
+    </form>
+  </section>
+
+  <!-- kolejka -->
+  <section class="card jobs-card">
+    <div class="card-head">
+      <h2>Menedżer pobierania</h2>
+      <button class="btn-soft small" id="clearDone" type="button" hidden>Wyczyść zakończone</button>
+    </div>
+    <div class="engine-warn" id="engineWarn" hidden></div>
+    <div class="jobs" id="jobs"></div>
+  </section>
+</main>
+<div class="foot-ver">Plex Downloader · wersja {{ version }}</div>
+
+<!-- ustawienia -->
+<dialog id="settings">
+  <form method="dialog" id="settingsForm">
+    <div class="dlg-head"><h2>Ustawienia</h2><button class="icon-btn" value="cancel" formnovalidate aria-label="Zamknij"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <div class="dlg-body">
+      <h3>Dyski docelowe</h3>
+      <div id="diskRows"></div>
+      <button class="btn-soft small" type="button" id="addDisk">+ Dodaj dysk</button>
+
+      <h3>Pobieranie</h3>
+      <div class="grid-3">
+        <div><label for="sConn">Połączeń na plik (1–16)</label><input class="input" id="sConn" type="number" min="1" max="16"></div>
+        <div><label for="sConc">Równoległych pobrań</label><input class="input" id="sConc" type="number" min="1" max="10"></div>
+        <div><label for="sSpeed">Limit prędkości MB/s (0 = brak)</label><input class="input" id="sSpeed" type="number" min="0" step="0.5"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="sMount"> Pobieraj tylko na zamontowany dysk (chroni kartę SD przed zapełnieniem, gdy dysk się odłączy)</label>
+
+      <h3>Konto</h3>
+      <div class="grid-acc">
+        <div><label for="aUser">Login</label><input class="input" id="aUser" autocomplete="username"></div>
+        <div><label for="aCur">Obecne hasło</label><input class="input" id="aCur" type="password" autocomplete="current-password"></div>
+        <div><label for="aNew">Nowe hasło</label><input class="input" id="aNew" type="password" autocomplete="new-password"></div>
+      </div>
+      <div style="margin-top:12px"><button class="btn-soft small" type="button" id="savePwd">Zmień login / hasło</button> <span class="form-msg" id="pwdMsg"></span></div>
+
+      <h3>Aktualizacje</h3>
+      <div class="update-row"><span>Wersja <b id="verLabel">{{ version }}</b></span>
+        <button class="btn-soft small" type="button" id="checkUpd">Sprawdź aktualizacje</button>
+        <span id="updMsg"></span></div>
+    </div>
+    <div class="dlg-foot">
+      <span class="form-msg" id="setMsg"></span>
+      <button class="btn-soft" value="cancel" formnovalidate>Anuluj</button>
+      <button class="btn-accent" type="button" id="saveSettings">Zapisz</button>
+    </div>
+  </form>
+</dialog>
+
+<template id="diskRowTpl">
+  <div class="disk-row">
+    <div class="disk-row-head"><b class="row-title">Dysk</b><button class="icon-btn rm" type="button" title="Usuń dysk"><svg class="i"><use href="#i-trash"/></svg></button></div>
+    <input type="hidden" data-k="id">
+    <div><label>Nazwa przycisku</label><input class="input" data-k="label"></div>
+    <div><label>Podpis (np. udział SMB)</label><input class="input" data-k="subtitle"></div>
+    <div class="full"><label>Punkt montowania (do odczytu wolnego miejsca)</label><input class="input mono" data-k="mount"></div>
+    <div><label>Folder filmów</label><input class="input mono" data-k="movies"></div>
+    <div><label>Folder seriali</label><input class="input mono" data-k="tv"></div>
+  </div>
+</template>
+
+<script src="{{ url_for('static', filename='app.js') }}?v={{ version }}"></script>
+</body>
+</html>
