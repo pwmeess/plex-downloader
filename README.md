@@ -29,7 +29,7 @@ Lekki menedżer pobierania dla Raspberry Pi. Wklejasz bezpośredni link do pliku
 
 ```bash
 cd ~
-git clone https://github.com/<TWÓJ_LOGIN>/plex-downloader.git
+git clone https://github.com/pwmeess/plex-downloader.git
 cd plex-downloader
 chmod +x setup.sh update.sh
 ./setup.sh
