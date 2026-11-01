@@ -75,6 +75,22 @@ Klucz jest zapisywany wyłącznie lokalnie w `config.json`. Bez klucza aplikacja
 
 Ścieżki zmienisz w **Ustawieniach** albo w `config.json`.
 
+## Własne dyski (inna instalacja niż autora)
+
+Aplikacja **nie wykrywa dysków automatycznie**. Domyślne ścieżki to konfiguracja autora, więc u Ciebie najpewniej będą inne.
+
+1. Sprawdź, gdzie są zamontowane Twoje dyski, poleceniem `df -h`. Zobaczysz np. `/mnt/dysk1`.
+2. W panelu wejdź w **Ustawienia → Dyski docelowe** i dla każdego dysku wpisz:
+   - **Nazwa przycisku**, np. „SSD 1TB”,
+   - **Podpis**, np. nazwę udziału SMB (opcjonalnie),
+   - **Punkt montowania**, np. `/mnt/dysk1` (służy do odczytu wolnego miejsca),
+   - **Folder filmów** i **Folder seriali**, czyli ścieżki z bibliotek Plexa, np. `/mnt/dysk1/Movies`.
+3. Dysk dodajesz przyciskiem **+ Dodaj dysk**, a usuwasz ikoną kosza. Na koniec kliknij **Zapisz**.
+
+Usunięcie dysku z listy nie kasuje żadnych plików, tylko chowa przycisk.
+
+Jeśli biblioteka leży na karcie SD (bez osobnego dysku), odznacz **„Pobieraj tylko na zamontowany dysk”**.
+
 ## Przydatne polecenia
 
 ```bash
