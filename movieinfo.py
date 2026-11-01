@@ -1,0 +1,161 @@
+"""Poglądowe informacje o filmie/serialu z TMDB (The Movie Database) – tylko do wyświetlenia.
+
+Nic nie jest zapisywane do plików ani na dysk; Plex i tak pobiera własne metadane.
+"""
+import json
+import os
+import re
+import threading
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
+import config
+
+API = os.environ.get("PLEXDL_TMDB_BASE", "https://api.themoviedb.org/3")
+IMG = os.environ.get("PLEXDL_TMDB_IMG", "https://image.tmdb.org/t/p/")
+LANG = "pl-PL"
+TTL = 6 * 3600
+UA = "PlexDownloader/1.1 (+github.com/pwmeess/plex-downloader)"
+
+_cache = {}
+_lock = threading.Lock()
+
+
+class InfoError(Exception):
+    pass
+
+
+def configured():
+    return bool((config.get().get("tmdb_api_key") or "").strip())
+
+
+def _get(path, **params):
+    key = (config.get().get("tmdb_api_key") or "").strip()
+    if not key:
+        raise InfoError("Brak klucza API TMDB.")
+    headers = {"Accept": "application/json", "User-Agent": UA}
+    if len(key) > 40:  # „API Read Access Token” (v4) – przekazywany jako Bearer
+        headers["Authorization"] = "Bearer " + key
+    else:              # klasyczny „API Key” (v3)
+        params["api_key"] = key
+    url = API + path + "?" + urllib.parse.urlencode({k: v for k, v in params.items() if v not in (None, "")})
+    now = time.time()
+    with _lock:
+        hit = _cache.get(url)
+        if hit and now - hit[0] < TTL:
+            return hit[1]
+    req = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            raise InfoError("Nieprawidłowy klucz API TMDB – sprawdź go w Ustawieniach.")
+        if e.code == 404:
+            raise InfoError("Nie znaleziono w TMDB.")
+        raise InfoError("TMDB odpowiedziało błędem %d." % e.code)
+    except (urllib.error.URLError, OSError, ValueError):
+        raise InfoError("Brak połączenia z TMDB.")
+    with _lock:
+        if len(_cache) > 500:
+            _cache.clear()
+        _cache[url] = (now, data)
+    return data
+
+
+def split_title(text):
+    """„Milczenie owiec (1991)” → („Milczenie owiec”, 1991)."""
+    text = (text or "").strip()
+    m = re.match(r"^(.*?)\s*\((\d{4})\)\s*$", text)
+    if m:
+        return m.group(1).strip(), int(m.group(2))
+    return text, None
+
+
+def _year(date):
+    return int(date[:4]) if date and len(date) >= 4 and date[:4].isdigit() else None
+
+
+def _poster(path, size="w342"):
+    return IMG + size + path if path else None
+
+
+def search(kind, title, year=None):
+    """Zwraca listę do 6 trafień: id, tytuł, rok, oryginalny tytuł."""
+    if not title:
+        return []
+    if kind == "tv":
+        res = _get("/search/tv", query=title, first_air_date_year=year, language=LANG)
+        if year and not res.get("results"):
+            res = _get("/search/tv", query=title, language=LANG)
+        items = [{"id": r["id"], "title": r.get("name") or r.get("original_name"),
+                  "original_title": r.get("original_name"), "year": _year(r.get("first_air_date")),
+                  "poster": _poster(r.get("poster_path"), "w92")} for r in res.get("results", [])]
+    else:
+        res = _get("/search/movie", query=title, primary_release_year=year, language=LANG)
+        if year and not res.get("results"):  # rok z nazwy pliku bywa rokiem premiery DVD itp.
+            res = _get("/search/movie", query=title, year=year, language=LANG)
+        if year and not res.get("results"):
+            res = _get("/search/movie", query=title, language=LANG)
+        items = [{"id": r["id"], "title": r.get("title") or r.get("original_title"),
+                  "original_title": r.get("original_title"), "year": _year(r.get("release_date")),
+                  "poster": _poster(r.get("poster_path"), "w92")} for r in res.get("results", [])]
+    return items[:6]
+
+
+def details(kind, item_id, season=None, episode=None):
+    kind = "tv" if kind == "tv" else "movie"
+    d = _get("/%s/%d" % (kind, int(item_id)), language=LANG, append_to_response="credits,external_ids")
+    overview = d.get("overview") or ""
+    if not overview:  # brak polskiego opisu → angielski
+        try:
+            overview = _get("/%s/%d" % (kind, int(item_id)), language="en-US").get("overview") or ""
+        except InfoError:
+            pass
+    credits = d.get("credits") or {}
+    cast = [c.get("name") for c in (credits.get("cast") or [])[:5] if c.get("name")]
+    if kind == "tv":
+        title, original = d.get("name"), d.get("original_name")
+        year = _year(d.get("first_air_date"))
+        runtime = (d.get("episode_run_time") or [None])[0]
+        creators = [c.get("name") for c in d.get("created_by") or [] if c.get("name")]
+    else:
+        title, original = d.get("title"), d.get("original_title")
+        year = _year(d.get("release_date"))
+        runtime = d.get("runtime")
+        creators = [c.get("name") for c in credits.get("crew") or []
+                    if c.get("job") == "Director" and c.get("name")]
+    imdb_id = (d.get("external_ids") or {}).get("imdb_id") or d.get("imdb_id")
+    info = {
+        "kind": kind, "id": d.get("id"), "title": title, "original_title": original, "year": year,
+        "runtime": runtime, "genres": [g.get("name") for g in d.get("genres") or []],
+        "overview": overview, "rating": round(d.get("vote_average") or 0, 1),
+        "votes": d.get("vote_count") or 0, "poster": _poster(d.get("poster_path")),
+        "people_label": "Twórcy" if kind == "tv" else "Reżyseria", "people": creators[:3],
+        "cast": cast, "imdb_id": imdb_id, "seasons": d.get("number_of_seasons"),
+        "tmdb_url": "https://www.themoviedb.org/%s/%s?language=pl" % (kind, d.get("id")),
+        "imdb_url": "https://www.imdb.com/title/%s/" % imdb_id if imdb_id else None,
+        "filmweb_url": "https://www.filmweb.pl/search#/?query=" + urllib.parse.quote(
+            "%s %s" % (title or original or "", year or "")).strip(),
+        "episode": None,
+    }
+    if kind == "tv" and season is not None and episode is not None:
+        try:
+            ep = _get("/tv/%d/season/%d/episode/%d" % (int(item_id), int(season), int(episode)), language=LANG)
+            info["episode"] = {"season": int(season), "episode": int(episode), "name": ep.get("name"),
+                               "air_date": ep.get("air_date")}
+        except (InfoError, ValueError):
+            pass
+    return info
+
+
+def lookup(kind, title, year=None, item_id=None, season=None, episode=None):
+    kind = "tv" if kind == "tv" else "movie"
+    results = search(kind, title, year) if title else []
+    if item_id is None:
+        if not results:
+            return {"results": [], "item": None}
+        item_id = results[0]["id"]
+    return {"results": results, "item": details(kind, item_id, season, episode)}

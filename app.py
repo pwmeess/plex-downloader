@@ -19,6 +19,7 @@ from flask import Flask, jsonify, redirect, render_template, request, session, u
 from werkzeug.security import check_password_hash, generate_password_hash
 
 import config
+import movieinfo
 import naming
 from downloader import Manager, disk_status, probe
 
@@ -127,6 +128,30 @@ def api_probe():
     return jsonify(info)
 
 
+@app.route("/api/info")
+@login_required
+def api_info():
+    """Poglądowe dane o filmie/serialu z TMDB (nic nie jest zapisywane)."""
+    if not movieinfo.configured():
+        return jsonify(configured=False)
+    a = request.args
+    kind = "tv" if a.get("kind") == "tv" else "movie"
+    title, year = movieinfo.split_title(a.get("title", ""))
+    if a.get("year", "").isdigit():
+        year = int(a["year"])
+
+    def num(k):
+        v = a.get(k, "")
+        return int(v) if v.isdigit() else None
+    try:
+        data = movieinfo.lookup(kind, title, year, num("id"), num("season"), num("episode"))
+    except movieinfo.InfoError as e:
+        return jsonify(configured=True, error=str(e))
+    data["configured"] = True
+    data["query"] = {"title": title, "year": year}
+    return jsonify(data)
+
+
 @app.route("/api/jobs", methods=["POST"])
 @login_required
 def api_add():
@@ -189,7 +214,8 @@ def api_settings_get():
                    connections_per_file=cfg.get("connections_per_file"),
                    max_concurrent=cfg.get("max_concurrent"),
                    max_speed_mbps=cfg.get("max_speed_mbps"),
-                   require_mount=cfg.get("require_mount"))
+                   require_mount=cfg.get("require_mount"),
+                   tmdb_api_key=cfg.get("tmdb_api_key", ""))
 
 
 @app.route("/api/settings", methods=["POST"])
@@ -216,8 +242,10 @@ def api_settings_post():
         speed = max(0.0, float(data.get("max_speed_mbps") or 0))
     except (TypeError, ValueError):
         return err("Nieprawidłowe wartości liczbowe.")
+    tmdb_key = re.sub(r"\s+", "", data.get("tmdb_api_key") or "")
     config.update(disks=disks, connections_per_file=conns, max_concurrent=conc,
-                  max_speed_mbps=speed, require_mount=bool(data.get("require_mount", True)))
+                  max_speed_mbps=speed, require_mount=bool(data.get("require_mount", True)),
+                  tmdb_api_key=tmdb_key)
     manager.apply_settings()
     return jsonify(ok=True)
 

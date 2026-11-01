@@ -73,15 +73,39 @@
     </form>
   </section>
 
-  <!-- kolejka -->
-  <section class="card jobs-card">
-    <div class="card-head">
-      <h2>Menedżer pobierania</h2>
-      <button class="btn-soft small" id="clearDone" type="button" hidden>Wyczyść zakończone</button>
-    </div>
-    <div class="engine-warn" id="engineWarn" hidden></div>
-    <div class="jobs" id="jobs"></div>
-  </section>
+  <div class="col">
+    <!-- kolejka -->
+    <section class="card jobs-card">
+      <div class="card-head">
+        <h2>Menedżer pobierania</h2>
+        <button class="btn-soft small" id="clearDone" type="button" hidden>Wyczyść zakończone</button>
+      </div>
+      <div class="engine-warn" id="engineWarn" hidden></div>
+      <div class="jobs" id="jobs"></div>
+    </section>
+
+    <!-- podgląd filmu (TMDB) -->
+    <section class="card info-card" id="infoCard" hidden>
+      <div class="info-head">
+        <h2 id="infoHeading">Podgląd filmu</h2>
+        <span class="info-src" title="Dane poglądowe z The Movie Database – nie są zapisywane">TMDB</span>
+      </div>
+      <div class="info-state" id="infoState"></div>
+      <div class="info-body" id="infoBody" hidden>
+        <div class="info-poster" id="infoPoster"></div>
+        <div class="info-main">
+          <h3 class="info-title" id="infoTitle"></h3>
+          <div class="info-orig" id="infoOrig"></div>
+          <div class="info-meta" id="infoMeta"></div>
+          <div class="info-ep" id="infoEp" hidden></div>
+          <p class="info-overview" id="infoOverview"></p>
+          <div class="info-people" id="infoPeople"></div>
+          <div class="info-links" id="infoLinks"></div>
+        </div>
+      </div>
+      <div class="info-alts" id="infoAlts" hidden></div>
+    </section>
+  </div>
 </main>
 <div class="foot-ver">Plex Downloader · wersja {{ version }}</div>
 
@@ -101,6 +125,11 @@
         <div><label for="sSpeed">Limit prędkości MB/s (0 = brak)</label><input class="input" id="sSpeed" type="number" min="0" step="0.5"></div>
       </div>
       <label class="check"><input type="checkbox" id="sMount"> Pobieraj tylko na zamontowany dysk (chroni kartę SD przed zapełnieniem, gdy dysk się odłączy)</label>
+
+      <h3>Podgląd filmów (TMDB)</h3>
+      <div><label class="small-label" for="sTmdb">Klucz API TMDB (API Key albo API Read Access Token)</label>
+        <input class="input mono" id="sTmdb" autocomplete="off" spellcheck="false" placeholder="wklej klucz z themoviedb.org → Ustawienia → API"></div>
+      <p class="hint">Darmowy klucz: <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">themoviedb.org/settings/api</a>. Dane są tylko poglądowe – nic nie jest zapisywane w plikach.</p>
 
       <h3>Konto</h3>
       <div class="grid-acc">

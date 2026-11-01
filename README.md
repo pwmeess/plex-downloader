@@ -18,6 +18,7 @@ Lekki menedżer pobierania dla Raspberry Pi. Wklejasz bezpośredni link do pliku
 - Po restarcie Pi lub usługi przerwane pobierania wznawiają się automatycznie.
 - Atomowość: plik pobiera się do ukrytego folderu `.plexdl-tmp` na tym samym dysku, obok `Movies`, czyli poza biblioteką Plexa. Po zakończeniu jest przenoszony do biblioteki jedną operacją `rename`. Anulowanie lub błąd usuwa pliki tymczasowe, a folder docelowy nie zostaje utworzony.
 - Ustawienia w przeglądarce: dyski (etykiety i ścieżki), liczba połączeń, równoległe pobrania, limit prędkości, zmiana hasła, sprawdzanie aktualizacji.
+- **Podgląd filmu lub serialu (TMDB):** po wklejeniu linku pojawia się karta z polskim tytułem, plakatem, oceną, czasem trwania, gatunkami, reżyserem, obsadą i opisem. Dla seriali pokazuje też nazwę odcinka. Karta ma linki do IMDb, Filmwebu i TMDB oraz przycisk „Nie ten film?” z innymi trafieniami. Dane są tylko poglądowe i nic nie trafia do plików, bo Plex pobiera własne metadane.
 - Działa na telefonie.
 
 ## Wymagania
@@ -55,6 +56,15 @@ cd ~/plex-downloader
 Możesz też zrobić to ręcznie: `git pull && sudo systemctl restart plex-downloader`.
 W Ustawieniach jest przycisk **Sprawdź aktualizacje**, który pokazuje, czy na GitHubie są nowe zmiany.
 
+## Podgląd filmów: klucz TMDB
+
+1. Załóż darmowe konto na https://www.themoviedb.org/signup.
+2. Przejdź do **Ustawienia → API → Utwórz → Developer**. W formularzu wystarczy wpisać użytek prywatny.
+3. Skopiuj **API Key** albo **API Read Access Token**. Działa każdy z nich.
+4. W Plex Downloaderze wejdź w **Ustawienia → Podgląd filmów (TMDB)**, wklej klucz i kliknij **Zapisz**.
+
+Klucz jest zapisywany wyłącznie lokalnie w `config.json`. Bez klucza aplikacja działa normalnie, tylko bez karty podglądu.
+
 ## Domyślne dyski (`config.example.json`)
 
 | Przycisk | Filmy | Seriale |
@@ -79,6 +89,7 @@ sudo systemctl restart plex-downloader         # restart
 |---|---|
 | `app.py` | serwer WWW (Flask + waitress), logowanie, API |
 | `downloader.py` | sterowanie aria2c przez JSON-RPC, kolejka, finalizacja, sprzątanie |
+| `movieinfo.py` | podgląd filmu lub serialu z TMDB (tylko do wyświetlenia) |
 | `naming.py` | rozpoznawanie tytułu, roku i odcinka; nazewnictwo Plexa |
 | `config.py` | odczyt i zapis `config.json` |
 | `templates/`, `static/` | interfejs |

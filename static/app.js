@@ -128,6 +128,7 @@
   }
 
   function updatePreview() {
+    scheduleInfo();
     const p = targetPath(), box = $("#preview");
     if (!p) { box.hidden = true; return; }
     box.hidden = false;
@@ -138,6 +139,157 @@
     } else hint.replaceChildren();
   }
 
+  // ---- podgląd filmu z TMDB (tylko poglądowo, nic nie zapisujemy)
+  const info = { timer: null, key: "", seq: 0, pickId: null, results: [] };
+
+  function infoQuery() {
+    if (st.kind === "tv") {
+      const t = showIn.value.trim();
+      return t ? { kind: "tv", title: t, season: seasonIn.value, episode: epIn.value } : null;
+    }
+    const t = nameIn.value.trim();
+    return t ? { kind: "movie", title: t } : null;
+  }
+
+  function scheduleInfo(force) {
+    const q = infoQuery();
+    const card = $("#infoCard");
+    if (!q) { clearTimeout(info.timer); card.hidden = true; info.key = ""; info.pickId = null; info.seq++; return; }
+    const key = JSON.stringify(q);
+    if (!force && key === info.key) return; // bez zmian – nie kasujemy zaplanowanego zapytania
+    clearTimeout(info.timer);
+    const titleOnly = JSON.stringify([q.kind, q.title]);
+    if (info.titleKey !== titleOnly) info.pickId = null; // nowy tytuł → wracamy do najlepszego trafienia
+    info.titleKey = titleOnly;
+    info.key = key;
+    info.timer = setTimeout(() => loadInfo(q), force ? 0 : 650);
+  }
+
+  function setInfoState(text, cls) {
+    const s = $("#infoState");
+    s.className = "info-state" + (cls ? " " + cls : "");
+    s.replaceChildren();
+    if (text instanceof Node) s.appendChild(text); else s.textContent = text || "";
+    s.hidden = !text;
+  }
+
+  async function loadInfo(q) {
+    const seq = ++info.seq;
+    const card = $("#infoCard");
+    card.hidden = false;
+    $("#infoHeading").textContent = q.kind === "tv" ? "Podgląd serialu" : "Podgląd filmu";
+    if (!$("#infoBody").hidden) $("#infoBody").style.opacity = ".45";
+    setInfoState("Szukam w TMDB…", "loading");
+    const params = new URLSearchParams({ kind: q.kind, title: q.title });
+    if (q.kind === "tv") { params.set("season", q.season || ""); params.set("episode", q.episode || ""); }
+    if (info.pickId) params.set("id", info.pickId);
+    let data;
+    try {
+      data = await api("/api/info?" + params.toString());
+    } catch (e) {
+      if (seq === info.seq) { showInfoMsg(e.message, true); }
+      return;
+    }
+    if (seq !== info.seq) return;
+    $("#infoBody").style.opacity = "";
+    if (!data.configured) {
+      const f = document.createDocumentFragment();
+      f.append("Dodaj darmowy klucz TMDB w ");
+      const a = el("a", null, "Ustawieniach");
+      a.href = "#"; a.addEventListener("click", (ev) => { ev.preventDefault(); $("#openSettings").click(); });
+      f.append(a, ", aby zobaczyć tu opis, plakat i linki do IMDb i Filmwebu.");
+      showInfoMsg(f);
+      return;
+    }
+    if (data.error) { showInfoMsg(data.error, true); return; }
+    info.results = data.results || [];
+    if (!data.item) {
+      const y = data.query && data.query.year ? ` (${data.query.year})` : "";
+      showInfoMsg(`Nie znaleziono „${data.query ? data.query.title : q.title}${y}” w TMDB. Sprawdź pisownię tytułu.`);
+      return;
+    }
+    renderInfo(data.item);
+  }
+
+  function showInfoMsg(msg, bad) {
+    $("#infoBody").hidden = true;
+    $("#infoAlts").hidden = true;
+    if (bad) { const sp = el("span", "bad", msg); setInfoState(sp); } else setInfoState(msg);
+  }
+
+  function fmtRuntime(min) {
+    if (!min) return "";
+    const h = Math.floor(min / 60), m = min % 60;
+    return h ? `${h} godz. ${m} min` : `${m} min`;
+  }
+
+  function renderInfo(it) {
+    setInfoState("");
+    $("#infoBody").hidden = false;
+    const poster = $("#infoPoster");
+    poster.replaceChildren();
+    if (it.poster) {
+      const img = document.createElement("img");
+      img.src = it.poster; img.alt = "Plakat: " + it.title; img.loading = "lazy";
+      img.referrerPolicy = "no-referrer";
+      poster.appendChild(img);
+    } else poster.appendChild(icon(it.kind === "tv" ? "tv" : "film"));
+
+    $("#infoTitle").textContent = it.title + (it.year ? ` (${it.year})` : "");
+    const orig = $("#infoOrig");
+    orig.textContent = it.original_title && it.original_title !== it.title ? it.original_title : "";
+    orig.hidden = !orig.textContent;
+
+    const meta = $("#infoMeta");
+    meta.replaceChildren();
+    if (it.rating) {
+      const r = el("span", "rating");
+      r.append(el("i", null, "★"), String(it.rating).replace(".", ","), el("span", "votes", ` / 10 · ${it.votes.toLocaleString("pl-PL")} głosów`));
+      meta.appendChild(r);
+    }
+    if (it.runtime) meta.appendChild(el("span", null, fmtRuntime(it.runtime) + (it.kind === "tv" ? " / odc." : "")));
+    if (it.kind === "tv" && it.seasons) meta.appendChild(el("span", null, `Sezony: ${it.seasons}`));
+    if (it.genres && it.genres.length) meta.appendChild(el("span", null, it.genres.slice(0, 3).join(", ")));
+
+    const ep = $("#infoEp");
+    if (it.episode && it.episode.name) {
+      ep.replaceChildren(el("b", null, `S${String(it.episode.season).padStart(2, "0")}E${String(it.episode.episode).padStart(2, "0")}`), it.episode.name);
+      ep.hidden = false;
+    } else ep.hidden = true;
+
+    const ov = $("#infoOverview");
+    ov.textContent = it.overview || "Brak opisu.";
+    ov.classList.remove("open");
+    ov.onclick = () => ov.classList.toggle("open");
+
+    const ppl = $("#infoPeople");
+    ppl.replaceChildren();
+    if (it.people && it.people.length) { const d = el("div"); d.append(el("b", null, it.people_label + ": "), it.people.join(", ")); ppl.appendChild(d); }
+    if (it.cast && it.cast.length) { const d = el("div"); d.append(el("b", null, "Obsada: "), it.cast.join(", ")); ppl.appendChild(d); }
+
+    const links = $("#infoLinks");
+    links.replaceChildren();
+    const link = (href, text, cls) => { if (!href) return; const a = el("a", cls, text); a.href = href; a.target = "_blank"; a.rel = "noopener noreferrer"; links.appendChild(a); };
+    link(it.imdb_url, "IMDb", "imdb");
+    link(it.filmweb_url, "Filmweb", "filmweb");
+    link(it.tmdb_url, "TMDB", "tmdb");
+
+    const alts = $("#infoAlts");
+    const others = info.results.filter((r) => r.id !== it.id);
+    alts.replaceChildren();
+    if (others.length) {
+      alts.appendChild(el("span", null, it.kind === "tv" ? "Nie ten serial?" : "Nie ten film?"));
+      others.slice(0, 5).forEach((r) => {
+        const b = el("button", null, r.title + (r.year ? ` (${r.year})` : ""));
+        b.type = "button";
+        if (r.original_title && r.original_title !== r.title) b.title = r.original_title;
+        b.addEventListener("click", () => { info.pickId = r.id; loadInfo(infoQuery()); });
+        alts.appendChild(b);
+      });
+      alts.hidden = false;
+    } else alts.hidden = true;
+  }
+
   // ---- sprawdzanie linku
   let probeTimer = null, probeSeq = 0;
   urlIn.addEventListener("input", () => {
@@ -145,6 +297,7 @@
     st.probe = null;
     st.dirty = {};
     st.kindTouched = false;
+    $("#formMsg").textContent = "";
     const v = urlIn.value.trim();
     if (!/^https?:\/\/\S+/i.test(v)) { $("#probeInfo").replaceChildren(); return; }
     $("#probeInfo").replaceChildren(el("span", null, "Sprawdzam link…"));
@@ -429,6 +582,7 @@
       $("#sConc").value = s.max_concurrent;
       $("#sSpeed").value = s.max_speed_mbps;
       $("#sMount").checked = !!s.require_mount;
+      $("#sTmdb").value = s.tmdb_api_key || "";
       $("#aUser").value = s.username; $("#aCur").value = ""; $("#aNew").value = "";
       dlg.showModal();
     } catch (e) { alert(e.message); }
@@ -445,8 +599,10 @@
       await api("/api/settings", {
         disks, connections_per_file: $("#sConn").value, max_concurrent: $("#sConc").value,
         max_speed_mbps: $("#sSpeed").value, require_mount: $("#sMount").checked,
+        tmdb_api_key: $("#sTmdb").value,
       });
       dlg.close();
+      scheduleInfo(true);
       lastDisks = "";
       refresh(true);
     } catch (e) { m.className = "form-msg bad"; m.textContent = e.message; }
