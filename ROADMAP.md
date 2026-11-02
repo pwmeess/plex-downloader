@@ -1,6 +1,6 @@
 # Plex Downloader – plan rozwoju (To-Do)
 
-Ostatnia aktualizacja: 2 listopada 2026 · bieżąca wersja: **1.2.2**
+Ostatnia aktualizacja: 2 listopada 2026 · stabilna: **1.2.5** · BETA: **1.2.6-beta**
 
 ## Stałe zasady (sprawdzać przy każdej wersji)
 
@@ -12,6 +12,7 @@ Ostatnia aktualizacja: 2 listopada 2026 · bieżąca wersja: **1.2.2**
   1. **Zalecany:** Plex i Downloader na jednym Pi, biblioteka na dyskach zewnętrznych (SSD, pendrive).
   2. **Testowy (niezalecany):** jedno Pi bez dysków, biblioteka na karcie SD, opcjonalnie udostępniona przez SMB.
   3. **Dwa urządzenia:** Plex na jednym komputerze, Downloader z Menedżerem plików na drugim, oba ze stałym IP. Biblioteka jest dostępna dla obu, np. jako udział sieciowy SMB lub NFS zamontowany na stałe.
+- **Dwie linie wydań:** stabilna w gałęzi `main` (setup.sh, update.sh, panel ogłasza tylko ją) i BETA w gałęzi `beta` (tylko przez `fix.sh`). Nowe funkcje trafiają najpierw do BETA, po sprawdzeniu do stabilnej. Każde wydanie dostaje tag `vX.Y.Z` (BETA: `vX.Y.Z-beta`).
 - **Przed wydaniem:** testy automatyczne, zrzuty ekranu w wersjach EN/PL i w motywie ciemnym/jasnym, aktualizacja README i tego pliku.
 
 ## Wydane wersje
@@ -23,6 +24,8 @@ Ostatnia aktualizacja: 2 listopada 2026 · bieżąca wersja: **1.2.2**
 | 1.2.0 | Menedżer plików (2 kolumny, przeciąganie, kopia z weryfikacją SHA-256), kategorie, edycje i wersje Plex, status serwerów Plex, kopie ustawień, okno Ustawień, przyciski Google/YouTube |
 | 1.2.1 | Język EN/PL, motyw ciemny i jasny, dziennik aktywności, przenoszenie sezonów i odcinków, „Aktualizuj ścieżki”, komendy terminala, `fix.sh` |
 | 1.2.2 | Usuwanie zaznaczonych kopii ustawień, zwijane komendy, poprawka podpowiedzi |
+| 1.2.5 (stabilna) | 1.2.2 bez zapowiedzi VPN; podział na wersje stabilne i BETA, sprawdzanie aktualizacji tylko dla stabilnej, nowe menu `fix.sh` |
+| 1.2.6-beta | 1.2.2 z zapowiedziami VPN i tym samym podziałem wersji; baza do prac nad 1.3 |
 
 ## 1.3 – kreator pierwszego uruchomienia, instrukcje, wybór wersji
 
@@ -51,13 +54,16 @@ Ostatnia aktualizacja: 2 listopada 2026 · bieżąca wersja: **1.2.2**
 - [ ] Bezpieczeństwo sieci domowej (bez DMZ i przekierowania portu 8800, mocne hasła, Samba z `valid users`).
 
 **Wybór wersji w `fix.sh` (zmiana sposobu wydawania w repozytorium)**
-- [ ] Od wersji bazowej (proponuję **1.2.2**) każde wydanie dostaje tag git `vX.Y.Z` i wydanie na GitHubie z listą zmian.
+- [x] Linie stabilna (`main`) i BETA (`beta`), instalacja i wyjście z BETA w `fix.sh` (od 1.2.5 / 1.2.6-beta).
+- [ ] Każde wydanie od **1.2.5** ma tag git `vX.Y.Z` i wydanie na GitHubie z listą zmian.
 - [ ] Plik `CHANGELOG.md` z historią wersji.
-- [ ] Nowa opcja w `fix.sh`: „Zainstaluj inną wersję”. Pokazuje listę wersji od wersji bazowej z krótkim opisem. Przed zmianą tworzy kopię `config.json`, potem przełącza kod na wybrany tag, odbudowuje środowisko i restartuje usługę.
+- [ ] Nowa opcja w `fix.sh`: „Zainstaluj inną wersję”. Pokazuje listę stabilnych wersji od 1.2.5 z krótkim opisem. Przed zmianą tworzy kopię `config.json`, potem przełącza kod na wybrany tag, odbudowuje środowisko i restartuje usługę.
 - [ ] Panel i `update.sh` wiedzą, że zainstalowana jest wersja przypięta (starsza). Dostępny jest powrót do najnowszej.
 - [ ] Zgodność ustawień: nowsze wersje migrują `config.json` automatycznie. Przy cofnięciu do starszej wersji przywracana jest kopia ustawień z tamtego okresu, jeśli istnieje. Zachowanie sprawdzić w testach.
 
 ## 1.4 – dostęp zdalny przez VPN
+
+Zapowiedzi VPN (zakładka i przycisk w nagłówku) są widoczne tylko w BETA; w wersji stabilnej wrócą razem z działającą funkcją.
 
 - [ ] Skrypt `setup-vpn.sh`: instalacja Tailscale i link do logowania.
 - [ ] Zakładka VPN: wybór „tylko sieć domowa” lub „sieć domowa + VPN”, port panelu, status i adres VPN, kod QR dla telefonu.

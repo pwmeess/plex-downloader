@@ -444,7 +444,7 @@
     u.className = "upd-status"; u.textContent = t("checking for updates…");
     try {
       const r = await api("/api/version");
-      if (r.available) { u.className = "upd-status new"; u.textContent = "⬆ " + t("Update available ({n}) – run ./update.sh", { n: r.behind }); }
+      if (r.available) { u.className = "upd-status new"; u.textContent = "⬆ " + t("Update available ({v}) – run {cmd}", { v: r.latest, cmd: r.cmd }); }
       else if (r.available === false) { u.className = "upd-status ok"; u.textContent = "✓ " + t("Version {v} is up to date", { v: r.version }); }
       else { u.textContent = `${t("Version")} ${r.version} · ${r.message}`; }
       u.title = r.commit ? "commit " + r.commit : "";

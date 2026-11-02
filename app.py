@@ -612,23 +612,30 @@ def api_version():
     return resp
 
 
+def _ver_tuple(v):
+    m = re.match(r"\s*(\d+)\.(\d+)\.(\d+)", v or "")
+    return tuple(int(x) for x in m.groups()) if m else (0, 0, 0)
+
+
 def _api_version():
+    """Sprawdza tylko linię stabilną (gałąź main na GitHubie) – wersje beta nie są ogłaszane."""
     def git(*args):
         return subprocess.run(["git", "-C", BASE_DIR] + list(args), capture_output=True,
                               text=True, timeout=25)
     try:
         if git("rev-parse", "--is-inside-work-tree").returncode != 0:
             return jsonify(version=VERSION, available=None, message=_("This is not a git repository."))
-        fetch = git("fetch", "--quiet")
+        fetch = git("fetch", "--quiet", "origin", "+refs/heads/main:refs/remotes/origin/main")
         if fetch.returncode != 0:
             return jsonify(version=VERSION, available=None,
                            message=_("Could not connect to GitHub."))
-        behind = git("rev-list", "--count", "HEAD..@{u}").stdout.strip() or "0"
-        commit = git("log", "-1", "--format=%h, %cd", "--date=short").stdout.strip()
-        n = int(behind) if behind.isdigit() else 0
-        return jsonify(version=VERSION, commit=commit, available=n > 0, behind=n,
-                       message=(_("Update available (%d changes). Run ./update.sh on the Raspberry Pi.") % n)
-                       if n else _("You have the latest version."))
+        stable = git("show", "origin/main:VERSION").stdout.strip()
+        beta = "beta" in VERSION.lower()
+        newer = bool(stable) and _ver_tuple(stable) > _ver_tuple(VERSION)
+        cmd = "./fix.sh" if beta else "./update.sh"
+        return jsonify(version=VERSION, latest=stable if newer else VERSION, available=newer, cmd=cmd,
+                       message=(_("Update available (%s). Run %s on the Raspberry Pi.") % (stable, cmd))
+                       if newer else _("You have the latest version."))
     except Exception as e:
         return jsonify(version=VERSION, available=None, message=str(e))
 

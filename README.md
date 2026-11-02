@@ -74,6 +74,11 @@ cd ~/plex-downloader
 Możesz też zrobić to ręcznie: `git pull && sudo systemctl restart plex-downloader`.
 Nagłówek okna Ustawień pokazuje, czy na GitHubie są nowe zmiany.
 
+## Wersje: stabilna i BETA
+
+- **Stabilna** (gałąź `main`): instaluje ją `setup.sh` i aktualizuje `update.sh`. Panel sprawdza i ogłasza tylko wersje stabilne.
+- **BETA** (gałąź `beta`): nowe, mniej przetestowane funkcje. Instaluje się ją i aktualizuje wyłącznie przez `fix.sh` (opcja 4). Przed pierwszym przejściem na BETA `fix.sh` zapisuje obecne ustawienia, a przy wyjściu z BETA (opcja 5) wraca do wersji stabilnej, usuwa ustawienia eksperymentalne i przywraca zapisane.
+
 ## Naprawa: `fix.sh`
 
 ```bash
@@ -83,11 +88,13 @@ cd ~/plex-downloader
 
 Najpierw pyta o język, potem pokazuje menu:
 
-1. **Update (check and install)** – sprawdza GitHuba i instaluje nową wersję,
+1. **Update (check and install)** – sprawdza GitHuba i instaluje nową wersję stabilną,
 2. **Reinstall (keep settings)** – pobiera kod od nowa i odbudowuje środowisko, ustawienia zostają,
-3. **Clean reinstall** – kasuje ustawienia, kopie, dzienniki i listę pobrań, potem instaluje od zera (potwierdzenie słowem YES/TAK),
-4. **Uninstall** – usuwa usługę z autostartu, opcjonalnie także folder aplikacji,
-5. **Cancel**.
+3. **Clean reinstall** – kasuje ustawienia, kopie, dzienniki i listę pobrań, potem instaluje wersję stabilną od zera (potwierdzenie słowem YES/TAK),
+4. **Install / update the latest BETA** – instaluje lub aktualizuje wersję BETA,
+5. **Leave BETA** – powrót do wersji stabilnej z usunięciem ustawień eksperymentalnych (bez dodatkowych pytań),
+6. **Uninstall** – usuwa usługę z autostartu, opcjonalnie także folder aplikacji,
+7. **Cancel**.
 
 Filmy i seriale na dyskach nigdy nie są ruszane.
 

@@ -74,7 +74,6 @@
  "Username/password changed": "Zmiana loginu/hasła",
  "This is not a git repository.": "To nie jest repozytorium git.",
  "Could not connect to GitHub.": "Nie udało się połączyć z GitHubem.",
- "Update available (%d changes). Run ./update.sh on the Raspberry Pi.": "Dostępna aktualizacja (zmian: %d). Uruchom ./update.sh na Raspberry Pi.",
  "You have the latest version.": "Masz najnowszą wersję.",
  "Plex Downloader login setup": "Ustawienie logowania do Plex Downloadera",
  "Username [%s]: ": "Login [%s]: ",
@@ -415,7 +414,6 @@
  "Log backups deleted: {n}": "Usunięto kopie dziennika: {n}",
  "Saved.": "Zapisano.",
  "checking for updates…": "sprawdzam aktualizacje…",
- "Update available ({n}) – run ./update.sh": "Dostępna aktualizacja ({n}) – uruchom ./update.sh",
  "Version {v} is up to date": "Wersja {v} jest aktualna",
  "Version": "Wersja",
  "Settings saved (restore point created).": "Zapisano ustawienia (utworzono punkt przywracania).",
@@ -447,5 +445,7 @@
  "{n} restore points will be deleted. The current settings and the newest backup stay.": "Zostanie usuniętych punktów przywracania: {n}. Bieżące ustawienia i najnowsza kopia zostaną.",
  "Backups deleted: {n}": "Usunięto kopie: {n}",
  "Repair menu: update, reinstall, factory reset, uninstall": "Menu naprawy: aktualizacja, reinstalacja, ustawienia fabryczne, odinstalowanie",
- "The backup is damaged.": "Kopia jest uszkodzona."
+ "The backup is damaged.": "Kopia jest uszkodzona.",
+ "Update available ({v}) – run {cmd}": "Dostępna aktualizacja ({v}) – uruchom {cmd}",
+ "Update available (%s). Run %s on the Raspberry Pi.": "Dostępna aktualizacja (%s). Uruchom %s na Raspberry Pi."
 }
