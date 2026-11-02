@@ -6,6 +6,8 @@ Lekki menedżer pobierania dla Raspberry Pi. Wklejasz bezpośredni link do pliku
 - **Seriale:** `…/TV Shows/Serial/Season 01/Serial - S01E02.mkv`
 - **Dla dzieci i własne kategorie:** `…/Kids/Tytuł (YYYY)/…`, `…/Concerts/…` itd.
 
+Plan kolejnych wersji: [ROADMAP.md](ROADMAP.md).
+
 ## Funkcje
 
 - Logowanie (login i hasło), sesja „zapamiętaj mnie” na 30 dni, wylogowanie.
