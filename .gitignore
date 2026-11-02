@@ -1,6 +1,7 @@
 # konfiguracja lokalna (hasło, klucze sesji)
 config.json
 config.json.tmp
+backups/
 
 # baza zadań
 *.db

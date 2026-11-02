@@ -1,0 +1,134 @@
+<dialog id="settings" class="window" aria-labelledby="setTitle">
+  <div class="win-head" data-drag>
+    <h2 id="setTitle">Ustawienia</h2>
+    <span class="upd-status" id="updStatus"></span>
+    <button class="icon-btn win-close" type="button" data-close aria-label="Zamknij"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
+
+  <nav class="tabs" role="tablist">
+    <button type="button" role="tab" data-tab="disks" class="on"><svg class="i"><use href="#i-drive"/></svg>Dyski</button>
+    <button type="button" role="tab" data-tab="cats"><svg class="i"><use href="#i-cat"/></svg>Kategorie</button>
+    <button type="button" role="tab" data-tab="dl"><svg class="i"><use href="#i-down"/></svg>Pobieranie</button>
+    <button type="button" role="tab" data-tab="plex"><svg class="i"><use href="#i-server"/></svg>Serwery Plex</button>
+    <button type="button" role="tab" data-tab="preview"><svg class="i"><use href="#i-image"/></svg>Podgląd i okładki</button>
+    <button type="button" role="tab" data-tab="backups"><svg class="i"><use href="#i-history"/></svg>Kopie zapasowe</button>
+    <button type="button" role="tab" data-tab="account"><svg class="i"><use href="#i-user"/></svg>Konto</button>
+    <button type="button" role="tab" data-tab="vpn" class="tab-soon"><svg class="i"><use href="#i-shield"/></svg>VPN<span class="soon">wkrótce</span></button>
+  </nav>
+
+  <div class="win-body">
+    <!-- DYSKI -->
+    <section class="tab-panel" data-panel="disks">
+      <p class="panel-intro">Każdy dysk ma folder dla każdej kategorii. Puste pole oznacza, że dana kategoria nie jest dostępna na tym dysku.
+        <button type="button" class="info-i" data-tip="Punkt montowania to katalog, pod którym system widzi dysk (sprawdzisz go poleceniem df -h). Służy do odczytu wolnego miejsca. Foldery kategorii to ścieżki bibliotek Plexa, np. /plex_media/Plex/Movies." data-href="https://support.plex.tv/articles/naming-and-organizing-your-movie-media-files/">i</button></p>
+      <div id="diskRows"></div>
+      <button class="btn-soft small" type="button" id="addDisk">+ Dodaj dysk</button>
+    </section>
+
+    <!-- KATEGORIE -->
+    <section class="tab-panel" data-panel="cats" hidden>
+      <p class="panel-intro">Kategorie to przyciski nad formularzem pobierania i w Menedżerze plików, np. Filmy, Seriale, Dla dzieci, Koncerty.
+        <button type="button" class="info-i" data-tip="Typ decyduje o nazewnictwie: „Film” zapisuje pliki jako Tytuł (Rok)/Tytuł (Rok).mkv, „Serial” jako Serial/Season 01/Serial - S01E01.mkv. W Plexie dodaj dla każdej kategorii osobną bibliotekę odpowiedniego typu." data-href="https://support.plex.tv/articles/naming-and-organizing-your-tv-show-files/">i</button></p>
+      <div class="cat-head"><span>Nazwa przycisku</span><span>Typ</span><span>Domyślny folder <button type="button" class="info-i" data-tip="Nazwa folderu używana przez przycisk „Uzupełnij foldery” w zakładce Dyski – dopisuje ją obok istniejących folderów kategorii, np. …/Plex 1T/Kids.">i</button></span><span></span></div>
+      <div id="catRows"></div>
+      <button class="btn-soft small" type="button" id="addCat">+ Dodaj kategorię</button>
+    </section>
+
+    <!-- POBIERANIE -->
+    <section class="tab-panel" data-panel="dl" hidden>
+      <div class="grid-3">
+        <div><label for="sConn">Połączeń na plik (1–16) <button type="button" class="info-i" data-tip="Ile równoległych połączeń aria2 otwiera dla jednego pliku. Więcej połączeń zwykle przyspiesza pobieranie z serwerów premium; 6 to bezpieczna wartość.">i</button></label><input class="input" id="sConn" type="number" min="1" max="16"></div>
+        <div><label for="sConc">Równoległych pobrań</label><input class="input" id="sConc" type="number" min="1" max="10"></div>
+        <div><label for="sSpeed">Limit prędkości MB/s (0 = brak)</label><input class="input" id="sSpeed" type="number" min="0" step="0.5"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="sMount"> Pobieraj tylko na zamontowany dysk
+        <button type="button" class="info-i" data-tip="Chroni kartę SD: gdy dysk się odłączy, jego folder staje się zwykłym katalogiem na karcie i pobieranie mogłoby ją zapełnić. Wyłącz tylko, jeśli biblioteka leży na samej karcie SD.">i</button></label>
+    </section>
+
+    <!-- SERWERY PLEX -->
+    <section class="tab-panel" data-panel="plex" hidden>
+      <label class="check"><input type="checkbox" id="sAutodisc"> Wykrywaj serwery Plex w sieci automatycznie
+        <button type="button" class="info-i" data-tip="Downloader co kilka minut wysyła zapytanie GDM (tak jak aplikacje Plex) i sprawdza adres /identity serwera. Nie wymaga logowania do Plexa i nic nie zmienia na serwerze.">i</button></label>
+      <h3>Stan serwerów</h3>
+      <div id="plexList" class="plex-list"></div>
+      <button class="btn-soft small" type="button" id="plexDiscover"><svg class="i"><use href="#i-search"/></svg>Wyszukaj teraz</button>
+      <h3>Dodane ręcznie</h3>
+      <div id="plexRows"></div>
+      <button class="btn-soft small" type="button" id="addPlex">+ Dodaj serwer</button>
+    </section>
+
+    <!-- PODGLĄD I OKŁADKI -->
+    <section class="tab-panel" data-panel="preview" hidden>
+      <div><label class="small-label" for="sTmdb">Klucz API TMDB (API Key albo API Read Access Token)
+        <button type="button" class="info-i" data-tip="Darmowy klucz z themoviedb.org → Ustawienia → API. Służy do karty podglądu filmu i okładek w Menedżerze plików. Zapisywany tylko lokalnie." data-href="https://www.themoviedb.org/settings/api">i</button></label>
+        <input class="input mono" id="sTmdb" autocomplete="off" spellcheck="false" placeholder="wklej klucz z themoviedb.org"></div>
+      <h3>Okładki w Menedżerze plików</h3>
+      <div class="radios">
+        <label class="check"><input type="radio" name="thumbs" value="online"> Pobieraj brakujące okładki z TMDB i zapisuj na dysku</label>
+        <label class="check"><input type="radio" name="thumbs" value="local"> Tylko okładki już zapisane na dysku</label>
+        <label class="check"><input type="radio" name="thumbs" value="off"> Bez okładek (szybki widok, zastępczy obrazek)</label>
+      </div>
+      <p class="hint">Okładka zapisuje się w folderze filmu jako <code>Tytuł (Rok).thumb.png</code>. Plex jej nie używa, korzysta z własnych plakatów. <span id="pillowNote"></span></p>
+      <div class="thumb-actions">
+        <select class="input" id="thumbDisk"></select>
+        <button class="btn-soft small" type="button" id="thumbRefresh"><svg class="i"><use href="#i-retry"/></svg>Pobierz ponownie (nadpisz)</button>
+        <button class="btn-soft small btn-danger" type="button" id="thumbDelete"><svg class="i"><use href="#i-trash"/></svg>Usuń okładki z dysku</button>
+      </div>
+      <span class="form-msg" id="thumbMsg"></span>
+    </section>
+
+    <!-- KOPIE ZAPASOWE -->
+    <section class="tab-panel" data-panel="backups" hidden>
+      <p class="panel-intro">Po każdej zmianie ustawień zapisuje się punkt przywracania. Kopie starsze niż 30 dni są usuwane automatycznie, ale ostatnia zostaje zawsze.
+        <button type="button" class="info-i" data-tip="Przywrócenie kopii zmienia dyski, kategorie, serwery Plex i opcje. Login, hasło i klucze sesji zostają bez zmian – z bezpieczeństwa. Kopie są w folderze backups/ na Raspberry Pi (poza GitHubem).">i</button></p>
+      <div id="backupList" class="backup-list"></div>
+    </section>
+
+    <!-- KONTO -->
+    <section class="tab-panel" data-panel="account" hidden>
+      <div class="grid-acc">
+        <div><label for="aUser">Login</label><input class="input" id="aUser" autocomplete="username"></div>
+        <div><label for="aCur">Obecne hasło</label><input class="input" id="aCur" type="password" autocomplete="current-password"></div>
+        <div><label for="aNew">Nowe hasło</label><input class="input" id="aNew" type="password" autocomplete="new-password"></div>
+      </div>
+      <div style="margin-top:12px"><button class="btn-soft small" type="button" id="savePwd">Zmień login / hasło</button> <span class="form-msg" id="pwdMsg"></span></div>
+    </section>
+
+    <!-- VPN (wkrótce) -->
+    <section class="tab-panel vpn-panel" data-panel="vpn" hidden>
+      <div class="soon-banner"><svg class="i"><use href="#i-shield"/></svg>
+        <div><b>Dostęp spoza domu przez VPN – w przygotowaniu</b><br>Panel pozostanie niewidoczny w internecie. Zamiast otwierać porty w routerze, połączysz się przez prywatną sieć VPN.</div></div>
+      <div class="ph-grid">
+        <div class="ph"><label>Dostawca</label><select class="input" disabled><option>Tailscale (zalecany, bez otwierania portów)</option><option>WireGuard</option></select></div>
+        <div class="ph"><label>Panel dostępny przez</label><select class="input" disabled><option>Tylko sieć domowa</option><option>Sieć domowa + VPN</option></select></div>
+        <div class="ph"><label>Port panelu</label><input class="input" disabled value="8800"></div>
+        <div class="ph"><label>Status VPN</label><div class="ph-box">Nie zainstalowano · adres w VPN: 100.x.x.x:8800 · kod QR do telefonu</div></div>
+      </div>
+      <ul class="ph-list">
+        <li>Skrypt <code>setup-vpn.sh</code> na GitHubie: instaluje Tailscale i wyświetla link do zalogowania.</li>
+        <li>Logowanie do konta VPN odbywa się zawsze na stronie dostawcy. Panel nie przechowuje tych danych.</li>
+        <li>Instrukcje krok po kroku po polsku i angielsku.</li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="win-foot">
+    <span class="form-msg" id="setMsg"></span>
+    <button class="btn-soft" type="button" data-close>Anuluj</button>
+    <button class="btn-accent" type="button" id="saveSettings">Zapisz</button>
+  </div>
+</dialog>
+
+<template id="diskRowTpl">
+  <div class="disk-row">
+    <div class="disk-row-head"><b class="row-title">Dysk</b>
+      <span class="row-tools">
+        <button class="btn-ghost small fill-paths" type="button" title="Uzupełnij puste foldery kategorii według domyślnych nazw">Uzupełnij foldery</button>
+        <button class="icon-btn rm" type="button" title="Usuń dysk"><svg class="i"><use href="#i-trash"/></svg></button>
+      </span></div>
+    <div><label>Nazwa przycisku</label><input class="input" data-k="label"></div>
+    <div><label>Podpis (np. udział SMB)</label><input class="input" data-k="subtitle"></div>
+    <div class="full"><label>Punkt montowania (do odczytu wolnego miejsca)</label><input class="input mono" data-k="mount"></div>
+    <div class="full cat-paths"></div>
+  </div>
+</template>

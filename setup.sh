@@ -36,6 +36,11 @@ fi
 "$APP_DIR/venv/bin/pip" install -q --upgrade pip
 "$APP_DIR/venv/bin/pip" install -q -r "$APP_DIR/requirements.txt"
 c_ok "Zależności Pythona zainstalowane"
+if "$APP_DIR/venv/bin/pip" install -q -r "$APP_DIR/requirements-optional.txt" 2>/dev/null; then
+  c_ok "Pillow zainstalowany (okładki .thumb.png)"
+else
+  c_warn "Nie udało się zainstalować Pillow – okładki będą zapisywane jako .thumb.jpg"
+fi
 
 if [ ! -f "$APP_DIR/config.json" ]; then
   cp "$APP_DIR/config.example.json" "$APP_DIR/config.json"
@@ -50,19 +55,7 @@ if ! grep -q '"password_hash": "[^"]' "$APP_DIR/config.json"; then
 fi
 
 c_info "Sprawdzam foldery bibliotek z config.json…"
-"$APP_DIR/venv/bin/python" - "$APP_DIR/config.json" <<'PY'
-import json, os, sys
-cfg = json.load(open(sys.argv[1]))
-for d in cfg.get("disks", []):
-    for key, label in (("movies", "Filmy"), ("tv", "Seriale")):
-        p = d.get(key, "")
-        if not os.path.isdir(p):
-            print("  \033[33m! %-18s %-8s brak folderu: %s\033[0m" % (d["label"], label, p))
-        elif not os.access(p, os.W_OK):
-            print("  \033[33m! %-18s %-8s brak prawa zapisu: %s\033[0m" % (d["label"], label, p))
-        else:
-            print("  \033[32m✔ %-18s %-8s %s\033[0m" % (d["label"], label, p))
-PY
+"$APP_DIR/venv/bin/python" "$APP_DIR/app.py" --check-folders
 
 c_info "Rejestruję usługę systemd ($SERVICE)…"
 sudo tee "/etc/systemd/system/$SERVICE.service" >/dev/null <<EOF

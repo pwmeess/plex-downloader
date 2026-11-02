@@ -11,14 +11,7 @@
 </head>
 <body>
 {% include "_icons.html" %}
-
-<header class="topbar">
-  <div class="brand"><span class="brand-mark"><svg class="i"><use href="#i-logo"/></svg></span><span class="t">Plex Downloader</span></div>
-  <div class="conn"><span class="dot" id="connDot"></span><span id="connText">Połączono z <span class="host" id="hostName"></span></span></div>
-  <div class="spacer"></div>
-  <button class="btn-ghost" id="openSettings" type="button" title="Ustawienia"><svg class="i"><use href="#i-gear"/></svg><span class="lbl">Ustawienia</span></button>
-  <button class="btn-soft" id="logoutBtn" type="button" title="Wyloguj"><svg class="i"><use href="#i-logout"/></svg><span class="lbl">Wyloguj</span></button>
-</header>
+{% include "_header.html" %}
 
 <main class="layout">
   <!-- formularz -->
@@ -33,10 +26,7 @@
       </div>
 
       <div class="field">
-        <div class="segmented" role="tablist">
-          <button type="button" class="on" data-kind="movie"><svg class="i"><use href="#i-film"/></svg>Film</button>
-          <button type="button" data-kind="tv"><svg class="i"><use href="#i-tv"/></svg>Serial</button>
-        </div>
+        <div class="segmented cats" id="catTabs" role="tablist"></div>
       </div>
 
       <div class="field" id="movieFields">
@@ -60,6 +50,30 @@
             <input class="input" id="epTitle" placeholder="np. Pilot">
             <input class="suffix ext" id="extTv" placeholder=".mkv" maxlength="6" aria-label="Rozszerzenie">
           </div>
+        </div>
+      </div>
+
+      <!-- opcje zaawansowane (nazewnictwo Plex) -->
+      <div class="adv">
+        <label class="check adv-toggle"><input type="checkbox" id="advOn"> Opcje zaawansowane – oznaczenia Plex
+          <button type="button" class="info-i" data-tip="Dodatkowe znaczniki w nazwie zgodne z zasadami Plex: edycja filmu (np. wersja reżyserska, remaster), wersja pliku (np. 1080p, 4K – kilka wersji w jednym folderze) oraz ID TMDB, które gwarantuje trafne dopasowanie." data-href="https://support.plex.tv/articles/multiple-editions/">i</button></label>
+        <div class="adv-body" id="advBody" hidden>
+          <div class="adv-grid">
+            <div id="advEditionBox">
+              <label class="small-label" for="advEdition">Edycja <span class="muted">{edition-…}</span>
+                <button type="button" class="info-i" data-tip="Edycja filmu, np. Director's Cut, Extended Edition, Remastered 1997, VHS. Plex pokaże ją jako osobną edycję tego samego filmu. Trafia do nazwy folderu i pliku (zalecenie Plex), maks. 32 znaki. Wymaga Plex Pass na koncie administratora serwera." data-href="https://support.plex.tv/articles/multiple-editions/">i</button></label>
+              <input class="input" id="advEdition" list="editionList" maxlength="32" placeholder="np. Director's Cut">
+              <datalist id="editionList"></datalist>
+            </div>
+            <div id="advVersionBox">
+              <label class="small-label" for="advVersion">Wersja pliku <span class="muted">„ - 1080p”</span>
+                <button type="button" class="info-i" data-tip="Oznaczenie wersji tego samego filmu, np. 4K, 1080p, Lektor PL. Dodawane tylko do nazwy pliku – kilka wersji w jednym folderze Plex połączy w jedną pozycję z wyborem wersji." data-href="https://support.plex.tv/articles/200381043-multi-version-movies/">i</button></label>
+              <input class="input" id="advVersion" list="versionList" maxlength="40" placeholder="np. 1080p">
+              <datalist id="versionList"></datalist>
+            </div>
+          </div>
+          <label class="check"><input type="checkbox" id="advId"> Dodaj ID TMDB do nazwy folderu <span class="mono muted" id="advIdVal"></span>
+            <button type="button" class="info-i" data-tip="Znacznik {tmdb-12345} w nazwie folderu wskazuje Plexowi dokładnie ten film lub serial – przydatne przy remake'ach i tytułach o tej samej nazwie. ID pochodzi z karty podglądu (TMDB)." data-href="https://support.plex.tv/articles/naming-and-organizing-your-movie-media-files/">i</button></label>
         </div>
       </div>
 
@@ -109,61 +123,10 @@
 </main>
 <div class="foot-ver">Plex Downloader · wersja {{ version }}</div>
 
-<!-- ustawienia -->
-<dialog id="settings">
-  <form method="dialog" id="settingsForm">
-    <div class="dlg-head"><h2>Ustawienia</h2><button class="icon-btn" value="cancel" formnovalidate aria-label="Zamknij"><svg class="i"><use href="#i-x"/></svg></button></div>
-    <div class="dlg-body">
-      <h3>Dyski docelowe</h3>
-      <div id="diskRows"></div>
-      <button class="btn-soft small" type="button" id="addDisk">+ Dodaj dysk</button>
+{% include "_settings.html" %}
 
-      <h3>Pobieranie</h3>
-      <div class="grid-3">
-        <div><label for="sConn">Połączeń na plik (1–16)</label><input class="input" id="sConn" type="number" min="1" max="16"></div>
-        <div><label for="sConc">Równoległych pobrań</label><input class="input" id="sConc" type="number" min="1" max="10"></div>
-        <div><label for="sSpeed">Limit prędkości MB/s (0 = brak)</label><input class="input" id="sSpeed" type="number" min="0" step="0.5"></div>
-      </div>
-      <label class="check"><input type="checkbox" id="sMount"> Pobieraj tylko na zamontowany dysk (chroni kartę SD przed zapełnieniem, gdy dysk się odłączy)</label>
-
-      <h3>Podgląd filmów (TMDB)</h3>
-      <div><label class="small-label" for="sTmdb">Klucz API TMDB (API Key albo API Read Access Token)</label>
-        <input class="input mono" id="sTmdb" autocomplete="off" spellcheck="false" placeholder="wklej klucz z themoviedb.org → Ustawienia → API"></div>
-      <p class="hint">Darmowy klucz: <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">themoviedb.org/settings/api</a>. Dane są tylko poglądowe – nic nie jest zapisywane w plikach.</p>
-
-      <h3>Konto</h3>
-      <div class="grid-acc">
-        <div><label for="aUser">Login</label><input class="input" id="aUser" autocomplete="username"></div>
-        <div><label for="aCur">Obecne hasło</label><input class="input" id="aCur" type="password" autocomplete="current-password"></div>
-        <div><label for="aNew">Nowe hasło</label><input class="input" id="aNew" type="password" autocomplete="new-password"></div>
-      </div>
-      <div style="margin-top:12px"><button class="btn-soft small" type="button" id="savePwd">Zmień login / hasło</button> <span class="form-msg" id="pwdMsg"></span></div>
-
-      <h3>Aktualizacje</h3>
-      <div class="update-row"><span>Wersja <b id="verLabel">{{ version }}</b></span>
-        <button class="btn-soft small" type="button" id="checkUpd">Sprawdź aktualizacje</button>
-        <span id="updMsg"></span></div>
-    </div>
-    <div class="dlg-foot">
-      <span class="form-msg" id="setMsg"></span>
-      <button class="btn-soft" value="cancel" formnovalidate>Anuluj</button>
-      <button class="btn-accent" type="button" id="saveSettings">Zapisz</button>
-    </div>
-  </form>
-</dialog>
-
-<template id="diskRowTpl">
-  <div class="disk-row">
-    <div class="disk-row-head"><b class="row-title">Dysk</b><button class="icon-btn rm" type="button" title="Usuń dysk"><svg class="i"><use href="#i-trash"/></svg></button></div>
-    <input type="hidden" data-k="id">
-    <div><label>Nazwa przycisku</label><input class="input" data-k="label"></div>
-    <div><label>Podpis (np. udział SMB)</label><input class="input" data-k="subtitle"></div>
-    <div class="full"><label>Punkt montowania (do odczytu wolnego miejsca)</label><input class="input mono" data-k="mount"></div>
-    <div><label>Folder filmów</label><input class="input mono" data-k="movies"></div>
-    <div><label>Folder seriali</label><input class="input mono" data-k="tv"></div>
-  </div>
-</template>
-
+<script src="{{ url_for('static', filename='common.js') }}?v={{ version }}"></script>
+<script src="{{ url_for('static', filename='settings.js') }}?v={{ version }}"></script>
 <script src="{{ url_for('static', filename='app.js') }}?v={{ version }}"></script>
 </body>
 </html>

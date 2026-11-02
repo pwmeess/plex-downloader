@@ -4,6 +4,7 @@ Lekki menedżer pobierania dla Raspberry Pi. Wklejasz bezpośredni link do pliku
 
 - **Filmy:** `…/Movies/Tytuł (YYYY)/Tytuł (YYYY).mkv`
 - **Seriale:** `…/TV Shows/Serial/Season 01/Serial - S01E02.mkv`
+- **Dla dzieci i własne kategorie:** `…/Kids/Tytuł (YYYY)/…`, `…/Concerts/…` itd.
 
 ## Funkcje
 
@@ -19,6 +20,14 @@ Lekki menedżer pobierania dla Raspberry Pi. Wklejasz bezpośredni link do pliku
 - Atomowość: plik pobiera się do ukrytego folderu `.plexdl-tmp` na tym samym dysku, obok `Movies`, czyli poza biblioteką Plexa. Po zakończeniu jest przenoszony do biblioteki jedną operacją `rename`. Anulowanie lub błąd usuwa pliki tymczasowe, a folder docelowy nie zostaje utworzony.
 - Ustawienia w przeglądarce: dyski (etykiety i ścieżki), liczba połączeń, równoległe pobrania, limit prędkości, zmiana hasła, sprawdzanie aktualizacji.
 - **Podgląd filmu lub serialu (TMDB):** po wklejeniu linku pojawia się karta z polskim tytułem, plakatem, oceną, czasem trwania, gatunkami, reżyserem, obsadą i opisem. Dla seriali pokazuje też nazwę odcinka. Karta ma linki do IMDb, Filmwebu i TMDB oraz przycisk „Nie ten film?” z innymi trafieniami. Dane są tylko poglądowe i nic nie trafia do plików, bo Plex pobiera własne metadane.
+- **Kategorie (1.2):** Filmy, Seriale, Dla dzieci oraz dowolne własne kategorie typu „film” albo „serial”. Każdy dysk ma osobny folder dla każdej kategorii, a foldery mogą mieć dowolne nazwy.
+- **Opcje zaawansowane nazewnictwa Plex (1.2):** edycja `{edition-Director's Cut}` (Plex Pass), wersja pliku `- 1080p` (kilka wersji w jednym folderze) oraz ID `{tmdb-…}` dla trafnego dopasowania. Edycja jest wykrywana z nazwy pliku, np. `Directors.Cut`.
+- **Menedżer plików (1.2):** dwie kolumny z okładkami. Przeciągnij i upuść, żeby przenieść filmy między folderami i dyskami. Ten sam dysk to natychmiastowe przeniesienie, inny dysk to kopia, weryfikacja SHA-256 i dopiero wtedy usunięcie oryginału. Kosz usuwa cały folder filmu po potwierdzeniu.
+- **Okładki (1.2):** zapisywane w folderze filmu jako `Tytuł (Rok).thumb.png` (z TMDB). Można je pobrać ponownie, usunąć z dysku albo wyłączyć.
+- **Serwery Plex w nagłówku (1.2):** automatyczne wykrywanie w sieci (GDM) i status online/offline, także dla serwerów dodanych ręcznie.
+- **Kopie zapasowe ustawień (1.2):** punkt przywracania po każdej zmianie, przechowywany 30 dni (ostatni zawsze zostaje). Przywrócenie nie zmienia loginu ani hasła.
+- **Pływające okno ustawień z zakładkami (1.2)** i podpowiedzi ⓘ przy opcjach.
+- Przyciski **Google** i **Zwiastun (YouTube)** w karcie filmu.
 - Działa na telefonie.
 
 ## Wymagania
@@ -67,11 +76,13 @@ Klucz jest zapisywany wyłącznie lokalnie w `config.json`. Bez klucza aplikacja
 
 ## Domyślne dyski (`config.example.json`)
 
-| Przycisk | Filmy | Seriale |
-|---|---|---|
-| Pendrive 256GB | `/plex_media/Plex/Movies` | `/plex_media/Plex/TV Shows` |
-| Dysk SSD 512GB | `/plex_media_512/Plex 512/Movies` | `/plex_media_512/Plex 512/TV Shows` |
-| Dysk SSD 1024GB | `/plex_media_1024/Plex 1T/Movies` | `/plex_media_1024/Plex 1T/TV Shows` |
+| Przycisk | Filmy | Seriale | Dla dzieci |
+|---|---|---|---|
+| Pendrive 256GB | `/plex_media/Plex/Movies` | `/plex_media/Plex/TV Shows` | `/plex_media/Plex/Kids` |
+| Dysk SSD 512GB | `/plex_media_512/Plex 512/Movies` | `/plex_media_512/Plex 512/TV Shows` | `/plex_media_512/Plex 512/Kids` |
+| Dysk SSD 1024GB | `/plex_media_1024/Plex 1T/Movies` | `/plex_media_1024/Plex 1T/TV Shows` | `/plex_media_1024/Plex 1T/Kids` |
+
+Aktualizacja z wersji 1.0/1.1 przenosi starą konfigurację automatycznie. Jeśli obok folderu `Movies` istnieje folder `Kids`, zostaje od razu przypisany do kategorii „Dla dzieci”.
 
 Ścieżki zmienisz w **Ustawieniach** albo w `config.json`.
 
@@ -85,7 +96,8 @@ Aplikacja **nie wykrywa dysków automatycznie**. Domyślne ścieżki to konfigur
    - **Podpis**, np. nazwę udziału SMB (opcjonalnie),
    - **Punkt montowania**, np. `/mnt/dysk1` (służy do odczytu wolnego miejsca),
    - **Folder filmów** i **Folder seriali**, czyli ścieżki z bibliotek Plexa, np. `/mnt/dysk1/Movies`.
-3. Dysk dodajesz przyciskiem **+ Dodaj dysk**, a usuwasz ikoną kosza. Na koniec kliknij **Zapisz**.
+3. Dysk dodajesz przyciskiem **+ Dodaj dysk**, a usuwasz ikoną kosza. Przycisk **Uzupełnij foldery** dopisuje brakujące ścieżki według domyślnych nazw kategorii (np. `…/Plex 1T/Kids`). Na koniec kliknij **Zapisz**.
+4. Własne kategorie dodasz w zakładce **Kategorie**: nazwa przycisku, typ (film/serial) i domyślna nazwa folderu. W Plexie dodaj dla nich osobne biblioteki.
 
 Usunięcie dysku z listy nie kasuje żadnych plików, tylko chowa przycisk.
 
@@ -105,13 +117,15 @@ sudo systemctl restart plex-downloader         # restart
 |---|---|
 | `app.py` | serwer WWW (Flask + waitress), logowanie, API |
 | `downloader.py` | sterowanie aria2c przez JSON-RPC, kolejka, finalizacja, sprzątanie |
+| `filemanager.py` | Menedżer plików: lista, przenoszenie z weryfikacją, usuwanie, okładki |
+| `plexservers.py` | wykrywanie i status serwerów Plex w sieci |
 | `movieinfo.py` | podgląd filmu lub serialu z TMDB (tylko do wyświetlenia) |
 | `naming.py` | rozpoznawanie tytułu, roku i odcinka; nazewnictwo Plexa |
-| `config.py` | odczyt i zapis `config.json` |
+| `config.py` | odczyt i zapis `config.json`, migracja, punkty przywracania (`backups/`) |
 | `templates/`, `static/` | interfejs |
 | `setup.sh`, `update.sh` | instalacja i aktualizacja |
 
-`config.json` (hasło, klucze) i `plexdl.db` (lista pobrań) nie trafiają do repozytorium (`.gitignore`).
+`config.json` (hasło, klucze), `backups/` i `plexdl.db` (lista pobrań) nie trafiają do repozytorium (`.gitignore`).
 
 ## Bezpieczeństwo
 

@@ -1,0 +1,24 @@
+<header class="topbar">
+  <a class="brand" href="/" title="Plex Downloader – strona główna">
+    <span class="brand-mark"><svg class="i"><use href="#i-logo"/></svg></span>
+    <span class="brand-txt">
+      <span class="t">Plex Downloader</span>
+      <span class="brand-sub"><span class="dot" id="selfDot"></span><span id="hdrServer">…</span></span>
+    </span>
+  </a>
+
+  <div class="hdr-status" id="plexStatus" aria-label="Serwery Plex"></div>
+
+  <div class="spacer"></div>
+
+  <span class="vpn-ph" title="VPN – dostęp spoza domu (wkrótce)" tabindex="0">
+    <svg class="i"><use href="#i-shield"/></svg><span class="lbl">VPN</span><span class="soon">wkrótce</span>
+  </span>
+  {% if page == 'files' %}
+  <a class="btn-ghost" href="/" title="Pobieranie"><svg class="i"><use href="#i-down"/></svg><span class="lbl">Pobieranie</span></a>
+  {% else %}
+  <a class="btn-ghost" href="/files" title="Menedżer plików"><svg class="i"><use href="#i-folder"/></svg><span class="lbl">Menedżer plików</span></a>
+  {% endif %}
+  <button class="btn-ghost" id="openSettings" type="button" title="Ustawienia"><svg class="i"><use href="#i-gear"/></svg><span class="lbl">Ustawienia</span></button>
+  <button class="btn-soft" id="logoutBtn" type="button" title="Wyloguj"><svg class="i"><use href="#i-logout"/></svg><span class="lbl">Wyloguj</span></button>
+</header>

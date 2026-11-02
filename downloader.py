@@ -118,8 +118,10 @@ def disk_status(d):
     """Stan dysku: zamontowany?, wolne/całkowite miejsce, czy foldery istnieją."""
     cfg = config.get()
     mount = d.get("mount") or ""
+    paths = d.get("paths") or {}
     info = {"id": d.get("id"), "label": d.get("label"), "subtitle": d.get("subtitle", ""),
-            "mount": mount, "movies": d.get("movies"), "tv": d.get("tv"),
+            "mount": mount, "paths": paths,
+            "folders": {cid: os.path.isdir(p) for cid, p in paths.items()},
             "mounted": False, "free": None, "total": None, "ok": False, "problem": ""}
     if not mount or not os.path.isdir(mount):
         info["problem"] = "Brak punktu montowania"
@@ -280,7 +282,7 @@ class Manager:
         self._save(job)
 
     # ---------- API zadań ----------
-    def add(self, url, disk_id, folder, filename, kind, display, size=None):
+    def add(self, url, disk_id, category_id, folder, filename, kind, display, size=None):
         if not self.engine_ok:
             raise ValueError("Silnik pobierania (aria2c) nie działa: %s" % self.engine_error)
         d = config.disk(disk_id)
@@ -289,7 +291,10 @@ class Manager:
         st = disk_status(d)
         if not st["ok"]:
             raise ValueError("%s: %s" % (d.get("label"), st["problem"]))
-        base = d["tv"] if kind == "tv" else d["movies"]
+        cat = config.category(category_id) or {}
+        base = (d.get("paths") or {}).get(category_id)
+        if not base:
+            raise ValueError("Dysk %s nie ma folderu dla kategorii „%s”." % (d["label"], cat.get("label", category_id)))
         if not os.path.isdir(base):
             raise ValueError("Folder biblioteki nie istnieje: %s" % base)
         target = os.path.join(folder, filename)
@@ -309,6 +314,7 @@ class Manager:
         tmp_root = os.path.join(os.path.dirname(base.rstrip("/")), TMP_DIRNAME)
         job = {
             "id": job_id, "url": url, "kind": kind, "disk_id": disk_id, "disk_label": d["label"],
+            "category": category_id, "category_label": cat.get("label", ""),
             "folder": folder, "filename": filename, "display": display,
             "tmp_dir": os.path.join(tmp_root, job_id), "gid": None,
             "status": "queued", "total": size or 0, "completed": 0, "speed": 0,
@@ -324,6 +330,12 @@ class Manager:
             self.jobs[job_id] = job
             self._save(job)
         return job
+
+    def busy_paths(self):
+        """Foldery, do których trwa pobieranie – menedżer plików ich nie rusza."""
+        with self.lock:
+            return [j["folder"] for j in self.jobs.values()
+                    if j["status"] not in ("done", "error")]
 
     def list(self):
         with self.lock:

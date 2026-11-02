@@ -15,12 +15,14 @@ from datetime import timedelta
 from functools import wraps
 from urllib.parse import urlparse
 
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, jsonify, redirect, render_template, request, send_file, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 import config
+import filemanager as fm
 import movieinfo
 import naming
+import plexservers
 from downloader import Manager, disk_status, probe
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -88,7 +90,13 @@ def logout():
 @app.route("/")
 @login_required
 def index():
-    return render_template("index.html", version=VERSION, user=session.get("user"))
+    return render_template("index.html", version=VERSION, user=session.get("user"), page="home")
+
+
+@app.route("/files")
+@login_required
+def files_page():
+    return render_template("files.html", version=VERSION, user=session.get("user"), page="files")
 
 
 # ---------------------------------------------------------------- API
@@ -104,7 +112,23 @@ def disks_payload():
 @login_required
 def api_state():
     return jsonify(jobs=manager.list(), disks=disks_payload(),
+                   categories=config.get().get("categories", []),
                    engine={"ok": manager.engine_ok, "error": manager.engine_error},
+                   version=VERSION)
+
+
+@app.route("/api/status")
+@login_required
+def api_status():
+    """Dane do paska nagłówka: adres Downloadera, serwery Plex, operacje, VPN."""
+    cfg = config.get()
+    return jsonify(server={"ip": plexservers.lan_ip(), "port": int(cfg.get("port", 8800)),
+                           "hostname": plexservers.socket.gethostname()},
+                   plex=plexservers.monitor.snapshot(),
+                   engine={"ok": manager.engine_ok},
+                   downloads=sum(1 for j in manager.list() if j["status"] in ("downloading", "queued")),
+                   ops=fm.ops.active(),
+                   vpn={"available": False, "planned": True},
                    version=VERSION)
 
 
@@ -123,6 +147,8 @@ def api_probe():
         info["probe_error"] = str(e)
         info["ext"] = naming.split_ext(info["filename"])[1]
     info["guess"] = naming.guess(info["filename"] or "")
+    info["editions"] = naming.EDITIONS
+    info["versions"] = naming.VERSIONS
     if not info["ext"]:
         info["ext"] = info["guess"]["ext"]
     return jsonify(info)
@@ -167,16 +193,28 @@ def api_add():
     d = config.disk(data.get("disk_id"))
     if not d:
         return err("Wybierz dysk docelowy.")
-    kind = "tv" if data.get("kind") == "tv" else "movie"
+    cat = config.category(data.get("category") or ("tv" if data.get("kind") == "tv" else "movies"))
+    if not cat:
+        return err("Wybierz kategorię.")
+    base = (d.get("paths") or {}).get(cat["id"])
+    if not base:
+        return err("Dysk %s nie ma folderu dla kategorii „%s” – uzupełnij go w Ustawieniach." % (d["label"], cat["label"]))
+    adv = data.get("advanced") or {}
+    ids = {}
+    if adv.get("use_id") and adv.get("tmdb_id"):
+        ids["tmdb"] = adv.get("tmdb_id")
     try:
-        if kind == "tv":
-            folder, filename = naming.tv_target(d["tv"], data.get("show"), data.get("season"),
-                                                data.get("episode"), data.get("episode_title"), ext)
+        if cat["kind"] == "tv":
+            folder, filename = naming.tv_target(base, data.get("show"), data.get("season"),
+                                                data.get("episode"), data.get("episode_title"), ext,
+                                                ids=ids)
         else:
-            folder, filename = naming.movie_target(d["movies"], data.get("name"), ext)
+            folder, filename = naming.movie_target(base, data.get("name"), ext,
+                                                   edition=adv.get("edition"), version=adv.get("version"),
+                                                   ids=ids)
         size = data.get("size")
         size = int(size) if isinstance(size, (int, float)) and size > 0 else None
-        job = manager.add(url, d["id"], folder, filename, kind,
+        job = manager.add(url, d["id"], cat["id"], folder, filename, cat["kind"],
                           os.path.splitext(filename)[0], size)
     except ValueError as e:
         return err(str(e))
@@ -210,44 +248,218 @@ def api_clear():
 @login_required
 def api_settings_get():
     cfg = config.get()
-    return jsonify(disks=cfg.get("disks", []), username=cfg.get("username"),
+    return jsonify(disks=cfg.get("disks", []), categories=cfg.get("categories", []),
+                   username=cfg.get("username"),
                    connections_per_file=cfg.get("connections_per_file"),
                    max_concurrent=cfg.get("max_concurrent"),
                    max_speed_mbps=cfg.get("max_speed_mbps"),
                    require_mount=cfg.get("require_mount"),
-                   tmdb_api_key=cfg.get("tmdb_api_key", ""))
+                   tmdb_api_key=cfg.get("tmdb_api_key", ""),
+                   plex_servers=cfg.get("plex_servers", []),
+                   plex_autodiscover=cfg.get("plex_autodiscover", True),
+                   thumbs_mode=cfg.get("thumbs_mode", "online"),
+                   pillow=fm.Image is not None,
+                   port=cfg.get("port", 8800))
+
+
+def _abs_path(value, what):
+    value = (value or "").strip()
+    if not value:
+        return ""
+    if not value.startswith("/") or ".." in value.split("/"):
+        raise ValueError("Ścieżka „%s” musi być bezwzględna (zaczynać się od /)." % what)
+    return value.rstrip("/") or "/"
 
 
 @app.route("/api/settings", methods=["POST"])
 @login_required
 def api_settings_post():
     data = request.get_json(silent=True) or {}
-    disks = []
-    for raw in data.get("disks") or []:
-        d = {k: (raw.get(k) or "").strip() for k in ("id", "label", "subtitle", "mount", "movies", "tv")}
-        if not d["label"]:
-            return err("Każdy dysk musi mieć nazwę.")
-        for k in ("mount", "movies", "tv"):
-            if not d[k].startswith("/") or ".." in d[k].split("/"):
-                return err("Ścieżka „%s” dla %s musi być bezwzględna." % (k, d["label"]))
-            d[k] = d[k].rstrip("/") or "/"
-        if not d["id"] or not re.match(r"^[a-z0-9_-]{1,32}$", d["id"]):
-            d["id"] = uuid.uuid4().hex[:8]
-        disks.append(d)
-    if not disks:
-        return err("Musi zostać co najmniej jeden dysk.")
     try:
+        cats, seen = [], set()
+        for raw in data.get("categories") or []:
+            label = (raw.get("label") or "").strip()
+            if not label:
+                raise ValueError("Każda kategoria musi mieć nazwę.")
+            cid = (raw.get("id") or "").strip()
+            if not re.match(r"^[a-z0-9-]{1,24}$", cid):
+                cid = re.sub(r"[^a-z0-9]+", "-", label.lower()).strip("-")[:24] or uuid.uuid4().hex[:6]
+            while cid in seen:
+                cid = cid[:20] + "-" + uuid.uuid4().hex[:3]
+            seen.add(cid)
+            cats.append({"id": cid, "label": label[:40], "kind": "tv" if raw.get("kind") == "tv" else "movie",
+                         "folder": naming.sanitize(raw.get("folder") or "")[:60]})
+        if not cats:
+            raise ValueError("Musi zostać co najmniej jedna kategoria.")
+        # mapowanie identyfikatorów nowych kategorii (klient używa tymczasowych „new-…”)
+        idmap = {}
+        for raw, c in zip(data.get("categories") or [], cats):
+            idmap[(raw.get("id") or raw.get("tmp") or "").strip()] = c["id"]
+        disks = []
+        for raw in data.get("disks") or []:
+            d = {k: (raw.get(k) or "").strip() for k in ("id", "label", "subtitle")}
+            if not d["label"]:
+                raise ValueError("Każdy dysk musi mieć nazwę.")
+            d["mount"] = _abs_path(raw.get("mount"), "punkt montowania – " + d["label"])
+            if not d["mount"]:
+                raise ValueError("Podaj punkt montowania dla dysku %s." % d["label"])
+            paths = {}
+            for key, val in (raw.get("paths") or {}).items():
+                cid = idmap.get(key, key)
+                if cid in seen:
+                    p = _abs_path(val, "%s – %s" % (d["label"], cid))
+                    if p:
+                        paths[cid] = p
+            d["paths"] = paths
+            if not re.match(r"^[a-z0-9_-]{1,32}$", d["id"]):
+                d["id"] = uuid.uuid4().hex[:8]
+            disks.append(d)
+        if not disks:
+            raise ValueError("Musi zostać co najmniej jeden dysk.")
+        servers = []
+        for raw in data.get("plex_servers") or []:
+            host = (raw.get("host") or "").strip()
+            if not host:
+                continue
+            if not re.match(r"^[A-Za-z0-9.\-:]+$", host):
+                raise ValueError("Nieprawidłowy adres serwera Plex: %s" % host)
+            port = int(raw.get("port") or 32400)
+            if not 1 <= port <= 65535:
+                raise ValueError("Nieprawidłowy port serwera Plex.")
+            servers.append({"id": raw.get("id") or uuid.uuid4().hex[:6],
+                            "name": (raw.get("name") or host).strip()[:40], "host": host, "port": port})
         conns = max(1, min(16, int(data.get("connections_per_file", 6))))
         conc = max(1, min(10, int(data.get("max_concurrent", 2))))
         speed = max(0.0, float(data.get("max_speed_mbps") or 0))
-    except (TypeError, ValueError):
-        return err("Nieprawidłowe wartości liczbowe.")
+    except (TypeError, ValueError) as e:
+        return err(str(e) if isinstance(e, ValueError) and str(e) else "Nieprawidłowe wartości.")
     tmdb_key = re.sub(r"\s+", "", data.get("tmdb_api_key") or "")
-    config.update(disks=disks, connections_per_file=conns, max_concurrent=conc,
+    mode = data.get("thumbs_mode") if data.get("thumbs_mode") in ("online", "local", "off") else "online"
+    config.update(note=data.get("note") or "Zapis ustawień",
+                  categories=cats, disks=disks, connections_per_file=conns, max_concurrent=conc,
                   max_speed_mbps=speed, require_mount=bool(data.get("require_mount", True)),
-                  tmdb_api_key=tmdb_key)
+                  tmdb_api_key=tmdb_key, plex_servers=servers,
+                  plex_autodiscover=bool(data.get("plex_autodiscover", True)), thumbs_mode=mode)
     manager.apply_settings()
+    plexservers.monitor.refresh()
     return jsonify(ok=True)
+
+
+@app.route("/api/backups")
+@login_required
+def api_backups():
+    return jsonify(backups=config.describe_backups(), keep_days=config.BACKUP_DAYS)
+
+
+@app.route("/api/backups/restore", methods=["POST"])
+@login_required
+def api_backup_restore():
+    try:
+        config.restore((request.get_json(silent=True) or {}).get("name", ""))
+    except (ValueError, OSError) as e:
+        return err(str(e))
+    manager.apply_settings()
+    plexservers.monitor.refresh()
+    return jsonify(ok=True)
+
+
+@app.route("/api/plex/discover", methods=["POST"])
+@login_required
+def api_plex_discover():
+    found = plexservers.monitor.discover_now()
+    return jsonify(found=found, status=plexservers.monitor.snapshot())
+
+
+# ---------------------------------------------------------------- menedżer plików
+def fm_call(fn, *args):
+    try:
+        return jsonify(fn(*args))
+    except fm.FMError as e:
+        return err(str(e))
+    except OSError as e:
+        return err("Błąd dysku: %s" % e)
+
+
+@app.route("/api/fm/list")
+@login_required
+def api_fm_list():
+    a = request.args
+    return fm_call(fm.list_items, a.get("disk", ""), a.get("cat", ""), manager.busy_paths())
+
+
+@app.route("/api/fm/plan", methods=["POST"])
+@login_required
+def api_fm_plan():
+    d = request.get_json(silent=True) or {}
+    return fm_call(fm.plan_move, d.get("src_disk"), d.get("src_cat"), d.get("names") or [],
+                   d.get("dst_disk"), d.get("dst_cat"), manager.busy_paths())
+
+
+@app.route("/api/fm/move", methods=["POST"])
+@login_required
+def api_fm_move():
+    d = request.get_json(silent=True) or {}
+
+    def run():
+        plan = fm.plan_move(d.get("src_disk"), d.get("src_cat"), d.get("names") or [],
+                            d.get("dst_disk"), d.get("dst_cat"), manager.busy_paths())
+        op = fm.ops.move(plan)
+        return {"op": op["id"]}
+    return fm_call(run)
+
+
+@app.route("/api/fm/delete", methods=["POST"])
+@login_required
+def api_fm_delete():
+    d = request.get_json(silent=True) or {}
+    if d.get("confirm") != "DELETE":
+        return err("Brak potwierdzenia usunięcia.")
+    return fm_call(fm.delete, d.get("disk"), d.get("cat"), d.get("names") or [], manager.busy_paths())
+
+
+@app.route("/api/fm/ops")
+@login_required
+def api_fm_ops():
+    return jsonify(ops=fm.ops.public())
+
+
+@app.route("/api/fm/ops/<op_id>/cancel", methods=["POST"])
+@login_required
+def api_fm_cancel(op_id):
+    return fm_call(lambda: fm.ops.cancel(op_id) or {"ok": True})
+
+
+@app.route("/api/fm/ops/clear", methods=["POST"])
+@login_required
+def api_fm_clear():
+    fm.ops.clear()
+    return jsonify(ok=True)
+
+
+@app.route("/api/fm/thumb")
+@login_required
+def api_fm_thumb():
+    a = request.args
+    try:
+        path = fm.get_thumb(a.get("disk", ""), a.get("cat", ""), a.get("name", ""))
+    except (fm.FMError, OSError):
+        return ("", 404)
+    resp = send_file(path, max_age=86400)
+    return resp
+
+
+@app.route("/api/fm/thumbs/refresh", methods=["POST"])
+@login_required
+def api_fm_thumbs_refresh():
+    d = request.get_json(silent=True) or {}
+    return fm_call(lambda: {"op": fm.ops.refresh_thumbs(d.get("disk"))["id"]})
+
+
+@app.route("/api/fm/thumbs/delete", methods=["POST"])
+@login_required
+def api_fm_thumbs_delete():
+    d = request.get_json(silent=True) or {}
+    return fm_call(lambda: {"removed": fm.delete_thumbs(d.get("disk"))})
 
 
 @app.route("/api/password", methods=["POST"])
@@ -261,15 +473,26 @@ def api_password():
     if len(new) < 6:
         return err("Nowe hasło musi mieć co najmniej 6 znaków.")
     username = (data.get("username") or cfg["username"]).strip() or cfg["username"]
-    config.update(username=username, password_hash=generate_password_hash(new))
+    config.update(note="Zmiana loginu/hasła", username=username, password_hash=generate_password_hash(new))
     session["user"] = username
     return jsonify(ok=True)
+
+
+_version_cache = {"t": 0, "data": None}
 
 
 @app.route("/api/version")
 @login_required
 def api_version():
-    """Sprawdza, czy w repozytorium GitHub są nowsze commity."""
+    """Sprawdza (najwyżej co 10 min), czy w repozytorium GitHub są nowsze commity."""
+    if _version_cache["data"] and time.time() - _version_cache["t"] < 600 and not request.args.get("force"):
+        return jsonify(_version_cache["data"])
+    resp = _api_version()
+    _version_cache.update(t=time.time(), data=resp.get_json())
+    return resp
+
+
+def _api_version():
     def git(*args):
         return subprocess.run(["git", "-C", BASE_DIR] + list(args), capture_output=True,
                               text=True, timeout=25)
@@ -305,8 +528,25 @@ def set_password():
             print("Hasła się różnią.")
         else:
             break
-    config.update(username=user, password_hash=generate_password_hash(p1))
+    config.update(note="Ustawienie hasła (konsola)", username=user, password_hash=generate_password_hash(p1))
     print("Zapisano. Login: %s" % user)
+
+
+def check_folders():
+    """Raport dla setup.sh: czy foldery kategorii istnieją i można w nich zapisywać."""
+    cfg = config.load()
+    cats = {c["id"]: c["label"] for c in cfg.get("categories", [])}
+    for d in cfg.get("disks", []):
+        for cid, label in cats.items():
+            p = (d.get("paths") or {}).get(cid)
+            if not p:
+                print("  \033[90m– %-18s %-12s (brak folderu – opcjonalne)\033[0m" % (d["label"], label))
+            elif not os.path.isdir(p):
+                print("  \033[33m! %-18s %-12s brak folderu: %s\033[0m" % (d["label"], label, p))
+            elif not os.access(p, os.W_OK):
+                print("  \033[33m! %-18s %-12s brak prawa zapisu: %s\033[0m" % (d["label"], label, p))
+            else:
+                print("  \033[32m✔ %-18s %-12s %s\033[0m" % (d["label"], label, p))
 
 
 _instance_lock = None
@@ -332,21 +572,28 @@ def create_app():
                       PERMANENT_SESSION_LIFETIME=timedelta(days=30))
     manager = Manager(DB_PATH)
     manager.start()
+    fm.cleanup_tmp()
+    plexservers.monitor.start()
     return app
 
 
 def main():
     parser = argparse.ArgumentParser(description="Plex Downloader")
     parser.add_argument("--set-password", action="store_true", help="ustaw login i hasło")
+    parser.add_argument("--check-folders", action="store_true", help="sprawdź foldery bibliotek")
     args = parser.parse_args()
     if args.set_password:
         set_password()
+        return
+    if args.check_folders:
+        check_folders()
         return
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     create_app()
     cfg = config.get()
 
     def shutdown(*_):
+        plexservers.monitor.stop()
         manager.stop()
         sys.exit(0)
     signal.signal(signal.SIGTERM, shutdown)

@@ -159,3 +159,37 @@ def lookup(kind, title, year=None, item_id=None, season=None, episode=None):
             return {"results": [], "item": None}
         item_id = results[0]["id"]
     return {"results": results, "item": details(kind, item_id, season, episode)}
+
+
+def poster_url(kind, title, year=None, tmdb_id=None, size="w342"):
+    """Adres plakatu do miniatury w menedżerze plików (None, gdy brak)."""
+    kind = "tv" if kind == "tv" else "movie"
+    path = None
+    if tmdb_id:
+        path = _get("/%s/%d" % (kind, int(tmdb_id)), language=LANG).get("poster_path")
+    elif title:
+        if kind == "tv":
+            res = _get("/search/tv", query=title, first_air_date_year=year, language=LANG)
+        else:
+            res = _get("/search/movie", query=title, primary_release_year=year, language=LANG)
+            if year and not res.get("results"):
+                res = _get("/search/movie", query=title, year=year, language=LANG)
+        if year and not res.get("results"):
+            res = _get("/search/%s" % kind, query=title, language=LANG)
+        for r in res.get("results", []):
+            if r.get("poster_path"):
+                path = r["poster_path"]
+                break
+    return _poster(path, size) if path else None
+
+
+def download(url, timeout=15, limit=8 * 1024 * 1024):
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = resp.read(limit + 1)
+    except (urllib.error.URLError, OSError) as e:
+        raise InfoError("Nie udało się pobrać plakatu: %s" % e)
+    if len(data) > limit:
+        raise InfoError("Plakat jest za duży.")
+    return data
