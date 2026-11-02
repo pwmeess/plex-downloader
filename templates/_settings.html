@@ -81,8 +81,15 @@
     <!-- KOPIE ZAPASOWE -->
     <section class="tab-panel" data-panel="backups" hidden>
       <p class="panel-intro">{{ _("Every settings change creates a restore point. Backups older than 30 days are removed automatically, but the latest one is always kept.") }}
-        <button type="button" class="info-i" data-tip="{{ _('Restoring a backup changes disks, categories, Plex servers and options. Username, password and session keys stay unchanged for security. Backups are in the backups/ folder on the Raspberry Pi (outside GitHub).') }}">i</button></p>
+        <button type="button" class="info-i" data-tip="{{ _('Restoring a backup changes disks, categories, Plex servers and options. Username, password and session keys stay unchanged for security. Backups are in the backups/ folder on the Raspberry Pi.') }}">i</button></p>
+      <div class="backup-tools" id="backupTools" hidden>
+        <label class="check"><input type="checkbox" id="backupAll"> {{ _("Select all") }}</label>
+        <span class="spacer"></span>
+        <button class="btn-soft small btn-danger" type="button" id="backupDel" disabled><svg class="i"><use href="#i-trash"/></svg><span></span></button>
+      </div>
       <div id="backupList" class="backup-list"></div>
+      <p class="panel-note reset-note"><svg class="i"><use href="#i-retry"/></svg><span>{{ _("Factory reset (settings like after a fresh install): fix.sh → option 3.") }}</span>
+        <button type="button" class="linklike" id="gotoFix">{{ _("Go to terminal commands") }} →</button></p>
     </section>
 
     <!-- KONTO -->
@@ -110,8 +117,8 @@
       <div class="log-row"><button class="btn-soft small" type="button" id="openLog"><svg class="i"><use href="#i-history"/></svg>LOG</button>
         <span class="muted" id="logInfo"></span></div>
 
-      <h3>{{ _("Terminal commands (SSH)") }} <button type="button" class="info-i" data-tip="{{ _('Log in to the Raspberry Pi over SSH (Terminal on Mac, PowerShell on Windows), then copy a command with the button on the right and paste it into the terminal.') }}">i</button></h3>
-      <div id="cmdList" class="cmd-list"></div>
+      <h3 class="fold-h"><button type="button" class="fold" id="cmdToggle" aria-expanded="false"><svg class="i"><use href="#i-chev-r"/></svg>{{ _("Terminal commands (SSH)") }}</button> <button type="button" class="info-i" data-tip="{{ _('Log in to the Raspberry Pi over SSH (Terminal on Mac, PowerShell on Windows), then copy a command with the button on the right and paste it into the terminal.') }}">i</button></h3>
+      <div id="cmdList" class="cmd-list" hidden></div>
     </section>
 
     <!-- VPN (wkrótce) -->

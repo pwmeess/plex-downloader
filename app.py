@@ -448,6 +448,18 @@ def api_backups():
     return jsonify(backups=config.describe_backups(), keep_days=config.BACKUP_DAYS)
 
 
+@app.route("/api/backups/delete", methods=["POST"])
+@login_required
+def api_backups_delete():
+    names = (request.get_json(silent=True) or {}).get("names") or []
+    if not isinstance(names, list):
+        return err(_("Invalid values."))
+    n = config.delete_backups([str(x) for x in names])
+    if n:
+        actlog.write("DELETE", "settings backups: %d" % n)
+    return jsonify(removed=n)
+
+
 @app.route("/api/backups/restore", methods=["POST"])
 @login_required
 def api_backup_restore():

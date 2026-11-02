@@ -235,6 +235,22 @@ def describe_backups():
     return items
 
 
+def delete_backups(names):
+    """Usuwa wybrane kopie. Najnowsza (bieżąca) kopia nie może zostać usunięta."""
+    files = list_backups()
+    newest = files[0]["name"] if files else None
+    removed = 0
+    for name in names or []:
+        if not _NAME.match(name or "") or name == newest:
+            continue
+        try:
+            os.remove(os.path.join(BACKUP_DIR, name))
+            removed += 1
+        except OSError:
+            pass
+    return removed
+
+
 def prune():
     files = list_backups()
     limit = time.time() - BACKUP_DAYS * 86400
@@ -257,7 +273,7 @@ def restore(name):
         raise ValueError(_("No such backup."))
     snap = _read(path).get("config")
     if not isinstance(snap, dict):
-        raise ValueError("Kopia jest uszkodzona.")
+        raise ValueError(_("The backup is damaged."))
     with _lock:
         cfg = copy.deepcopy(DEFAULTS)
         cfg.update(snap)

@@ -188,15 +188,16 @@
     }
     (b.closest("dialog") || document.body).appendChild(tip);
     const r = b.getBoundingClientRect();
-    const w = Math.min(320, window.innerWidth - 24);
-    tip.style.width = w + "px";
     const host = b.closest("dialog");
-    const hr = host ? host.getBoundingClientRect() : { left: 0, top: 0 };
+    // granice: okno dialogowe (ma overflow: hidden) albo cała strona
+    const box = host ? host.getBoundingClientRect() : { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight, width: window.innerWidth };
+    const w = Math.min(320, box.width - 24);
+    tip.style.width = w + "px";
     const tr = host && getComputedStyle(host).transform !== "none";
-    const offX = tr ? hr.left : 0, offY = tr ? hr.top : 0;
-    tip.style.left = (Math.max(12, Math.min(r.left - 20, window.innerWidth - w - 12)) - offX) + "px";
+    const offX = tr ? box.left : 0, offY = tr ? box.top : 0;
+    tip.style.left = (Math.max(box.left + 12, Math.min(r.left - 20, box.right - w - 12)) - offX) + "px";
     const below = r.bottom + 8, h = tip.offsetHeight;
-    tip.style.top = ((below + h > window.innerHeight - 8 ? Math.max(8, r.top - h - 8) : below) - offY) + "px";
+    tip.style.top = ((below + h > box.bottom - 8 ? Math.max(box.top + 8, r.top - h - 8) : below) - offY) + "px";
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeTip(); });
 

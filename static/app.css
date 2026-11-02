@@ -631,3 +631,22 @@ p.bad, .hint.bad { color: var(--err); }
   .info-title { font-size: 18px; }
 }
 .lang-btn .tag { margin-left: auto; }
+
+/* 1.2.2 */
+.backup-tools { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; padding: 0 12px; }
+.backup-tools .check { margin-top: 0; }
+.backup-tools .spacer { flex: 1; }
+.backup-row { justify-content: flex-start; }
+.backup-row .bk-info { flex: 1; min-width: 0; }
+.backup-row.sel { box-shadow: inset 0 0 0 1px var(--err); }
+.bk-chk { width: 18px; flex: none; display: grid; place-items: center; }
+.bk-chk input { width: 18px; height: 18px; margin: 0; accent-color: var(--err); cursor: pointer; }
+.reset-note { margin-top: 16px; }
+.reset-note span { flex: 1; min-width: 200px; }
+h3.fold-h { display: flex; align-items: center; gap: 8px; }
+.fold { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0; color: inherit; font: inherit; text-transform: inherit; letter-spacing: inherit; }
+.fold:hover { color: var(--text); }
+.fold svg { width: 14px; height: 14px; transition: transform .15s; }
+.fold[aria-expanded=true] svg { transform: rotate(90deg); }
+.cmd.flash .cmd-code { animation: flash 1.6s ease-out; }
+@keyframes flash { 0%, 40% { box-shadow: 0 0 0 2px var(--accent); } 100% { box-shadow: 0 0 0 2px transparent; } }

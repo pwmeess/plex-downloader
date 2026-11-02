@@ -210,17 +210,33 @@
 
   // ------------------------------------------------------------------ kopie zapasowe
   const fmtDate = (ts) => { const d = new Date(ts * 1000); return d.toLocaleDateString(LOCALE) + " " + d.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }); };
+  const bsel = new Set();
+  function updBackupTools() {
+    const rows = $$("#backupList input[data-name]");
+    $("#backupTools").hidden = !rows.length;
+    $("#backupAll").checked = rows.length > 0 && rows.every((c) => c.checked);
+    const del = $("#backupDel");
+    del.disabled = !bsel.size;
+    $("span", del).textContent = bsel.size ? t("Delete selected ({n})", { n: bsel.size }) : t("Delete selected");
+  }
   async function loadBackups() {
     const box = $("#backupList");
+    bsel.clear();
     box.replaceChildren(el("p", "hint", t("Loading…")));
     try {
       const r = await api("/api/backups");
       box.replaceChildren();
-      if (!r.backups.length) { box.appendChild(el("p", "hint", t("No backups."))); return; }
+      if (!r.backups.length) { box.appendChild(el("p", "hint", t("No backups."))); updBackupTools(); return; }
       r.backups.forEach((b, i) => {
         const row = el("div", "backup-row");
         const when = fmtDate(b.mtime);
-        const info = el("div");
+        const chk = el("label", "bk-chk");
+        if (i > 0) {
+          const cb = el("input"); cb.type = "checkbox"; cb.dataset.name = b.name;
+          cb.addEventListener("change", () => { cb.checked ? bsel.add(b.name) : bsel.delete(b.name); row.classList.toggle("sel", cb.checked); updBackupTools(); });
+          chk.appendChild(cb);
+        }
+        const info = el("div", "bk-info");
         info.append(el("b", null, when), el("span", "muted", " · " + (b.note || t("Settings changed"))));
         if (i === 0) info.appendChild(el("span", "tag ok", t("current")));
         const btn = el("button", "btn-soft small", t("Restore")); btn.type = "button";
@@ -237,11 +253,46 @@
             document.dispatchEvent(new CustomEvent("pd:settings-saved"));
           } catch (e) { toast(e.message, true); }
         });
-        row.append(info, btn);
+        row.append(chk, info, btn);
         box.appendChild(row);
       });
+      updBackupTools();
     } catch (e) { box.replaceChildren(el("p", "hint bad", e.message)); }
   }
+  $("#backupAll").addEventListener("change", (e) => {
+    $$("#backupList input[data-name]").forEach((c) => {
+      c.checked = e.target.checked;
+      c.checked ? bsel.add(c.dataset.name) : bsel.delete(c.dataset.name);
+      c.closest(".backup-row").classList.toggle("sel", c.checked);
+    });
+    updBackupTools();
+  });
+  $("#backupDel").addEventListener("click", async () => {
+    if (!bsel.size) return;
+    const ok = await modal({ title: t("Delete selected backups?"), danger: true,
+      body: t("{n} restore points will be deleted. The current settings and the newest backup stay.", { n: bsel.size }),
+      buttons: [{ label: t("Cancel"), value: false }, { label: t("Delete permanently"), value: true, cls: "btn-accent danger" }] });
+    if (!ok) return;
+    try {
+      const r = await api("/api/backups/delete", { names: [...bsel] });
+      toast(t("Backups deleted: {n}", { n: r.removed }));
+    } catch (e) { toast(e.message, true); }
+    loadBackups();
+  });
+  function setCmdsOpen(open) {
+    $("#cmdList").hidden = !open;
+    $("#cmdToggle").setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  $("#cmdToggle").addEventListener("click", () => setCmdsOpen($("#cmdList").hidden));
+  $("#gotoFix").addEventListener("click", () => {
+    showTab("account"); setCmdsOpen(true);
+    const row = $('#cmdList [data-cmd="fix"]');
+    if (row) {
+      row.scrollIntoView({ block: "center", behavior: "smooth" });
+      row.classList.remove("flash"); void row.offsetWidth; row.classList.add("flash");
+    }
+  });
+
 
   // ------------------------------------------------------------------ konto: interfejs, dziennik, komendy
   async function setInterface(data) {
@@ -266,7 +317,7 @@
     const cmds = [
       [t("Connect from your computer (Terminal / PowerShell)"), `ssh ${cfg.system_user || "pi"}@${cfg.ip || "192.168.1.10"}`],
       [t("Update Plex Downloader"), `cd ${dir} && ./update.sh`],
-      [t("Repair menu: update, reinstall, uninstall"), `cd ${dir} && ./fix.sh`],
+      [t("Repair menu: update, reinstall, factory reset, uninstall"), `cd ${dir} && ./fix.sh`, "fix"],
       [t("Service status"), "systemctl status plex-downloader"],
       [t("Restart the service"), "sudo systemctl restart plex-downloader"],
       [t("Live service logs"), "journalctl -u plex-downloader -f"],
@@ -276,8 +327,9 @@
     ];
     const box = $("#cmdList");
     box.replaceChildren();
-    cmds.forEach(([label, cmd]) => {
+    cmds.forEach(([label, cmd, key]) => {
       const row = el("div", "cmd");
+      if (key) row.dataset.cmd = key;
       const code = el("code", null, cmd);
       const b = el("button", "icon-btn copy"); b.type = "button"; b.title = t("Copy"); b.appendChild(icon("copy"));
       b.addEventListener("click", async () => {
