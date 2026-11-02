@@ -1,13 +1,13 @@
 /* Plex Downloader – strona główna: formularz pobierania, kolejka, podgląd filmu */
 (() => {
   "use strict";
-  const { $, $$, store, api, fmtSize, fmtSpeed, fmtEta, el, icon, catIcon, toast } = window.PD;
+  const { $, $$, store, t, LOCALE, api, fmtSize, fmtSpeed, fmtEta, el, icon, catIcon, toast } = window.PD;
 
   const VIDEO_EXTS = [".mkv", ".mp4", ".avi", ".m4v", ".mov", ".wmv", ".ts", ".m2ts", ".mpg",
     ".mpeg", ".webm", ".flv", ".divx", ".ogm", ".vob"];
   const STATUS = {
-    queued: "Oczekuje", downloading: "Pobieranie", paused: "Wstrzymano", finalizing: "Finalizowanie",
-    cancelling: "Anulowanie…", done: "Zakończono", error: "Błąd",
+    queued: t("Queued"), downloading: t("Downloading"), paused: t("Paused"), finalizing: t("Finalizing"),
+    cancelling: t("Cancelling…"), done: t("Finished"), error: t("Error"),
   };
 
   const st = {
@@ -22,8 +22,9 @@
     infoItem: null,
     detectedEdition: "",
   };
-  const category = () => st.categories.find((c) => c.id === st.cat) || st.categories[0] || { id: "movies", kind: "movie", label: "Filmy" };
+  const category = () => st.categories.find((c) => c.id === st.cat) || st.categories[0] || { id: "movies", kind: "movie", label: "Movies" };
   const isTv = () => category().kind === "tv";
+  const isOther = () => category().kind === "other";
 
   function sanitize(s) {
     return (s || "").replace(/[<>:"/\\|?*\x00-\x1f]/g, " ").replace(/\s+/g, " ").replace(/^[\s.]+|[\s.]+$/g, "");
@@ -57,7 +58,7 @@
       const b = el("button", c.id === st.cat ? "on" : "");
       b.type = "button"; b.dataset.cat = c.id;
       b.append(icon(catIcon(c)), document.createTextNode(c.label));
-      b.title = c.kind === "tv" ? "Serial – nazewnictwo Serial/Season 01/…" : "Film – nazewnictwo Tytuł (Rok)/…";
+      b.title = c.kind === "tv" ? t("TV show – naming Show/Season 01/…") : c.kind === "other" ? t("Other – the name is kept as entered") : t("Movie – naming Title (Year)/…");
       b.addEventListener("click", () => setCat(c.id, true));
       box.appendChild(b);
     });
@@ -71,6 +72,8 @@
     $("#tvFields").hidden = !isTv();
     $("#advEditionBox").hidden = isTv();
     $("#advVersionBox").hidden = isTv();
+    $(".adv").hidden = isOther();
+    $("#name").placeholder = isOther() ? t("e.g. Birthday 2024") : t("Movie Title (YYYY)");
     if (prevTv !== isTv()) st.infoItem = null;
     renderDisks();
     updatePreview();
@@ -85,7 +88,7 @@
   const diskPath = (d) => (d && d.paths ? d.paths[st.cat] : "") || "";
 
   function tags() {
-    if (!advOn.checked) return { folder: "", version: "" };
+    if (!advOn.checked || isOther()) return { folder: "", version: "" };
     const parts = [];
     if (advId.checked && st.infoItem) parts.push(`{tmdb-${st.infoItem.id}}`);
     const ed = isTv() ? "" : cleanTag(advEdition.value);
@@ -116,18 +119,18 @@
 
   function updatePreview() {
     scheduleInfo();
-    $("#advIdVal").textContent = st.infoItem ? `{tmdb-${st.infoItem.id}} – ${st.infoItem.title}` : "(najpierw znajdź film w podglądzie)";
+    $("#advIdVal").textContent = st.infoItem ? `{tmdb-${st.infoItem.id}} – ${st.infoItem.title}` : t("(find the movie in the preview first)");
     advId.disabled = !st.infoItem;
     const p = targetPath(), box = $("#preview");
     const hint = $("#nameHint");
     hint.replaceChildren();
-    if (!isTv() && nameIn.value.trim() && !/\(\d{4}\)/.test(nameIn.value)) {
-      hint.appendChild(el("span", "warn", "Dodaj rok w nawiasie – Plex lepiej dopasuje film, np. „Tytuł (2015)”."));
+    if (!isTv() && !isOther() && nameIn.value.trim() && !/\(\d{4}\)/.test(nameIn.value)) {
+      hint.appendChild(el("span", "warn", t("Add the year in brackets – Plex matches the movie better, e.g. “Title (2015)”.")));
     }
-    if (!isTv() && st.detectedEdition && cleanTag(advEdition.value) !== st.detectedEdition) {
+    if (!isTv() && !isOther() && st.detectedEdition && cleanTag(advEdition.value) !== st.detectedEdition) {
       const s = el("span", "ed-hint");
-      s.append(`W nazwie pliku wykryto edycję: ${st.detectedEdition}. `);
-      const b = el("button", "linklike", "Użyj"); b.type = "button";
+      s.append(t("Edition detected in the file name: {ed}.", { ed: st.detectedEdition }) + " ");
+      const b = el("button", "linklike", t("Use")); b.type = "button";
       b.addEventListener("click", () => { advOn.checked = true; $("#advBody").hidden = false; advEdition.value = st.detectedEdition; updatePreview(); });
       s.appendChild(b);
       hint.appendChild(s);
@@ -141,6 +144,7 @@
   const info = { timer: null, key: "", seq: 0, pickId: null, results: [] };
 
   function infoQuery() {
+    if (isOther() || category().tmdb === false) return null;
     if (isTv()) {
       const t = stripTags(showIn.value);
       return t ? { kind: "tv", title: t, season: seasonIn.value, episode: epIn.value } : null;
@@ -175,9 +179,9 @@
     const seq = ++info.seq;
     const card = $("#infoCard");
     card.hidden = false;
-    $("#infoHeading").textContent = q.kind === "tv" ? "Podgląd serialu" : "Podgląd filmu";
+    $("#infoHeading").textContent = q.kind === "tv" ? t("TV show preview") : t("Movie preview");
     if (!$("#infoBody").hidden) $("#infoBody").style.opacity = ".45";
-    setInfoState("Szukam w TMDB…", "loading");
+    setInfoState(t("Searching TMDB…"), "loading");
     const params = new URLSearchParams({ kind: q.kind, title: q.title });
     if (q.kind === "tv") { params.set("season", q.season || ""); params.set("episode", q.episode || ""); }
     if (info.pickId) params.set("id", info.pickId);
@@ -192,10 +196,10 @@
     $("#infoBody").style.opacity = "";
     if (!data.configured) {
       const f = document.createDocumentFragment();
-      f.append("Dodaj darmowy klucz TMDB w ");
-      const a = el("a", null, "Ustawieniach");
+      const parts = t("Add a free TMDB key in {settings} to see the description, poster and links to IMDb, Filmweb and YouTube here.").split("{settings}");
+      const a = el("a", null, t("Settings"));
       a.href = "#"; a.addEventListener("click", (ev) => { ev.preventDefault(); window.PD.openSettings("preview"); });
-      f.append(a, ", aby zobaczyć tu opis, plakat i linki do IMDb, Filmwebu i YouTube.");
+      f.append(parts[0], a, parts[1] || "");
       showInfoMsg(f);
       return;
     }
@@ -203,7 +207,7 @@
     info.results = data.results || [];
     if (!data.item) {
       const y = data.query && data.query.year ? ` (${data.query.year})` : "";
-      showInfoMsg(`Nie znaleziono „${data.query ? data.query.title : q.title}${y}” w TMDB. Sprawdź pisownię tytułu.`);
+      showInfoMsg(t("“{title}” was not found in TMDB. Check the spelling of the title.", { title: (data.query ? data.query.title : q.title) + y }));
       return;
     }
     renderInfo(data.item);
@@ -224,7 +228,7 @@
   function fmtRuntime(min) {
     if (!min) return "";
     const h = Math.floor(min / 60), m = min % 60;
-    return h ? `${h} godz. ${m} min` : `${m} min`;
+    return h ? t("{h} h {m} min", { h, m }) : t("{m} min", { m });
   }
 
   function renderInfo(it) {
@@ -249,11 +253,11 @@
     meta.replaceChildren();
     if (it.rating) {
       const r = el("span", "rating");
-      r.append(el("i", null, "★"), String(it.rating).replace(".", ","), el("span", "votes", ` / 10 · ${it.votes.toLocaleString("pl-PL")} głosów`));
+      r.append(el("i", null, "★"), it.rating.toLocaleString(LOCALE), el("span", "votes", " / 10 · " + t("{n} votes", { n: it.votes.toLocaleString(LOCALE) })));
       meta.appendChild(r);
     }
-    if (it.runtime) meta.appendChild(el("span", null, fmtRuntime(it.runtime) + (it.kind === "tv" ? " / odc." : "")));
-    if (it.kind === "tv" && it.seasons) meta.appendChild(el("span", null, `Sezony: ${it.seasons}`));
+    if (it.runtime) meta.appendChild(el("span", null, fmtRuntime(it.runtime) + (it.kind === "tv" ? " / " + t("ep.") : "")));
+    if (it.kind === "tv" && it.seasons) meta.appendChild(el("span", null, t("Seasons: {n}", { n: it.seasons })));
     if (it.genres && it.genres.length) meta.appendChild(el("span", null, it.genres.slice(0, 3).join(", ")));
 
     const ep = $("#infoEp");
@@ -263,14 +267,14 @@
     } else ep.hidden = true;
 
     const ov = $("#infoOverview");
-    ov.textContent = it.overview || "Brak opisu.";
+    ov.textContent = it.overview || t("No description.");
     ov.classList.remove("open");
     ov.onclick = () => ov.classList.toggle("open");
 
     const ppl = $("#infoPeople");
     ppl.replaceChildren();
-    if (it.people && it.people.length) { const d = el("div"); d.append(el("b", null, it.people_label + ": "), it.people.join(", ")); ppl.appendChild(d); }
-    if (it.cast && it.cast.length) { const d = el("div"); d.append(el("b", null, "Obsada: "), it.cast.join(", ")); ppl.appendChild(d); }
+    if (it.people && it.people.length) { const d = el("div"); d.append(el("b", null, t(it.people_label) + ": "), it.people.join(", ")); ppl.appendChild(d); }
+    if (it.cast && it.cast.length) { const d = el("div"); d.append(el("b", null, t("Cast") + ": "), it.cast.join(", ")); ppl.appendChild(d); }
 
     const links = $("#infoLinks");
     links.replaceChildren();
@@ -286,14 +290,14 @@
     link(it.imdb_url, "IMDb", "imdb");
     link(it.filmweb_url, "Filmweb", "filmweb");
     link(it.tmdb_url, "TMDB", "tmdb");
-    link("https://www.google.com/search?q=" + encodeURIComponent(q + (it.kind === "tv" ? " serial" : " film")), "Google", "google", "search");
-    link("https://www.youtube.com/results?search_query=" + encodeURIComponent(qOrig + " trailer"), "Zwiastun", "youtube", "youtube");
+    link("https://www.google.com/search?q=" + encodeURIComponent(q + " " + (it.kind === "tv" ? t("TV series") : t("film"))), "Google", "google", "search");
+    link("https://www.youtube.com/results?search_query=" + encodeURIComponent(qOrig + " trailer"), t("Trailer"), "youtube", "youtube");
 
     const alts = $("#infoAlts");
     const others = info.results.filter((r) => r.id !== it.id);
     alts.replaceChildren();
     if (others.length) {
-      alts.appendChild(el("span", null, it.kind === "tv" ? "Nie ten serial?" : "Nie ten film?"));
+      alts.appendChild(el("span", null, it.kind === "tv" ? t("Not this show?") : t("Not this movie?")));
       others.slice(0, 5).forEach((r) => {
         const b = el("button", null, r.title + (r.year ? ` (${r.year})` : ""));
         b.type = "button";
@@ -317,7 +321,7 @@
     $("#formMsg").textContent = "";
     const v = urlIn.value.trim();
     if (!/^https?:\/\/\S+/i.test(v)) { $("#probeInfo").replaceChildren(); return; }
-    $("#probeInfo").replaceChildren(el("span", null, "Sprawdzam link…"));
+    $("#probeInfo").replaceChildren(el("span", null, t("Checking the link…")));
     probeTimer = setTimeout(() => runProbe(v), 450);
   });
 
@@ -331,13 +335,13 @@
       applyGuess(r);
       const parts = [];
       if (r.reachable) {
-        parts.push(el("span", "ok", "✓ Link działa"));
-        if (r.size) parts.push(el("span", null, "Rozmiar: " + fmtSize(r.size)));
+        parts.push(el("span", "ok", "✓ " + t("Link works")));
+        if (r.size) parts.push(el("span", null, t("Size: {s}", { s: fmtSize(r.size) })));
         parts.push(r.resumable
-          ? el("span", null, "Wznawianie i pobieranie wielowątkowe: tak")
-          : el("span", "warn", "Serwer nie obsługuje wznawiania – 1 połączenie"));
+          ? el("span", null, t("Resume and multi-connection download: yes"))
+          : el("span", "warn", t("The server does not support resuming – 1 connection")));
       } else {
-        parts.push(el("span", "warn", "Nie udało się sprawdzić linku (" + (r.probe_error || "brak odpowiedzi") + "). Możesz spróbować pobrać mimo to."));
+        parts.push(el("span", "warn", t("Could not check the link ({err}). You can still try to download it.", { err: r.probe_error || t("no response") })));
       }
       if (r.filename) parts.push(el("span", null, r.filename));
       $("#probeInfo").replaceChildren(...parts);
@@ -360,7 +364,7 @@
     const g = r.guess || {};
     if (!st.dirty.ext && r.ext) setExt(r.ext);
     if (!st.catTouched && g.kind) {
-      // serial → pierwsza kategoria serialowa; film → zostajemy w bieżącej kategorii filmowej (np. Dla dzieci)
+      // serial → pierwsza kategoria serialowa; film → zostajemy w bieżącej kategorii filmowej/innej (np. Dla dzieci)
       if (g.kind === "tv" && !isTv()) { const c = st.categories.find((x) => x.kind === "tv"); if (c) setCat(c.id, false); }
       if (g.kind === "movie" && isTv()) {
         const c = st.categories.find((x) => x.id === "movies") || st.categories.find((x) => x.kind === "movie");
@@ -403,7 +407,7 @@
       const b = el("button", "disk" + (d.id === st.diskId && can ? " on" : ""));
       b.type = "button";
       b.disabled = !can;
-      b.title = diskPath(d) || "Brak folderu dla tej kategorii";
+      b.title = diskPath(d) || t("No folder for this category");
       const ico = el("div", "ico"); ico.appendChild(icon("drive"));
       b.append(ico, el("div", "name", d.label), el("div", "sub", d.subtitle || d.mount));
       if (d.ok && d.total) {
@@ -411,11 +415,11 @@
         const bar = el("div", "bar" + (d.free / d.total < 0.05 ? " low" : ""));
         const fill = el("i"); fill.style.width = Math.max(2, used * 100).toFixed(1) + "%";
         bar.appendChild(fill);
-        b.append(bar, el("div", "free", `Wolne: ${fmtSize(d.free).replace(" GB", "")} / ${fmtSize(d.total)}`));
+        b.append(bar, el("div", "free", t("Free: {free} / {total}", { free: fmtSize(d.free).replace(" GB", ""), total: fmtSize(d.total) })));
       }
-      if (!d.ok) b.append(el("div", "problem", d.problem || "Niedostępny"));
-      else if (!diskPath(d)) b.append(el("div", "problem muted", `Brak folderu „${category().label}”`));
-      else if (!d.folders[st.cat]) b.append(el("div", "problem", "Folder nie istnieje"));
+      if (!d.ok) b.append(el("div", "problem", d.problem || t("Unavailable")));
+      else if (!diskPath(d)) b.append(el("div", "problem muted", t("No “{name}” folder", { name: category().label })));
+      else if (!d.folders[st.cat]) b.append(el("div", "problem", t("Folder does not exist")));
       b.addEventListener("click", () => { st.diskId = d.id; store.set("plexdl.disk", d.id); renderDisks(); updatePreview(); });
       box.appendChild(b);
     });
@@ -427,14 +431,14 @@
     const msg = $("#formMsg");
     msg.className = "form-msg"; msg.textContent = "";
     const e = ext();
-    if (!VIDEO_EXTS.includes(e)) { msg.className = "form-msg bad"; msg.textContent = "Podaj rozszerzenie pliku wideo (np. .mkv lub .mp4)."; return; }
+    if (!VIDEO_EXTS.includes(e)) { msg.className = "form-msg bad"; msg.textContent = t("Enter a video file extension (e.g. .mkv or .mp4)."); return; }
     const d = selectedDisk();
-    if (!d || !d.ok || !diskPath(d)) { msg.className = "form-msg bad"; msg.textContent = "Wybierz dostępny dysk docelowy."; return; }
+    if (!d || !d.ok || !diskPath(d)) { msg.className = "form-msg bad"; msg.textContent = t("Choose an available target disk."); return; }
     const body = {
       url: urlIn.value.trim(), category: st.cat, disk_id: st.diskId, ext: e,
       name: nameIn.value, show: showIn.value, season: seasonIn.value, episode: epIn.value,
       episode_title: epTitleIn.value, size: st.probe && st.probe.size,
-      advanced: advOn.checked ? {
+      advanced: advOn.checked && !isOther() ? {
         edition: isTv() ? "" : advEdition.value, version: isTv() ? "" : advVersion.value,
         use_id: advId.checked && !!st.infoItem, tmdb_id: st.infoItem ? st.infoItem.id : null,
       } : null,
@@ -446,7 +450,7 @@
       const wasTv = isTv();
       resetForm();
       msg.className = "form-msg ok";
-      msg.textContent = "Dodano do kolejki: " + r.job.filename;
+      msg.textContent = t("Added to the queue: {f}", { f: r.job.filename });
       if (wasTv) { // przy serialach zostawiamy nazwę i sezon – wygodne przy kolejnych odcinkach
         showIn.value = body.show; seasonIn.value = body.season; epIn.value = (parseInt(body.episode, 10) || 0) + 1;
         st.dirty = { show: true, season: true, episode: true };
@@ -485,11 +489,11 @@
       const badge = el("span", "badge " + j.status, STATUS[j.status]);
       const title = el("span", "job-title", j.filename);
       const rest = el("span", "rest");
-      rest.textContent = j.status === "done" ? `${fmtSize(j.total)} · Zapisano na: ${where(j)}` : j.error;
+      rest.textContent = j.status === "done" ? `${fmtSize(j.total)} · ${t("Saved to: {w}", { w: where(j) })}` : j.error;
       const acts = el("div", "job-actions");
-      if (j.status === "error") acts.appendChild(actBtn("Ponów", "btn-soft small", "retry", () => jobAction(j.id, "retry")));
+      if (j.status === "error") acts.appendChild(actBtn(t("Retry"), "btn-soft small", "retry", () => jobAction(j.id, "retry")));
       const rm = actBtn("", "icon-btn", "x", () => jobAction(j.id, "remove"));
-      rm.title = "Usuń z listy";
+      rm.title = t("Remove from the list");
       acts.appendChild(rm);
       const txt = el("div", "txt");
       txt.append(title, rest);
@@ -503,13 +507,13 @@
     const stats = el("div", "job-stats");
     const meta = el("div", "job-meta");
     const acts = el("div", "job-actions");
-    if (j.status === "paused") acts.appendChild(actBtn("Wznów", "btn-soft small", "play", () => jobAction(j.id, "resume")));
-    else if (j.status === "downloading" || j.status === "queued") acts.appendChild(actBtn("Wstrzymaj", "btn-soft small", "pause", () => jobAction(j.id, "pause")));
+    if (j.status === "paused") acts.appendChild(actBtn(t("Resume"), "btn-soft small", "play", () => jobAction(j.id, "resume")));
+    else if (j.status === "downloading" || j.status === "queued") acts.appendChild(actBtn(t("Pause"), "btn-soft small", "pause", () => jobAction(j.id, "pause")));
     if (j.status !== "finalizing" && j.status !== "cancelling") {
-      const c = actBtn("Anuluj ", "btn-soft small btn-danger", null, async () => {
-        const ok = await window.PD.modal({ title: "Anulować pobieranie?", danger: true,
-          body: `„${j.filename}” – pobrane dane zostaną usunięte.`,
-          buttons: [{ label: "Nie", value: false }, { label: "Anuluj pobieranie", value: true, cls: "btn-accent danger" }] });
+      const c = actBtn(t("Cancel") + " ", "btn-soft small btn-danger", null, async () => {
+        const ok = await window.PD.modal({ title: t("Cancel the download?"), danger: true,
+          body: t("“{f}” – the downloaded data will be deleted.", { f: j.filename }),
+          buttons: [{ label: t("No"), value: false }, { label: t("Cancel the download"), value: true, cls: "btn-accent danger" }] });
         if (ok) jobAction(j.id, "cancel");
       });
       c.appendChild(icon("trash"));
@@ -526,16 +530,16 @@
     const s = n.querySelector(".job-stats");
     const sep = " • ";
     if (j.status === "downloading") {
-      s.textContent = `${j.percent}% (${fmtSize(j.completed)} z ${j.total ? fmtSize(j.total) : "?"})` +
-        sep + fmtSpeed(j.speed) + sep + "pozostało: " + fmtEta(j.eta);
+      s.textContent = `${j.percent}% (${t("{a} of {b}", { a: fmtSize(j.completed), b: j.total ? fmtSize(j.total) : "?" })})` +
+        sep + fmtSpeed(j.speed) + sep + t("remaining: {eta}", { eta: fmtEta(j.eta) });
     } else if (j.status === "finalizing") {
-      s.textContent = "Przenoszenie pliku do biblioteki…";
+      s.textContent = t("Moving the file into the library…");
     } else {
-      s.textContent = STATUS[j.status] + (j.total ? ` · ${j.percent}% (${fmtSize(j.completed)} z ${fmtSize(j.total)})` : "");
+      s.textContent = STATUS[j.status] + (j.total ? ` · ${j.percent}% (${t("{a} of {b}", { a: fmtSize(j.completed), b: fmtSize(j.total) })})` : "");
     }
     const meta = n.querySelector(".job-meta");
     meta.replaceChildren(icon("net"), document.createTextNode(
-      j.status === "downloading" ? `Połączenia: ${j.connections}/${j.max_connections || "?"}` : where(j)));
+      j.status === "downloading" ? t("Connections: {c}", { c: `${j.connections}/${j.max_connections || "?"}` }) : where(j)));
   }
 
   function renderJobs() {
@@ -544,7 +548,7 @@
       jobEls.clear();
       const e = el("div", "empty");
       e.appendChild(icon("down"));
-      e.appendChild(el("div", null, "Brak pobierań. Wklej link po lewej, aby zacząć."));
+      e.appendChild(el("div", null, t("No downloads. Paste a link on the left to start.")));
       box.replaceChildren(e);
     } else {
       const seen = new Set();
@@ -582,7 +586,7 @@
       renderJobs();
       const w = $("#engineWarn");
       w.hidden = s.engine.ok;
-      w.textContent = s.engine.ok ? "" : "Silnik pobierania aria2c nie działa: " + s.engine.error;
+      w.textContent = s.engine.ok ? "" : t("The aria2c download engine is not running: {e}", { e: s.engine.error });
       busy = s.jobs.some((j) => ["downloading", "queued", "finalizing", "cancelling"].includes(j.status));
     } catch (e) {
       if (e.message === "auth") return;

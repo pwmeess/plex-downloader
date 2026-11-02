@@ -11,8 +11,11 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+from urllib.parse import urlparse
 
+import actlog
 import config
+from i18n import _
 import naming
 
 log = logging.getLogger("plexdl")
@@ -54,7 +57,7 @@ class Aria2:
             except ValueError:
                 raise Aria2Error("HTTP %s" % e.code)
         if "error" in data:
-            raise Aria2Error(data["error"].get("message", "błąd aria2"))
+            raise Aria2Error(data["error"].get("message", "aria2 error"))
         return data.get("result")
 
     def alive(self):
@@ -68,16 +71,16 @@ class Aria2:
 def _human_error(msg):
     m = (msg or "").lower()
     if "404" in m or "not found" in m:
-        return "Serwer zwrócił 404 – link wygasł lub jest błędny."
+        return _("The server returned 404 – the link has expired or is wrong.")
     if "403" in m or "forbidden" in m:
-        return "Brak dostępu (403) – link mógł wygasnąć."
+        return _("Access denied (403) – the link may have expired.")
     if "no space" in m or "disk" in m and "full" in m:
-        return "Brak miejsca na dysku."
+        return _("No space left on the disk.")
     if "timeout" in m or "timed out" in m:
-        return "Przekroczono czas połączenia z serwerem."
+        return _("Connection to the server timed out.")
     if "resolve" in m or "name or service" in m:
-        return "Nie można rozwiązać nazwy serwera (DNS)."
-    return msg or "Nieznany błąd pobierania."
+        return _("Cannot resolve the server name (DNS).")
+    return msg or _("Unknown download error.")
 
 
 def probe(url, timeout=12):
@@ -124,11 +127,11 @@ def disk_status(d):
             "folders": {cid: os.path.isdir(p) for cid, p in paths.items()},
             "mounted": False, "free": None, "total": None, "ok": False, "problem": ""}
     if not mount or not os.path.isdir(mount):
-        info["problem"] = "Brak punktu montowania"
+        info["problem"] = _("Mount point not found")
         return info
     info["mounted"] = os.path.ismount(mount)
     if cfg.get("require_mount", True) and not info["mounted"]:
-        info["problem"] = "Dysk niezamontowany"
+        info["problem"] = _("Disk not mounted")
         return info
     try:
         u = shutil.disk_usage(mount)
@@ -203,7 +206,7 @@ class Manager:
             if self.proc.poll() is not None:
                 break
             time.sleep(0.1)
-        raise RuntimeError("Nie udało się uruchomić aria2c – czy jest zainstalowany?")
+        raise RuntimeError(_("Could not start aria2c – is it installed?"))
 
     def apply_settings(self):
         cfg = config.get()
@@ -215,7 +218,7 @@ class Manager:
                 "max-concurrent-downloads": str(int(cfg.get("max_concurrent", 2))),
                 "max-overall-download-limit": str(limit)})
         except Exception as e:
-            log.warning("Nie udało się zmienić opcji aria2: %s", e)
+            log.warning("Could not change aria2 options: %s", e)
 
     def _aria_add(self, job, paused=False):
         n = max(1, min(16, int(config.get().get("connections_per_file", 6))))
@@ -278,37 +281,37 @@ class Manager:
             self._aria_add(job, paused=paused)
             job["status"] = "paused" if paused else "queued"
         except Exception as e:
-            job.update(status="error", error="Nie udało się wznowić: %s" % e)
+            job.update(status="error", error=_("Could not resume: %s") % e)
         self._save(job)
 
     # ---------- API zadań ----------
     def add(self, url, disk_id, category_id, folder, filename, kind, display, size=None):
         if not self.engine_ok:
-            raise ValueError("Silnik pobierania (aria2c) nie działa: %s" % self.engine_error)
+            raise ValueError(_("The download engine (aria2c) is not running: %s") % self.engine_error)
         d = config.disk(disk_id)
         if not d:
-            raise ValueError("Nieznany dysk docelowy.")
+            raise ValueError(_("Unknown target disk."))
         st = disk_status(d)
         if not st["ok"]:
             raise ValueError("%s: %s" % (d.get("label"), st["problem"]))
         cat = config.category(category_id) or {}
         base = (d.get("paths") or {}).get(category_id)
         if not base:
-            raise ValueError("Dysk %s nie ma folderu dla kategorii „%s”." % (d["label"], cat.get("label", category_id)))
+            raise ValueError(_("Disk %s has no folder for the category “%s”.") % (d["label"], cat.get("label", category_id)))
         if not os.path.isdir(base):
-            raise ValueError("Folder biblioteki nie istnieje: %s" % base)
+            raise ValueError(_("Library folder does not exist: %s") % base)
         target = os.path.join(folder, filename)
         if os.path.exists(target):
-            raise ValueError("Taki plik już istnieje: %s" % target)
+            raise ValueError(_("This file already exists: %s") % target)
         with self.lock:
             for j in self.jobs.values():
                 if j["status"] not in ("done", "error") and os.path.join(j["folder"], j["filename"]) == target:
-                    raise ValueError("Ten plik jest już w kolejce.")
+                    raise ValueError(_("This file is already in the queue."))
             reserved = sum(max(0, (j.get("total") or 0) - (j.get("completed") or 0))
                            for j in self.jobs.values()
                            if j["disk_id"] == disk_id and j["status"] in ACTIVE)
         if size and st["free"] is not None and size + reserved + 200 * 1024 * 1024 > st["free"]:
-            raise ValueError("Za mało miejsca na %s (potrzeba %.1f GB, wolne %.1f GB)."
+            raise ValueError(_("Not enough space on %s (needed %.1f GB, free %.1f GB).")
                              % (d["label"], (size + reserved) / 1e9, st["free"] / 1e9))
         job_id = uuid.uuid4().hex[:12]
         tmp_root = os.path.join(os.path.dirname(base.rstrip("/")), TMP_DIRNAME)
@@ -325,10 +328,11 @@ class Manager:
             self._aria_add(job)
         except Exception as e:
             self._cleanup_tmp(job)
-            raise ValueError("aria2 odrzuciło zadanie: %s" % e)
+            raise ValueError(_("aria2 rejected the task: %s") % e)
         with self.lock:
             self.jobs[job_id] = job
             self._save(job)
+        actlog.write("DOWNLOAD", "%s → %s / %s (%s)" % (filename, d["label"], cat.get("label", ""), urlparse(url).netloc))
         return job
 
     def busy_paths(self):
@@ -354,7 +358,7 @@ class Manager:
     def _get(self, job_id):
         job = self.jobs.get(job_id)
         if not job:
-            raise ValueError("Nie ma takiego zadania.")
+            raise ValueError(_("No such task."))
         return job
 
     def pause(self, job_id):
@@ -381,7 +385,7 @@ class Manager:
         with self.lock:
             job = self._get(job_id)
             if job["status"] in ("done", "finalizing"):
-                raise ValueError("Tego zadania nie można już anulować.")
+                raise ValueError(_("This task can no longer be cancelled."))
             if job["status"] == "error" or not job["gid"]:
                 self._cleanup_tmp(job)
                 self._delete(job_id)
@@ -397,9 +401,9 @@ class Manager:
         with self.lock:
             job = self._get(job_id)
             if job["status"] != "error":
-                raise ValueError("Ponowić można tylko zadanie z błędem.")
+                raise ValueError(_("Only a failed task can be retried."))
             if os.path.exists(os.path.join(job["folder"], job["filename"])):
-                raise ValueError("Plik docelowy już istnieje.")
+                raise ValueError(_("The target file already exists."))
             job.update(error="", completed=0, speed=0, finished=None)
             self._aria_add(job)
             job["status"] = "queued"
@@ -425,7 +429,7 @@ class Manager:
             try:
                 self._poll()
             except Exception:
-                log.exception("Błąd w pętli monitorującej")
+                log.exception("Monitor loop error")
             self._stop.wait(1.0)
 
     def _poll(self):
@@ -498,13 +502,15 @@ class Manager:
                 self._save(job)
 
     def _fail(self, job, message):
-        log.warning("Błąd pobierania %s: %s", job["filename"], message)
+        log.warning("Download error %s: %s", job["filename"], message)
         self._aria_forget(job)
         self._cleanup_tmp(job)
         job.update(status="error", error=message, speed=0, finished=time.time())
         self._save(job)
+        actlog.write("FAILED", "%s: %s" % (job["filename"], message))
 
     def _finish_cancel(self, job):
+        actlog.write("CANCEL", job["filename"])
         self._aria_forget(job)
         self._cleanup_tmp(job)
         self._delete(job["id"])
@@ -535,9 +541,9 @@ class Manager:
         created = []
         try:
             if not os.path.exists(src):
-                raise RuntimeError("Nie znaleziono pobranego pliku.")
+                raise RuntimeError(_("Downloaded file not found."))
             if os.path.exists(dst):
-                raise RuntimeError("Plik docelowy już istnieje.")
+                raise RuntimeError(_("The target file already exists."))
             path = dst_dir
             while path and not os.path.isdir(path):
                 created.append(path)
@@ -557,14 +563,14 @@ class Manager:
                         os.remove(part)
                     raise
         except Exception as e:
-            log.exception("Finalizacja nie powiodła się")
+            log.exception("Finalization failed")
             for p in created:  # usuwamy tylko foldery utworzone przez nas i tylko puste
                 try:
                     os.rmdir(p)
                 except OSError:
                     pass
             with self.lock:
-                self._fail(job, "Nie udało się przenieść pliku: %s" % e)
+                self._fail(job, _("Could not move the file: %s") % e)
             return
         for p in created + [dst]:
             try:
@@ -576,4 +582,5 @@ class Manager:
             self._cleanup_tmp(job)
             job.update(status="done", finished=time.time(), speed=0, error="")
             self._save(job)
-        log.info("Zakończono: %s", dst)
+        actlog.write("DONE", "%s → %s (%.2f GB)" % (job["filename"], dst_dir, (job.get("total") or 0) / 1e9))
+        log.info("Finished: %s", dst)

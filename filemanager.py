@@ -1,37 +1,40 @@
-"""Menedżer plików: przeglądanie bibliotek, przenoszenie między folderami/dyskami, usuwanie, miniatury.
+"""Menedżer plików: przeglądanie bibliotek, przenoszenie między folderami/dyskami, usuwanie, okładki.
 
 Zasady bezpieczeństwa:
-- operujemy wyłącznie na bezpośrednich elementach folderów kategorii skonfigurowanych w Ustawieniach,
+- operujemy wyłącznie na elementach folderów kategorii skonfigurowanych w Ustawieniach,
 - nazwy nie mogą zawierać ścieżek; ścieżka po rozwiązaniu musi leżeć w folderze kategorii,
 - przenoszenie między dyskami: kopia do folderu tymczasowego → weryfikacja SHA-256 →
   zmiana nazwy na docelową → dopiero wtedy usunięcie oryginału,
 - elementy, do których trwa pobieranie, są zablokowane.
 """
-import errno
 import hashlib
-import io
 import logging
 import os
+import re
 import shutil
 import threading
 import time
 import uuid
 
+import actlog
 import config
 import movieinfo
 import naming
 from downloader import TMP_DIRNAME, disk_status
+from i18n import _
 
 log = logging.getLogger("plexdl")
 CHUNK = 4 * 1024 * 1024
-THUMB_EXTS = (".thumb.png", ".thumb.jpg")
+THUMB = ".thumb.jpg"
+THUMB_EXTS = (".thumb.jpg", ".thumb.png")  # .png – okładki z wersji 1.2.0
 SKIP = {"@eaDir", "$RECYCLE.BIN", "System Volume Information", "lost+found", "#recycle", ".Trash-1000"}
+# foldery dodatków Plexa (zwiastuny itp.) – nie liczą się jako osobne filmy
+EXTRA_DIRS = {"trailers", "featurettes", "behind the scenes", "deleted scenes", "interviews",
+              "scenes", "shorts", "other", "extras", "specials", "subs", "subtitles"}
+SUB_EXTS = {".srt", ".ass", ".ssa", ".sub", ".idx", ".vtt", ".smi"}
+EXTRA_SUFFIX = re.compile(r"-(trailer|sample|featurette|behindthescenes|deleted|interview|scene|short|other)$", re.I)
+EPISODE = re.compile(r"(?i)\bS(\d{1,2})E(\d{1,3})")
 SIZE_TTL = 120
-
-try:  # Pillow jest opcjonalny – bez niego miniatury zapisują się jako .thumb.jpg
-    from PIL import Image
-except Exception:  # pragma: no cover
-    Image = None
 
 
 class FMError(Exception):
@@ -42,31 +45,48 @@ class FMError(Exception):
 def location(disk_id, cat_id, need_ok=True):
     d = config.disk(disk_id)
     if not d:
-        raise FMError("Nieznany dysk.")
+        raise FMError(_("Unknown disk."))
     cat = config.category(cat_id)
     if not cat:
-        raise FMError("Nieznana kategoria.")
+        raise FMError(_("Unknown category."))
     base = (d.get("paths") or {}).get(cat_id)
     if not base:
-        raise FMError("Dysk %s nie ma folderu dla kategorii „%s”." % (d["label"], cat["label"]))
+        raise FMError(_("Disk %s has no folder for the category “%s”.") % (d["label"], cat["label"]))
     if need_ok:
         st = disk_status(d)
         if not st["ok"]:
             raise FMError("%s: %s" % (d["label"], st["problem"]))
     if not os.path.isdir(base):
-        raise FMError("Folder nie istnieje: %s" % base)
+        raise FMError(_("Folder does not exist: %s") % base)
     return d, cat, base
 
 
-def item_path(base, name):
+def _safe_name(name):
     if (not name or name in (".", "..") or "/" in name or "\\" in name or "\0" in name
             or name.startswith(".")):
-        raise FMError("Nieprawidłowa nazwa: %r" % name)
+        raise FMError(_("Invalid name: %r") % name)
+
+
+def item_path(base, name):
+    _safe_name(name)
     path = os.path.join(base, name)
     if os.path.dirname(os.path.realpath(path)) != os.path.realpath(base):
-        raise FMError("Element spoza folderu biblioteki: %s" % name)
+        raise FMError(_("Invalid name: %r") % name)
     if not os.path.lexists(path):
-        raise FMError("Nie znaleziono: %s" % name)
+        raise FMError(_("Not found: %s") % name)
+    return path
+
+
+def sub_path(root, rel):
+    """Ścieżka pliku wewnątrz folderu serialu (np. „Season 01/Show - S01E02.mkv”)."""
+    parts = [p for p in (rel or "").split("/") if p]
+    if not parts or len(parts) > 3:
+        raise FMError(_("Invalid name: %r") % rel)
+    for p in parts:
+        _safe_name(p)
+    path = os.path.join(root, *parts)
+    if not os.path.realpath(path).startswith(os.path.realpath(root) + os.sep):
+        raise FMError(_("Invalid name: %r") % rel)
     return path
 
 
@@ -83,36 +103,61 @@ def is_busy(path, busy):
     return False
 
 
+def _is_video(name):
+    stem, ext = naming.split_ext(name)
+    return bool(ext) and not EXTRA_SUFFIX.search(stem)
+
+
 # ------------------------------------------------------------------ lista
 _size_cache = {}
 
 
-def tree_size(path):
+def scan_item(path, kind):
+    """Rozmiar, liczba głównych plików wideo (lub odcinków) i czy folder zawiera dodatki."""
     now = time.time()
-    hit = _size_cache.get(path)
     try:
         mtime = os.stat(path).st_mtime
     except OSError:
-        return 0, 0
+        return {"size": 0, "videos": 0, "extras": False}
+    hit = _size_cache.get(path)
     if hit and hit[0] == mtime and now - hit[1] < SIZE_TTL:
-        return hit[2], hit[3]
+        return hit[2]
     total = videos = 0
+    extras = False
     if os.path.isfile(path):
         total, videos = os.path.getsize(path), 1
     else:
         for root, dirs, files in os.walk(path):
-            dirs[:] = [x for x in dirs if not x.startswith(".") and x not in SKIP]
+            rel_depth = os.path.relpath(root, path).count(os.sep) + (0 if root == path else 1)
+            keep = []
+            for x in dirs:
+                if x.startswith(".") or x in SKIP:
+                    continue
+                if x.lower() in EXTRA_DIRS or (kind != "tv" and rel_depth == 0):
+                    extras = True  # podfolder w folderze filmu = dodatki (zwiastuny itp.)
+                keep.append(x)
+            dirs[:] = keep
+            in_extra = any(p.lower() in EXTRA_DIRS for p in os.path.relpath(root, path).split(os.sep))
             for f in files:
-                if f.startswith("."):
+                if f.startswith(".") or f.endswith(THUMB_EXTS):
                     continue
                 try:
                     total += os.path.getsize(os.path.join(root, f))
                 except OSError:
                     pass
-                if naming.split_ext(f)[1]:
-                    videos += 1
-    _size_cache[path] = (mtime, now, total, videos)
-    return total, videos
+                ext = os.path.splitext(f)[1].lower()
+                if ext in SUB_EXTS:
+                    extras = True
+                elif naming.split_ext(f)[1]:
+                    if in_extra or not _is_video(f):
+                        extras = True
+                    else:
+                        videos += 1
+        if kind != "tv" and videos > 1:
+            extras = True  # kilka wersji filmu w jednym folderze
+    res = {"size": total, "videos": videos, "extras": extras}
+    _size_cache[path] = (mtime, now, res)
+    return res
 
 
 def thumb_base(base, name, is_dir):
@@ -141,38 +186,90 @@ def list_items(disk_id, cat_id, busy=()):
             except OSError:
                 continue
             if not is_dir and not naming.split_ext(e.name)[1]:
-                continue  # luźne pliki inne niż wideo (np. .nfo) pomijamy
+                continue
             label = e.name if is_dir else naming.split_ext(e.name)[0]
             p = naming.parse_name(label)
-            size, videos = tree_size(e.path)
+            info = scan_item(e.path, cat["kind"])
             th = find_thumb(base, e.name, is_dir)
             items.append({
                 "name": e.name, "is_dir": is_dir, "title": p["title"] or label, "year": p["year"],
-                "edition": p["edition"], "tmdb": p["tmdb"], "size": size, "videos": videos,
-                "thumb": bool(th), "thumb_v": int(os.path.getmtime(th)) if th else 0,
+                "edition": p["edition"], "tmdb": p["tmdb"], "size": info["size"], "videos": info["videos"],
+                "extras": info["extras"], "thumb": bool(th), "thumb_v": int(os.path.getmtime(th)) if th else 0,
                 "busy": is_busy(e.path, busy),
             })
     items.sort(key=lambda i: (i["title"].lower(), i["year"] or 0))
     st = disk_status(d)
     return {"disk": d["id"], "disk_label": d["label"], "category": cat["id"], "kind": cat["kind"],
             "category_label": cat["label"], "path": base, "free": st["free"], "total": st["total"],
-            "thumbs_mode": config.get().get("thumbs_mode", "online"), "tmdb": movieinfo.configured(),
-            "items": items}
+            "thumbs_mode": config.get().get("thumbs_mode", "online"),
+            "tmdb": movieinfo.configured() and cat.get("tmdb", True), "items": items}
+
+
+def list_episodes(disk_id, cat_id, show):
+    """Odcinki serialu pogrupowane według sezonów (do przenoszenia wybranych odcinków)."""
+    _, cat, base = location(disk_id, cat_id)
+    if cat["kind"] != "tv":
+        raise FMError(_("Episodes can only be selected in TV show categories."))
+    root = item_path(base, show)
+    seasons = {}
+    for dirpath, dirs, files in os.walk(root):
+        dirs[:] = [x for x in dirs if not x.startswith(".") and x not in SKIP]
+        for f in files:
+            if f.startswith(".") or not _is_video(f):
+                continue
+            rel = os.path.relpath(os.path.join(dirpath, f), root).replace(os.sep, "/")
+            if any(p.lower() in EXTRA_DIRS for p in rel.split("/")[:-1]):
+                continue
+            m = EPISODE.search(f)
+            season_name = rel.split("/")[0] if "/" in rel else _("(no season folder)")
+            seasons.setdefault(season_name, []).append({
+                "rel": rel, "name": f, "size": os.path.getsize(os.path.join(dirpath, f)),
+                "code": "S%02dE%02d" % (int(m.group(1)), int(m.group(2))) if m else "",
+            })
+    out = []
+    for name in sorted(seasons):
+        eps = sorted(seasons[name], key=lambda e: (e["code"] or "~", e["name"]))
+        out.append({"season": name, "episodes": eps, "size": sum(e["size"] for e in eps)})
+    return {"show": show, "seasons": out}
+
+
+def _sidecars(path):
+    """Pliki towarzyszące odcinkowi (napisy itp.) o tym samym początku nazwy."""
+    d, f = os.path.split(path)
+    stem = os.path.splitext(f)[0]
+    out = []
+    for x in os.listdir(d):
+        if x != f and x.startswith(stem + ".") and os.path.splitext(x)[1].lower() in SUB_EXTS | {".nfo", ".jpg", ".png"}:
+            out.append(os.path.join(d, x))
+    return out
 
 
 # ------------------------------------------------------------------ plan przenoszenia
+def _check_kinds(sc, dc):
+    if sc["kind"] != dc["kind"]:
+        raise FMError(_("Cannot move between categories of different types (%s → %s): movies, TV shows and other videos use different naming in Plex.") % (sc["label"], dc["label"]))
+
+
+def _route(sd, sc, sbase, dd, dc, dbase):
+    return {"src": {"disk": sd["id"], "disk_label": sd["label"], "category": sc["id"],
+                    "category_label": sc["label"], "path": sbase},
+            "dst": {"disk": dd["id"], "disk_label": dd["label"], "category": dc["id"],
+                    "category_label": dc["label"], "path": dbase, "free": disk_status(dd)["free"]}}
+
+
+def _same_fs(a, b):
+    return os.stat(a).st_dev == os.stat(b).st_dev and not os.environ.get("PLEXDL_FORCE_COPY")
+
+
 def plan_move(src_disk, src_cat, names, dst_disk, dst_cat, busy=()):
     sd, sc, sbase = location(src_disk, src_cat)
     dd, dc, dbase = location(dst_disk, dst_cat)
     if os.path.realpath(sbase) == os.path.realpath(dbase):
-        raise FMError("Folder źródłowy i docelowy są takie same.")
-    if sc["kind"] != dc["kind"]:
-        raise FMError("Nie można przenosić między kategoriami różnego typu (%s → %s): "
-                      "filmy i seriale mają inne nazewnictwo w Plexie." % (sc["label"], dc["label"]))
+        raise FMError(_("Source and target folders are the same."))
+    _check_kinds(sc, dc)
     if not names:
-        raise FMError("Nic nie zaznaczono.")
-    same_fs = (os.stat(sbase).st_dev == os.stat(dbase).st_dev
-               and not os.environ.get("PLEXDL_FORCE_COPY"))  # zmienna tylko do testów
+        raise FMError(_("Nothing selected."))
+    same_fs = _same_fs(sbase, dbase)
     items, problems, total = [], [], 0
     for name in names:
         try:
@@ -180,27 +277,72 @@ def plan_move(src_disk, src_cat, names, dst_disk, dst_cat, busy=()):
         except FMError as e:
             problems.append(str(e))
             continue
-        size, _ = tree_size(src)
+        size = scan_item(src, sc["kind"])["size"]
         it = {"name": name, "size": size, "problem": ""}
         if os.path.lexists(os.path.join(dbase, name)):
-            it["problem"] = "istnieje już w miejscu docelowym"
+            it["problem"] = _("already exists at the destination")
         elif is_busy(src, busy):
-            it["problem"] = "trwa pobieranie do tego folderu"
+            it["problem"] = _("a download into this folder is in progress")
         if it["problem"]:
             problems.append("%s: %s" % (name, it["problem"]))
         total += size
         items.append(it)
-    free = disk_status(dd)["free"]
-    space_ok = same_fs or free is None or total + 200 * 1024 * 1024 <= free
-    if not space_ok:
-        problems.append("Za mało miejsca na %s (potrzeba %.1f GB, wolne %.1f GB)."
-                        % (dd["label"], total / 1e9, free / 1e9))
-    return {"src": {"disk": sd["id"], "disk_label": sd["label"], "category": sc["id"],
-                    "category_label": sc["label"], "path": sbase},
-            "dst": {"disk": dd["id"], "disk_label": dd["label"], "category": dc["id"],
-                    "category_label": dc["label"], "path": dbase, "free": free},
-            "same_fs": same_fs, "items": items, "total": total, "problems": problems,
-            "ok": not problems and bool(items)}
+    plan = _route(sd, sc, sbase, dd, dc, dbase)
+    plan.update(mode="items", same_fs=same_fs, items=items, total=total, problems=problems)
+    _space(plan)
+    return plan
+
+
+def plan_episodes(src_disk, src_cat, show, rels, dst_disk, dst_cat, busy=()):
+    """Przeniesienie wybranych odcinków serialu – na dysku docelowym powstaje ten sam układ folderów."""
+    sd, sc, sbase = location(src_disk, src_cat)
+    dd, dc, dbase = location(dst_disk, dst_cat)
+    _check_kinds(sc, dc)
+    if sc["kind"] != "tv":
+        raise FMError(_("Episodes can only be selected in TV show categories."))
+    if os.path.realpath(sbase) == os.path.realpath(dbase):
+        raise FMError(_("Source and target folders are the same."))
+    if not rels:
+        raise FMError(_("Nothing selected."))
+    root = item_path(sbase, show)
+    same_fs = _same_fs(sbase, dbase)
+    items, problems, total, seen = [], [], 0, set()
+    for rel in rels:
+        try:
+            src = sub_path(root, rel)
+        except FMError as e:
+            problems.append(str(e))
+            continue
+        if not os.path.isfile(src):
+            problems.append(_("Not found: %s") % rel)
+            continue
+        for p in [src] + _sidecars(src):
+            r = os.path.relpath(p, root).replace(os.sep, "/")
+            if r in seen:
+                continue
+            seen.add(r)
+            size = os.path.getsize(p)
+            it = {"name": r, "size": size, "problem": ""}
+            if os.path.lexists(os.path.join(dbase, show, *r.split("/"))):
+                it["problem"] = _("already exists at the destination")
+            elif is_busy(p, busy) or is_busy(os.path.dirname(p), busy):
+                it["problem"] = _("a download into this folder is in progress")
+            if it["problem"]:
+                problems.append("%s: %s" % (r, it["problem"]))
+            total += size
+            items.append(it)
+    plan = _route(sd, sc, sbase, dd, dc, dbase)
+    plan.update(mode="episodes", show=show, same_fs=same_fs, items=items, total=total, problems=problems)
+    _space(plan)
+    return plan
+
+
+def _space(plan):
+    free = plan["dst"]["free"]
+    if not plan["same_fs"] and free is not None and plan["total"] + 200 * 1024 * 1024 > free:
+        plan["problems"].append(_("Not enough space on %s (needed %.1f GB, free %.1f GB).")
+                                % (plan["dst"]["disk_label"], plan["total"] / 1e9, free / 1e9))
+    plan["ok"] = not plan["problems"] and bool(plan["items"])
 
 
 # ------------------------------------------------------------------ operacje w tle
@@ -216,7 +358,7 @@ class Ops:
         op = {"id": uuid.uuid4().hex[:10], "type": kind, "title": title, "status": "queued",
               "total": total, "done": 0, "current": "", "phase": "", "error": "", "log": [],
               "items_total": 0, "items_done": 0, "created": time.time(), "finished": None,
-              "cancel": False}
+              "cancel": False, "speed": 0, "eta": None, "_samples": []}
         op.update(extra)
         with self.cv:
             self.ops[op["id"]] = op
@@ -224,13 +366,31 @@ class Ops:
             self.cv.notify()
         return op
 
+    @staticmethod
+    def _rate(op):
+        """Prędkość z ostatnich ~5 s (lekko: liczona tylko przy odpytaniu przez przeglądarkę)."""
+        now = time.time()
+        s = op["_samples"]
+        s.append((now, op["done"]))
+        while len(s) > 2 and now - s[0][0] > 5:
+            s.pop(0)
+        if op["status"] != "running" or len(s) < 2 or s[-1][0] - s[0][0] < 0.5:
+            op["speed"], op["eta"] = (0, None) if op["status"] != "running" else (op["speed"], op["eta"])
+            return
+        dt = s[-1][0] - s[0][0]
+        op["speed"] = max(0, int((s[-1][1] - s[0][1]) / dt))
+        op["eta"] = int((op["total"] - op["done"]) / op["speed"]) if op["speed"] and op["total"] else None
+
     def public(self):
         with self.lock:
             now = time.time()
             for k in [k for k, o in self.ops.items() if o["finished"] and now - o["finished"] > 3600]:
                 del self.ops[k]
-            return sorted(({k: v for k, v in o.items() if k not in ("cancel", "plan")}
-                           for o in self.ops.values()), key=lambda o: -o["created"])
+            out = []
+            for o in self.ops.values():
+                self._rate(o)
+                out.append({k: v for k, v in o.items() if k not in ("cancel", "plan", "_samples")})
+            return sorted(out, key=lambda o: -o["created"])
 
     def active(self):
         with self.lock:
@@ -240,7 +400,7 @@ class Ops:
         with self.lock:
             op = self.ops.get(op_id)
             if not op:
-                raise FMError("Nie ma takiej operacji.")
+                raise FMError(_("No such operation."))
             if op["status"] in ("queued", "running"):
                 op["cancel"] = True
                 if op["status"] == "queued":
@@ -267,7 +427,7 @@ class Ops:
                 elif op["status"] == "running":
                     op["status"] = "error" if op["error"] else "done"
             except Exception as e:  # pragma: no cover
-                log.exception("Operacja menedżera plików")
+                log.exception("File manager operation")
                 op.update(status="error", error=str(e))
             op["finished"] = time.time()
             op["current"] = ""
@@ -275,27 +435,36 @@ class Ops:
     # ---- przenoszenie
     def move(self, plan):
         if not plan["ok"]:
-            raise FMError("; ".join(plan["problems"]) or "Nie można wykonać operacji.")
-        title = "%d → %s / %s" % (len(plan["items"]), plan["dst"]["disk_label"], plan["dst"]["category_label"])
+            raise FMError("; ".join(plan["problems"]) or _("The operation cannot be performed."))
+        src_label = "%s / %s" % (plan["src"]["disk_label"], plan["src"]["category_label"])
+        dst_label = "%s / %s" % (plan["dst"]["disk_label"], plan["dst"]["category_label"])
         total = plan["total"] * (1 if plan["same_fs"] else 2)  # kopia + weryfikacja
-        return self._new("move", title, total, plan=plan, items_total=len(plan["items"]),
-                         same_fs=plan["same_fs"], src_label="%s / %s" % (plan["src"]["disk_label"],
-                                                                        plan["src"]["category_label"]),
-                         dst_label="%s / %s" % (plan["dst"]["disk_label"], plan["dst"]["category_label"]))
+        return self._new("move", dst_label, total, plan=plan, items_total=len(plan["items"]),
+                         same_fs=plan["same_fs"], src_label=src_label, dst_label=dst_label,
+                         src_disk=plan["src"]["disk_label"], dst_disk=plan["dst"]["disk_label"],
+                         show=plan.get("show"))
 
     def _run_move(self, op):
         plan = op["plan"]
         sbase, dbase = plan["src"]["path"], plan["dst"]["path"]
+        episodes = plan.get("mode") == "episodes"
+        sroot = os.path.join(sbase, plan["show"]) if episodes else sbase
+        droot = os.path.join(dbase, plan["show"]) if episodes else dbase
         for it in plan["items"]:
             if op["cancel"]:
                 break
             name = it["name"]
             op["current"] = name
             try:
-                src = item_path(sbase, name)
-                dst = os.path.join(dbase, name)
+                if episodes:
+                    src = sub_path(sroot, name)
+                    dst = os.path.join(droot, *name.split("/"))
+                    os.makedirs(os.path.dirname(dst), exist_ok=True)
+                else:
+                    src = item_path(sbase, name)
+                    dst = os.path.join(dbase, name)
                 if os.path.lexists(dst):
-                    raise FMError("istnieje już w miejscu docelowym")
+                    raise FMError(_("already exists at the destination"))
                 if plan["same_fs"]:
                     op["phase"] = "move"
                     os.rename(src, dst)
@@ -304,13 +473,41 @@ class Ops:
                     self._copy_verify_swap(op, src, dst, dbase)
                 op["items_done"] += 1
                 op["log"].append({"name": name, "ok": True})
+                actlog.write("MOVE", "%s%s: %s → %s" % (plan["show"] + "/" if episodes else "", name,
+                                                       op["src_label"], op["dst_label"]))
                 _size_cache.pop(src, None)
             except Exception as e:
-                msg = "Anulowano" if op["cancel"] else str(e)
+                msg = _("Cancelled") if op["cancel"] else str(e)
                 op["log"].append({"name": name, "ok": False, "error": msg})
                 if not op["cancel"]:
                     op["error"] = "%s: %s" % (name, msg)
-                log.warning("Przenoszenie %s: %s", name, msg)
+                    actlog.write("ERROR", "%s: %s (%s → %s)" % (name, msg, op["src_label"], op["dst_label"]))
+                log.warning("Move %s: %s", name, msg)
+        if episodes:
+            self._finish_episodes(sroot, droot)
+
+    @staticmethod
+    def _finish_episodes(sroot, droot):
+        # okładka serialu także na dysku docelowym
+        name = os.path.basename(sroot)
+        for ext in THUMB_EXTS:
+            s, d = os.path.join(sroot, name + ext), os.path.join(droot, name + ext)
+            if os.path.isfile(s) and os.path.isdir(droot) and not os.path.exists(d):
+                try:
+                    shutil.copy2(s, d)
+                except OSError:
+                    pass
+        # puste foldery sezonów po stronie źródłowej
+        for root, dirs, files in os.walk(sroot, topdown=False):
+            if root != sroot and not os.listdir(root):
+                try:
+                    os.rmdir(root)
+                except OSError:
+                    pass
+        # serial bez żadnego pliku poza okładką i plikami systemowymi → usuwamy folder źródłowy
+        rest = [f for f in os.listdir(sroot) if not f.endswith(THUMB_EXTS) and f != ".DS_Store"]
+        if not rest:
+            shutil.rmtree(sroot, ignore_errors=True)
 
     def _copy_verify_swap(self, op, src, dst, dbase):
         tmp = os.path.join(tmp_root(dbase), "move-" + op["id"], os.path.basename(dst))
@@ -325,20 +522,27 @@ class Ops:
                     for f in fnames:
                         r = os.path.normpath(os.path.join(rel, f))
                         files.append((r,) + self._copy_file(op, os.path.join(src, r), os.path.join(tmp, r)))
+                # daty folderów jak w oryginale (od najgłębszych)
+                for root, dirs, _f in os.walk(src, topdown=False):
+                    rel = os.path.relpath(root, src)
+                    try:
+                        shutil.copystat(root, os.path.join(tmp, rel))
+                    except OSError:
+                        pass
             else:
                 files.append(("",) + self._copy_file(op, src, tmp))
             op["phase"] = "verify"
             for r, size, digest in files:
                 p = os.path.join(tmp, r) if r else tmp
                 if os.path.getsize(p) != size or self._hash(op, p) != digest:
-                    raise FMError("weryfikacja kopii nie powiodła się (%s) – oryginał pozostał nietknięty" % (r or os.path.basename(src)))
+                    raise FMError(_("copy verification failed (%s) – the original was left untouched") % (r or os.path.basename(src)))
             if op["cancel"]:
-                raise FMError("Anulowano")
+                raise FMError(_("Cancelled"))
             op["phase"] = "finish"
             if os.path.lexists(dst):
-                raise FMError("istnieje już w miejscu docelowym")
+                raise FMError(_("already exists at the destination"))
+            _fix_perms(tmp)
             os.rename(tmp, dst)
-            _fix_perms(dst)
         except Exception:
             shutil.rmtree(os.path.dirname(tmp), ignore_errors=True)
             raise
@@ -349,7 +553,7 @@ class Ops:
             else:
                 os.remove(src)
         except OSError as e:
-            raise FMError("skopiowano poprawnie, ale nie udało się usunąć oryginału: %s" % e)
+            raise FMError(_("copied correctly, but the original could not be removed: %s") % e)
 
     def _copy_file(self, op, src, dst):
         h = hashlib.sha256()
@@ -357,7 +561,7 @@ class Ops:
         with open(src, "rb") as fi, open(dst, "wb") as fo:
             while True:
                 if op["cancel"]:
-                    raise FMError("Anulowano")
+                    raise FMError(_("Cancelled"))
                 buf = fi.read(CHUNK)
                 if not buf:
                     break
@@ -378,7 +582,7 @@ class Ops:
         with open(path, "rb") as f:
             while True:
                 if op["cancel"]:
-                    raise FMError("Anulowano")
+                    raise FMError(_("Cancelled"))
                 buf = f.read(CHUNK)
                 if not buf:
                     break
@@ -386,21 +590,24 @@ class Ops:
                 op["done"] += len(buf)
         return h.hexdigest()
 
-    # ---- miniatury: odświeżenie dla całego dysku
+    # ---- okładki: odświeżenie dla całego dysku
     def refresh_thumbs(self, disk_id):
         d = config.disk(disk_id)
         if not d:
-            raise FMError("Nieznany dysk.")
+            raise FMError(_("Unknown disk."))
         if not movieinfo.configured():
-            raise FMError("Dodaj klucz TMDB w zakładce Podgląd i okładki.")
-        return self._new("thumbs", "Okładki: %s" % d["label"], 0, disk=disk_id)
+            raise FMError(_("Add a TMDB key in the Preview & posters tab."))
+        actlog.write("POSTERS", _("Refreshing posters: %s") % d["label"])
+        return self._new("thumbs", _("Posters: %s") % d["label"], 0, disk=disk_id)
 
     def _run_thumbs(self, op):
         d = config.disk(op["disk"])
         work = []
         for cat in config.get().get("categories", []):
+            if not cat.get("tmdb", True):
+                continue
             try:
-                _, _, base = location(d["id"], cat["id"])
+                _d, _c, base = location(d["id"], cat["id"])
             except FMError:
                 continue
             for e in os.scandir(base):
@@ -416,8 +623,8 @@ class Ops:
             try:
                 fetch_thumb(cat["kind"], base, name, is_dir, force=True)
                 op["log"].append({"name": name, "ok": True})
-            except Exception as e:
-                op["log"].append({"name": name, "ok": False, "error": str(e)})
+            except Exception:
+                op["log"].append({"name": name, "ok": True, "note": "placeholder"})
             op["items_done"] += 1
             op["done"] += 1
 
@@ -437,13 +644,14 @@ def _fix_perms(path):
 
 # ------------------------------------------------------------------ usuwanie
 def delete(disk_id, cat_id, names, busy=()):
-    _, _, base = location(disk_id, cat_id)
+    d, cat, base = location(disk_id, cat_id)
     removed, problems = [], []
     for name in names:
         try:
             path = item_path(base, name)
             if is_busy(path, busy):
-                raise FMError("trwa pobieranie do tego folderu")
+                raise FMError(_("a download into this folder is in progress"))
+            size = scan_item(path, cat["kind"])["size"]
             if os.path.isdir(path) and not os.path.islink(path):
                 shutil.rmtree(path)
             else:
@@ -453,20 +661,22 @@ def delete(disk_id, cat_id, names, busy=()):
                     os.remove(th)
             _size_cache.pop(path, None)
             removed.append(name)
+            actlog.write("DELETE", "%s (%s / %s, %.2f GB)" % (name, d["label"], cat["label"], size / 1e9))
         except (FMError, OSError) as e:
             problems.append("%s: %s" % (name, e))
     return {"removed": removed, "problems": problems}
 
 
-# ------------------------------------------------------------------ miniatury
+# ------------------------------------------------------------------ okładki
 _thumb_locks = {}
 _thumb_sem = threading.Semaphore(3)
 _thumb_fail = {}
-FAIL_TTL = 1800
+FAIL_TTL = 24 * 3600  # brak wyniku w TMDB → nie pytamy ponownie przez dobę
 
 
 def fetch_thumb(kind, base, name, is_dir, force=False):
-    """Pobiera plakat z TMDB i zapisuje jako „Tytuł (Rok).thumb.png” w folderze filmu."""
+    """Pobiera plakat z TMDB i zapisuje jako „Tytuł (Rok).thumb.jpg” w folderze filmu.
+    Gdy TMDB nic nie zwraca – plik nie powstaje (widok pokaże obrazek zastępczy)."""
     key = os.path.join(base, name)
     lock = _thumb_locks.setdefault(key, threading.Lock())
     with lock:
@@ -474,14 +684,14 @@ def fetch_thumb(kind, base, name, is_dir, force=False):
         if existing and not force:
             return existing
         if not force and time.time() - _thumb_fail.get(key, 0) < FAIL_TTL:
-            raise FMError("brak plakatu (ponowna próba później)")
+            raise FMError("no poster")
         label = name if is_dir else naming.split_ext(name)[0]
         p = naming.parse_name(label)
         with _thumb_sem:
             try:
                 url = movieinfo.poster_url(kind, p["title"], p["year"], p["tmdb"])
                 if not url:
-                    raise FMError("nie znaleziono plakatu w TMDB")
+                    raise FMError("no poster")
                 data = movieinfo.download(url)
             except (movieinfo.InfoError, FMError) as e:
                 _thumb_fail[key] = time.time()
@@ -490,16 +700,9 @@ def fetch_thumb(kind, base, name, is_dir, force=False):
         for ext in THUMB_EXTS:
             if os.path.exists(stem + ext):
                 os.remove(stem + ext)
-        if Image is not None:
-            out = stem + ".thumb.png"
-            with Image.open(io.BytesIO(data)) as im:
-                im = im.convert("RGB")
-                im.thumbnail((342, 513))
-                im.save(out + ".part", "PNG", optimize=True)
-        else:
-            out = stem + ".thumb.jpg"
-            with open(out + ".part", "wb") as f:
-                f.write(data)
+        out = stem + THUMB
+        with open(out + ".part", "wb") as f:
+            f.write(data)
         os.replace(out + ".part", out)
         _thumb_fail.pop(key, None)
         try:
@@ -510,26 +713,26 @@ def fetch_thumb(kind, base, name, is_dir, force=False):
 
 
 def get_thumb(disk_id, cat_id, name):
-    _, cat, base = location(disk_id, cat_id, need_ok=False)
+    _d, cat, base = location(disk_id, cat_id, need_ok=False)
     path = item_path(base, name)
     is_dir = os.path.isdir(path)
     existing = find_thumb(base, name, is_dir)
     if existing:
         return existing
     mode = config.get().get("thumbs_mode", "online")
-    if mode != "online" or not movieinfo.configured():
-        raise FMError("brak miniatury")
+    if mode != "online" or not movieinfo.configured() or not cat.get("tmdb", True):
+        raise FMError("no poster")
     return fetch_thumb(cat["kind"], base, name, is_dir)
 
 
 def delete_thumbs(disk_id):
     d = config.disk(disk_id)
     if not d:
-        raise FMError("Nieznany dysk.")
+        raise FMError(_("Unknown disk."))
     count = 0
     for cat in config.get().get("categories", []):
         try:
-            _, _, base = location(d["id"], cat["id"], need_ok=False)
+            _d, _c, base = location(d["id"], cat["id"], need_ok=False)
         except FMError:
             continue
         for e in os.scandir(base):
@@ -541,7 +744,70 @@ def delete_thumbs(disk_id):
                     os.remove(stem + ext)
                     count += 1
     _thumb_fail.clear()
+    actlog.write("POSTERS", _("Posters deleted from %s: %d") % (d["label"], count))
     return count
+
+
+# ------------------------------------------------------------------ „Aktualizuj ścieżki”
+ALIASES = {
+    "movies": ["movies", "movie", "filmy", "film", "films"],
+    "tv": ["tv shows", "tv", "tvshows", "tv series", "series", "shows", "seriale", "serial"],
+    "kids": ["kids", "children", "dla dzieci", "bajki", "kids movies", "family"],
+}
+
+
+def scan_paths(mount, categories, current=None, max_depth=3, max_dirs=4000):
+    """Szuka na dysku folderów pasujących do kategorii. Zwraca {id: {path, status}}:
+    status = ok (obecna ścieżka istnieje), found (znaleziono), missing (nie znaleziono)."""
+    current = current or {}
+    if not mount or not os.path.isdir(mount):
+        raise FMError(_("Mount point not found"))
+    wanted = {}
+    for c in categories:
+        names = {(c.get("folder") or "").strip().lower(), (c.get("label") or "").strip().lower()}
+        names |= set(ALIASES.get(c.get("id"), []))
+        wanted[c["id"]] = {n for n in names if n}
+    found, visited = {}, 0
+    queue = [(mount, 0)]
+    while queue and visited < max_dirs:
+        path, depth = queue.pop(0)
+        try:
+            entries = sorted(os.scandir(path), key=lambda e: e.name.lower())
+        except OSError:
+            continue
+        for e in entries:
+            if e.name.startswith(".") or e.name in SKIP or not e.is_dir(follow_symlinks=False):
+                continue
+            visited += 1
+            low = e.name.lower()
+            for cid, names in wanted.items():
+                if low in names and cid not in found:
+                    found[cid] = e.path
+            if depth + 1 < max_depth:
+                queue.append((e.path, depth + 1))
+    # preferujemy foldery leżące obok już znalezionych (np. wszystkie w „Plex 1T/”)
+    roots = [os.path.dirname(p) for p in list(current.values()) + list(found.values()) if p and os.path.isdir(p)]
+    out = {}
+    for c in categories:
+        cid = c["id"]
+        cur = current.get(cid)
+        if cur and os.path.isdir(cur):
+            out[cid] = {"path": cur, "status": "ok"}
+            continue
+        hit = None
+        for r in roots:
+            for n in wanted[cid]:
+                for entry in (os.listdir(r) if os.path.isdir(r) else []):
+                    if entry.lower() == n and os.path.isdir(os.path.join(r, entry)):
+                        hit = os.path.join(r, entry)
+                        break
+                if hit:
+                    break
+            if hit:
+                break
+        hit = hit or found.get(cid)
+        out[cid] = {"path": hit or cur or "", "status": "found" if hit else "missing"}
+    return out
 
 
 def cleanup_tmp():

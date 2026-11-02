@@ -1,4 +1,4 @@
-/* Plex Downloader – wspólne narzędzia: API, formatowanie, nagłówek, okna, podpowiedzi ⓘ */
+/* Plex Downloader – wspólne narzędzia: tłumaczenia, API, formatowanie, nagłówek, okna, podpowiedzi ⓘ */
 (() => {
   "use strict";
   const $ = (s, r = document) => r.querySelector(s);
@@ -7,6 +7,15 @@
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* tryb prywatny */ } },
   };
+  const CAT = window.I18N || {};
+  const LANG = window.LANG || "en";
+  // t("Removed: {n}", {n: 3}) – tekst źródłowy po angielsku, tłumaczenie z locales/<lang>.json
+  function t(s, vars) {
+    let out = CAT[s] || s;
+    if (vars) out = out.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
+    return out;
+  }
+  const LOCALE = LANG === "en" ? "en-GB" : LANG;
 
   async function api(path, body) {
     const opt = body === undefined ? {} : {
@@ -18,7 +27,7 @@
     if (res.status === 401) { location.href = "/login"; throw new Error("auth"); }
     let data = {};
     try { data = await res.json(); } catch (e) { /* brak treści */ }
-    if (!res.ok) throw new Error(data.error || ("Błąd " + res.status));
+    if (!res.ok) throw new Error(data.error || (t("Error") + " " + res.status));
     return data;
   }
 
@@ -59,6 +68,21 @@
     return "cat";
   }
 
+  // kopiowanie do schowka – działa także na zwykłym http (bez HTTPS) w sieci domowej
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
+    } catch (e) { /* spróbujemy niżej */ }
+    const ta = el("textarea"); ta.value = text; ta.setAttribute("readonly", "");
+    ta.style.cssText = "position:fixed;top:-1000px;opacity:0";
+    (document.querySelector("dialog[open]") || document.body).appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    ta.remove();
+    return ok;
+  }
+
   // ------------------------------------------------------------------ przeciąganie okien
   function makeDraggable(win) {
     const head = win.querySelector("[data-drag]");
@@ -74,7 +98,7 @@
     });
     head.addEventListener("pointermove", (e) => {
       if (!drag) return;
-      const w = win.offsetWidth, h = win.offsetHeight;
+      const w = win.offsetWidth;
       const x = Math.min(Math.max(ox + e.clientX - sx, 40 - w), window.innerWidth - 40);
       const y = Math.min(Math.max(oy + e.clientY - sy, 0), window.innerHeight - 40);
       win.style.left = x + "px"; win.style.top = y + "px";
@@ -101,30 +125,46 @@
       const bodyEl = el("div", "win-body");
       if (typeof body === "string") bodyEl.appendChild(el("p", null, body)); else if (body) bodyEl.appendChild(body);
       const foot = el("div", "win-foot");
+      const btns = [];
       (buttons || [{ label: "OK", value: true, cls: "btn-accent" }]).forEach((b) => {
         const btn = el("button", b.cls || "btn-soft", b.label); btn.type = "button";
         if (b.disabled) btn.disabled = true;
-        btn.addEventListener("click", () => { d.close(); resolve(b.value); });
-        foot.appendChild(btn);
+        if (b.id) btn.dataset.id = b.id;
+        btn.addEventListener("click", () => {
+          const v = typeof b.value === "function" ? b.value() : b.value;
+          if (v === undefined) return;
+          d.close(); resolve(v);
+        });
+        foot.appendChild(btn); btns.push(btn);
       });
       x.addEventListener("click", () => { d.close(); resolve(null); });
       d.addEventListener("cancel", () => resolve(null));
       d.addEventListener("close", () => setTimeout(() => d.remove(), 50));
       if (danger) d.classList.add("danger");
       d.append(head, bodyEl, foot);
+      d._buttons = btns;
       document.body.appendChild(d);
       makeDraggable(d);
       centerWindow(d);
       d.showModal();
+      if (typeof body === "object" && body && body._onOpen) body._onOpen(d);
     });
   }
+
+  // powiadomienia – w „top layer” (popover), więc są widoczne także nad otwartym oknem Ustawień
   function toast(msg, bad) {
     let box = $("#toasts");
-    if (!box) { box = el("div"); box.id = "toasts"; document.body.appendChild(box); }
-    const t = el("div", "toast" + (bad ? " bad" : ""), msg);
-    box.appendChild(t);
-    setTimeout(() => t.classList.add("out"), 3800);
-    setTimeout(() => t.remove(), 4300);
+    if (!box) {
+      box = el("div"); box.id = "toasts";
+      if (box.showPopover) box.setAttribute("popover", "manual");
+      document.body.appendChild(box);
+    }
+    if (box.showPopover) { try { box.hidePopover(); } catch (e) { /* */ } try { box.showPopover(); } catch (e) { /* */ } }
+    else { const d = $$("dialog[open]").pop(); (d || document.body).appendChild(box); }
+    const n = el("div", "toast" + (bad ? " bad" : ""), msg);
+    box.appendChild(n);
+    setTimeout(() => n.classList.add("out"), 3800);
+    setTimeout(() => { n.remove(); if (!box.childElementCount && box.hidePopover) { try { box.hidePopover(); } catch (e) { /* */ } } }, 4300);
   }
 
   // ------------------------------------------------------------------ podpowiedzi ⓘ
@@ -138,21 +178,25 @@
     closeTip();
     tip = el("div", "tip-pop"); tip._for = b;
     const head = el("div", "tip-head");
-    head.append(el("b", null, "Podpowiedź"));
+    head.append(el("b", null, t("Hint")));
     const x = el("button", "icon-btn"); x.type = "button"; x.appendChild(icon("x")); x.addEventListener("click", closeTip);
     head.appendChild(x);
     tip.append(head, el("p", null, b.dataset.tip || ""));
     if (b.dataset.href) {
-      const a = el("a", null, "Więcej informacji ↗"); a.href = b.dataset.href; a.target = "_blank"; a.rel = "noopener noreferrer";
+      const a = el("a", null, t("More information") + " ↗"); a.href = b.dataset.href; a.target = "_blank"; a.rel = "noopener noreferrer";
       tip.appendChild(a);
     }
     (b.closest("dialog") || document.body).appendChild(tip);
     const r = b.getBoundingClientRect();
     const w = Math.min(320, window.innerWidth - 24);
     tip.style.width = w + "px";
-    tip.style.left = Math.max(12, Math.min(r.left - 20, window.innerWidth - w - 12)) + "px";
+    const host = b.closest("dialog");
+    const hr = host ? host.getBoundingClientRect() : { left: 0, top: 0 };
+    const tr = host && getComputedStyle(host).transform !== "none";
+    const offX = tr ? hr.left : 0, offY = tr ? hr.top : 0;
+    tip.style.left = (Math.max(12, Math.min(r.left - 20, window.innerWidth - w - 12)) - offX) + "px";
     const below = r.bottom + 8, h = tip.offsetHeight;
-    tip.style.top = (below + h > window.innerHeight - 8 ? Math.max(8, r.top - h - 8) : below) + "px";
+    tip.style.top = ((below + h > window.innerHeight - 8 ? Math.max(8, r.top - h - 8) : below) - offY) + "px";
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeTip(); });
 
@@ -165,14 +209,15 @@
       $("#selfDot").classList.toggle("bad", !s.engine.ok);
       $("#hdrServer").textContent = `${s.server.ip}:${s.server.port}`;
       $("#hdrServer").parentElement.title = s.engine.ok
-        ? `Plex Downloader działa na ${s.server.hostname} (${s.server.ip}:${s.server.port})`
-        : "Silnik pobierania aria2c nie działa";
+        ? t("Plex Downloader is running on {host} ({ip}:{port})", { host: s.server.hostname, ip: s.server.ip, port: s.server.port })
+        : t("The aria2c download engine is not running");
       renderPlex(s.plex);
+      window.PD.status = s;
       document.dispatchEvent(new CustomEvent("pd:status", { detail: s }));
     } catch (e) {
       if (e.message === "auth") return;
       $("#selfDot").classList.add("bad");
-      $("#hdrServer").textContent = "brak połączenia";
+      $("#hdrServer").textContent = t("no connection");
     }
     statusTimer = setTimeout(refreshStatus, 15000);
   }
@@ -182,8 +227,8 @@
     box.replaceChildren();
     if (!list.length) {
       const b = el("button", "hstat none"); b.type = "button";
-      b.append(el("span", "dot off"), el("span", "hs-name", "Plex: nie wykryto"));
-      b.title = "Nie wykryto serwera Plex – kliknij, aby dodać lub wyszukać";
+      b.append(el("span", "dot off"), el("span", "hs-name", t("Plex: not found")));
+      b.title = t("No Plex server found – click to add or search");
       b.addEventListener("click", () => window.PD.openSettings && window.PD.openSettings("plex"));
       box.appendChild(b);
       return;
@@ -192,9 +237,9 @@
       const b = el("button", "hstat"); b.type = "button";
       b.append(el("span", "dot" + (p.online ? "" : " bad")), el("span", "hs-name", p.name),
         el("span", "hs-addr", `${p.display_host}:${p.port}`));
-      b.title = `Plex Media Server „${p.name}” – ${p.online ? "online" : "offline"}` +
-        (p.version ? `, wersja ${p.version}` : "") + ` · ${p.display_host}:${p.port}` +
-        (p.source === "manual" ? " (dodany ręcznie)" : " (wykryty automatycznie)");
+      b.title = t("Plex Media Server “{name}” – {state}", { name: p.name, state: p.online ? "online" : "offline" }) +
+        (p.version ? `, ${t("version")} ${p.version}` : "") + ` · ${p.display_host}:${p.port}` +
+        (p.source === "manual" ? ` (${t("added manually")})` : ` (${t("discovered automatically")})`);
       b.addEventListener("click", () => window.PD.openSettings && window.PD.openSettings("plex"));
       box.appendChild(b);
     });
@@ -210,6 +255,6 @@
     document.addEventListener("visibilitychange", () => { if (!document.hidden && $("#plexStatus")) refreshStatus(); });
   });
 
-  window.PD = { $, $$, store, api, fmtSize, fmtSpeed, fmtEta, el, icon, catIcon, modal, toast,
-    makeDraggable, centerWindow, refreshStatus, openSettings: null };
+  window.PD = { $, $$, store, t, LANG, LOCALE, api, fmtSize, fmtSpeed, fmtEta, el, icon, catIcon, modal, toast,
+    copyText, makeDraggable, centerWindow, refreshStatus, openSettings: null, status: null };
 })();

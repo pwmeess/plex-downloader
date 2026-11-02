@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="{{ lang }}" data-theme="{{ theme }}">
+<head>
+{% include "_head.html" %}
+  <title>Plex Downloader · Language / Język</title>
+</head>
+<body>
+{% include "_icons.html" %}
+<div class="login-wrap">
+  <form class="card login-card welcome" method="post">
+    <div class="brand"><span class="brand-mark"><svg class="i"><use href="#i-logo"/></svg></span>Plex Downloader</div>
+    <h2>Choose your language</h2>
+    <p class="login-note">Wybierz język · You can change it later in Settings → Account.</p>
+    <div class="lang-pick">
+      {% for l in languages %}
+      <button class="lang-btn" type="submit" name="language" value="{{ l.code }}">
+        <span class="lang-code">{{ l.code|upper }}</span><span>{{ l.name }}</span>
+        {% if l.code == 'en' %}<span class="tag">default</span>{% endif %}
+      </button>
+      {% endfor %}
+    </div>
+  </form>
+</div>
+<div class="foot-ver">version {{ version }}</div>
+</body>
+</html>

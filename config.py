@@ -16,11 +16,13 @@ BACKUP_DAYS = 30
 BACKUP_MAX = 300
 
 # Kategorie domyślne. "kind" decyduje o nazewnictwie: movie → Tytuł (Rok)/…, tv → Serial/Season 01/…
+# kind: movie → Tytuł (Rok)/…, tv → Serial/Season 01/…, other → nazwa bez zmian (np. nagrania domowe)
 DEFAULT_CATEGORIES = [
-    {"id": "movies", "label": "Filmy", "kind": "movie", "folder": "Movies"},
-    {"id": "tv", "label": "Seriale", "kind": "tv", "folder": "TV Shows"},
-    {"id": "kids", "label": "Dla dzieci", "kind": "movie", "folder": "Kids"},
+    {"id": "movies", "label": "Movies", "kind": "movie", "folder": "Movies", "tmdb": True},
+    {"id": "tv", "label": "TV Shows", "kind": "tv", "folder": "TV Shows", "tmdb": True},
+    {"id": "kids", "label": "Kids", "kind": "movie", "folder": "Kids", "tmdb": True},
 ]
+BUILTIN_LABELS = {"movies": "Movies", "tv": "TV Shows", "kids": "Kids"}
 
 DEFAULTS = {
     "host": "0.0.0.0",
@@ -40,6 +42,8 @@ DEFAULTS = {
     "plex_servers": [],          # [{"id","name","host","port"}] – dodane ręcznie
     "plex_autodiscover": True,   # wykrywanie serwerów Plex w sieci (GDM) + localhost
     "thumbs_mode": "online",     # online | local | off
+    "language": "",              # "" = jeszcze nie wybrano (ekran wyboru przy logowaniu)
+    "theme": "dark",             # dark | light
     "vpn": {"enabled": False, "provider": "tailscale", "listen": "lan"},  # zarezerwowane (wkrótce)
 }
 
@@ -71,9 +75,12 @@ def normalize(cfg):
         if cid in seen:
             continue
         seen.add(cid)
-        clean.append({"id": cid, "label": (c.get("label") or cid).strip()[:40],
-                      "kind": "tv" if c.get("kind") == "tv" else "movie",
-                      "folder": (c.get("folder") or "").strip()[:60]})
+        kind = c.get("kind") if c.get("kind") in ("movie", "tv", "other") else "movie"
+        tmdb = c.get("tmdb")
+        if tmdb is None:
+            tmdb = cid in BUILTIN_LABELS
+        clean.append({"id": cid, "label": (c.get("label") or cid).strip()[:40], "kind": kind,
+                      "folder": (c.get("folder") or "").strip()[:60], "tmdb": bool(tmdb and kind != "other")})
     cfg["categories"] = clean
     for d in cfg.get("disks", []):
         paths = d.get("paths")
@@ -118,7 +125,7 @@ def load():
         migrated = before != json.dumps({k: cfg.get(k) for k in data}, sort_keys=True)
         _config = cfg
         if changed or migrated:
-            save(note="Migracja konfiguracji" if migrated and not changed else "Pierwsze uruchomienie")
+            save(note="Configuration migrated" if migrated and not changed else "First run")
         return _config
 
 
@@ -127,7 +134,7 @@ def get():
         return _config if _config is not None else load()
 
 
-def save(new=None, note=""):
+def save(new=None, note="", note_args=None):
     global _config
     with _lock:
         if new is not None:
@@ -137,15 +144,15 @@ def save(new=None, note=""):
             json.dump(_config, f, indent=2, ensure_ascii=False)
         os.chmod(tmp, 0o600)
         os.replace(tmp, CONFIG_PATH)
-        backup(note)
+        backup(note, note_args)
 
 
-def update(note="", **changes):
+def update(note="", note_args=None, **changes):
     with _lock:
         cfg = copy.deepcopy(get())
         cfg.update(changes)
         normalize(cfg)
-        save(cfg, note=note)
+        save(cfg, note=note, note_args=note_args)
         return cfg
 
 
@@ -167,7 +174,7 @@ def category(cat_id):
 _NAME = re.compile(r"^config-(\d{8}-\d{6})(?:-\d+)?\.json$")
 
 
-def backup(note=""):
+def backup(note="", note_args=None):
     """Zapisuje migawkę konfiguracji po każdej zmianie; usuwa kopie starsze niż 30 dni
     (ostatnia kopia zostaje zawsze)."""
     try:
@@ -188,7 +195,8 @@ def backup(note=""):
             n += 1
         path = os.path.join(BACKUP_DIR, name)
         with open(path, "w", encoding="utf-8") as f:
-            json.dump({"created": time.time(), "note": note or "Zmiana ustawień", "config": _config},
+            json.dump({"created": time.time(), "note": note or "Settings changed",
+                       "note_args": note_args or {}, "config": _config},
                       f, indent=1, ensure_ascii=False)
         os.chmod(path, 0o600)
         prune()
@@ -214,11 +222,13 @@ def list_backups():
 
 
 def describe_backups():
+    from i18n import _
     items = []
     for b in list_backups():
         note = ""
         try:
-            note = _read(os.path.join(BACKUP_DIR, b["name"])).get("note", "")
+            data = _read(os.path.join(BACKUP_DIR, b["name"]))
+            note = _(data.get("note", ""), **(data.get("note_args") or {}))
         except (OSError, ValueError):
             pass
         items.append(dict(b, note=note))
@@ -239,11 +249,12 @@ def prune():
 
 
 def restore(name):
+    from i18n import _
     if not _NAME.match(name or ""):
-        raise ValueError("Nieprawidłowa nazwa kopii.")
+        raise ValueError(_("Invalid backup name."))
     path = os.path.join(BACKUP_DIR, name)
     if not os.path.isfile(path):
-        raise ValueError("Nie ma takiej kopii.")
+        raise ValueError(_("No such backup."))
     snap = _read(path).get("config")
     if not isinstance(snap, dict):
         raise ValueError("Kopia jest uszkodzona.")
@@ -253,6 +264,23 @@ def restore(name):
         for k in KEEP_ON_RESTORE:
             cfg[k] = get().get(k)
         normalize(cfg)
-        save(cfg, note="Przywrócono kopię z %s" % time.strftime(
-            "%d.%m.%Y %H:%M", time.localtime(os.path.getmtime(path))))
+        save(cfg, note="Restored backup from {date}", note_args={"date": time.strftime(
+            "%d.%m.%Y %H:%M", time.localtime(os.path.getmtime(path)))})
+        return cfg
+
+
+def set_language(code):
+    """Zmienia język i tłumaczy nazwy wbudowanych kategorii, jeśli użytkownik ich nie zmienił."""
+    from i18n import gettext, available
+    known = {}
+    for cid, en in BUILTIN_LABELS.items():
+        known[cid] = {en} | {gettext(en, lang=l["code"]) for l in available()}
+    with _lock:
+        cfg = copy.deepcopy(get())
+        cfg["language"] = code
+        for c in cfg.get("categories", []):
+            if c["id"] in known and c["label"] in known[c["id"]]:
+                c["label"] = gettext(BUILTIN_LABELS[c["id"]], lang=code)
+        normalize(cfg)
+        save(cfg, note="Language changed")
         return cfg

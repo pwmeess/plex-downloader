@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-# Aktualizacja Plex Downloader z GitHuba.  Uruchom:  ./update.sh
+# Update Plex Downloader from GitHub.  Run:  ./update.sh
 set -euo pipefail
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$APP_DIR"
 
 OLD="$(cat VERSION 2>/dev/null || echo '?')"
+echo "Downloading the latest version from GitHub…"
 git pull --ff-only
 "$APP_DIR/venv/bin/pip" install -q -r requirements.txt
-"$APP_DIR/venv/bin/pip" install -q -r requirements-optional.txt 2>/dev/null \
-  || echo "Uwaga: Pillow niedostępny – okładki będą zapisywane jako .thumb.jpg"
 sudo systemctl restart plex-downloader
-echo "Zaktualizowano: $OLD → $(cat VERSION)"
-echo "Trwające pobierania zostaną automatycznie wznowione."
+echo "Updated: $OLD → $(cat VERSION)"
+echo "Downloads in progress will resume automatically."

@@ -3,6 +3,8 @@ import os
 import re
 from urllib.parse import unquote, urlparse
 
+from i18n import _
+
 VIDEO_EXTS = {
     ".mkv", ".mp4", ".avi", ".m4v", ".mov", ".wmv", ".ts", ".m2ts",
     ".mpg", ".mpeg", ".webm", ".flv", ".divx", ".ogm", ".vob",
@@ -169,9 +171,9 @@ def _tags(edition=None, ids=None):
         if val:
             val = str(val).strip()
             if key == "imdb" and not re.match(r"^tt\d{5,10}$", val):
-                raise ValueError("Nieprawidłowe ID IMDb (oczekiwane tt1234567).")
+                raise ValueError(_("Invalid IMDb ID (expected tt1234567)."))
             if key != "imdb" and not val.isdigit():
-                raise ValueError("Nieprawidłowe ID %s." % key.upper())
+                raise ValueError(_("Invalid %s ID.") % key.upper())
             parts.append("{%s-%s}" % (key, val))
     ed = clean_tag(edition)
     if ed:
@@ -187,7 +189,7 @@ def movie_target(base, name, ext, edition=None, version=None, ids=None):
     """
     name = sanitize(strip_tags(name))
     if not name:
-        raise ValueError("Podaj nazwę filmu.")
+        raise ValueError(_("Enter the movie name."))
     folder = name + _tags(edition, ids)
     fname = folder
     ver = clean_tag(version, 40)
@@ -200,14 +202,14 @@ def tv_target(base, show, season, episode, episode_title, ext, ids=None):
     """base/Serial {tmdb-…}/Season 01/Serial - S01E02[ - Tytuł odcinka].ext"""
     show = sanitize(strip_tags(show))
     if not show:
-        raise ValueError("Podaj nazwę serialu.")
+        raise ValueError(_("Enter the TV show name."))
     try:
         season = int(season)
         episode = int(episode)
     except (TypeError, ValueError):
-        raise ValueError("Sezon i odcinek muszą być liczbami.")
+        raise ValueError(_("Season and episode must be numbers."))
     if not (0 <= season <= 99 and 0 <= episode <= 999):
-        raise ValueError("Nieprawidłowy numer sezonu lub odcinka.")
+        raise ValueError(_("Invalid season or episode number."))
     folder = show + _tags(None, ids)
     fname = "%s - S%02dE%02d" % (show, season, episode)
     et = sanitize(episode_title or "")

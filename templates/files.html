@@ -1,12 +1,8 @@
 <!doctype html>
-<html lang="pl">
+<html lang="{{ lang }}" data-theme="{{ theme }}">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1a1f28">
-  <title>Menedżer plików · Plex Downloader</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%232a2214'/%3E%3Cpath d='M9 5h4l5 7-5 7H9l5-7z' fill='%23e5a00d'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v={{ version }}">
+{% include "_head.html" %}
+  <title>{{ _("File manager") }} · Plex Downloader</title>
 </head>
 <body class="fm-page">
 {% include "_icons.html" %}
@@ -14,16 +10,16 @@
 
 <main class="fm-wrap">
   <div class="fm-top">
-    <h1>Menedżer plików
-      <button type="button" class="info-i" data-tip="Wybierz dysk i kategorię w każdej kolumnie. Zaznacz filmy i przeciągnij je na drugą kolumnę (albo użyj przycisku Przenieś). Na tym samym dysku przeniesienie jest natychmiastowe. Między dyskami pliki są kopiowane, sprawdzane sumą kontrolną SHA-256, a oryginał jest usuwany dopiero po poprawnej kopii.">i</button></h1>
+    <h1>{{ _("File manager") }}
+      <button type="button" class="info-i" data-tip="{{ _('Choose a disk and category in each column. Select movies and drag them to the other column (or use the Move button). On the same disk the move is instant. Between disks files are copied, verified with a SHA-256 checksum, and the original is removed only after a correct copy.') }}">i</button></h1>
     <div class="fm-top-actions">
-      <button class="btn-soft small" type="button" id="thumbOpts"><svg class="i"><use href="#i-image"/></svg>Opcje okładek</button>
-      <button class="btn-soft small" type="button" id="fmReload"><svg class="i"><use href="#i-retry"/></svg>Odśwież</button>
+      <button class="btn-soft small" type="button" id="thumbOpts"><svg class="i"><use href="#i-image"/></svg>{{ _("Poster options") }}</button>
+      <button class="btn-soft small" type="button" id="fmReload"><svg class="i"><use href="#i-retry"/></svg>{{ _("Refresh") }}</button>
     </div>
   </div>
 
   <section class="card fm-ops" id="fmOps" hidden>
-    <div class="fm-ops-head"><b>Operacje na plikach</b><button class="btn-ghost small" type="button" id="opsClear">Wyczyść zakończone</button></div>
+    <div class="fm-ops-head"><b>{{ _("File operations") }}</b><button class="btn-ghost small" type="button" id="opsClear">{{ _("Clear finished") }}</button></div>
     <div id="opsList"></div>
   </section>
 
@@ -32,23 +28,23 @@
     <section class="card fm-pane" data-pane="right"></section>
   </div>
 </main>
-<div class="foot-ver">Plex Downloader · wersja {{ version }}</div>
+<div class="foot-ver">Plex Downloader · {{ _("version") }} {{ version }}</div>
 
 <template id="paneTpl">
   <div class="fm-disks"></div>
   <div class="segmented cats fm-cats"></div>
   <div class="fm-path mono"></div>
   <div class="fm-toolbar">
-    <label class="fm-search"><svg class="i"><use href="#i-search"/></svg><input type="search" placeholder="Szukaj tytułu…"></label>
-    <label class="check fm-all"><input type="checkbox"> Zaznacz stronę</label>
+    <label class="fm-search"><svg class="i"><use href="#i-search"/></svg><input type="search" placeholder="{{ _('Search title…') }}"></label>
+    <label class="check fm-all"><input type="checkbox"> {{ _("Select page") }}</label>
   </div>
   <div class="fm-selbar" hidden>
     <span class="fm-selinfo"></span>
     <span class="spacer"></span>
     <button class="btn-soft small fm-move" type="button"></button>
-    <button class="btn-soft small btn-danger fm-del" type="button"><svg class="i"><use href="#i-trash"/></svg>Usuń</button>
+    <button class="btn-soft small btn-danger fm-del" type="button"><svg class="i"><use href="#i-trash"/></svg>{{ _("Delete") }}</button>
   </div>
-  <div class="fm-grid" tabindex="-1"><div class="fm-drop-hint">Upuść, aby przenieść tutaj</div></div>
+  <div class="fm-grid" tabindex="-1"><div class="fm-drop-hint"></div></div>
   <div class="fm-pager"></div>
 </template>
 

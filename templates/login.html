@@ -1,12 +1,8 @@
 <!doctype html>
-<html lang="pl">
+<html lang="{{ lang }}" data-theme="{{ theme }}">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#13171e">
-  <title>Logowanie · Plex Downloader</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%232a2214'/%3E%3Cpath d='M9 5h4l5 7-5 7H9l5-7z' fill='%23e5a00d'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v={{ version }}">
+{% include "_head.html" %}
+  <title>{{ _("Log in") }} · Plex Downloader</title>
 </head>
 <body>
 {% include "_icons.html" %}
@@ -14,24 +10,24 @@
   <form class="card login-card" method="post" autocomplete="on">
     <div class="brand"><span class="brand-mark"><svg class="i"><use href="#i-logo"/></svg></span>Plex Downloader</div>
     {% if no_password %}
-      <p class="login-note">Hasło nie zostało jeszcze ustawione. Na Raspberry Pi, w katalogu aplikacji, uruchom:</p>
+      <p class="login-note">{{ _("No password has been set yet. On the Raspberry Pi, in the application folder, run:") }}</p>
       <p class="login-note"><code>./venv/bin/python app.py --set-password</code></p>
-      <p class="login-note">a następnie <code>sudo systemctl restart plex-downloader</code>.</p>
+      <p class="login-note">{{ _("and then") }} <code>sudo systemctl restart plex-downloader</code>.</p>
     {% else %}
       {% if error %}<div class="login-err">{{ error }}</div>{% endif %}
       <div class="field">
-        <label class="field-label" for="u">Login</label>
+        <label class="field-label" for="u">{{ _("Username") }}</label>
         <input class="input" id="u" name="username" autocomplete="username" autocapitalize="none" required autofocus>
       </div>
       <div class="field">
-        <label class="field-label" for="p">Hasło</label>
+        <label class="field-label" for="p">{{ _("Password") }}</label>
         <input class="input" id="p" name="password" type="password" autocomplete="current-password" required>
       </div>
-      <label class="check" style="margin:0 0 20px"><input type="checkbox" name="remember" checked> Zapamiętaj mnie na 30 dni</label>
-      <button class="btn-primary" type="submit">ZALOGUJ</button>
+      <label class="check" style="margin:0 0 20px"><input type="checkbox" name="remember" checked> {{ _("Remember me for 30 days") }}</label>
+      <button class="btn-primary" type="submit">{{ _("LOG IN") }}</button>
     {% endif %}
   </form>
 </div>
-<div class="foot-ver">wersja {{ version }}</div>
+<div class="foot-ver">{{ _("version") }} {{ version }}</div>
 </body>
 </html>

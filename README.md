@@ -23,11 +23,17 @@ Lekki menedżer pobierania dla Raspberry Pi. Wklejasz bezpośredni link do pliku
 - **Kategorie (1.2):** Filmy, Seriale, Dla dzieci oraz dowolne własne kategorie typu „film” albo „serial”. Każdy dysk ma osobny folder dla każdej kategorii, a foldery mogą mieć dowolne nazwy.
 - **Opcje zaawansowane nazewnictwa Plex (1.2):** edycja `{edition-Director's Cut}` (Plex Pass), wersja pliku `- 1080p` (kilka wersji w jednym folderze) oraz ID `{tmdb-…}` dla trafnego dopasowania. Edycja jest wykrywana z nazwy pliku, np. `Directors.Cut`.
 - **Menedżer plików (1.2):** dwie kolumny z okładkami. Przeciągnij i upuść, żeby przenieść filmy między folderami i dyskami. Ten sam dysk to natychmiastowe przeniesienie, inny dysk to kopia, weryfikacja SHA-256 i dopiero wtedy usunięcie oryginału. Kosz usuwa cały folder filmu po potwierdzeniu.
-- **Okładki (1.2):** zapisywane w folderze filmu jako `Tytuł (Rok).thumb.png` (z TMDB). Można je pobrać ponownie, usunąć z dysku albo wyłączyć.
+- **Okładki:** zapisywane w folderze filmu jako `Tytuł (Rok).thumb.jpg` (z TMDB). Gdy TMDB nic nie zwróci, plik nie powstaje i widać obrazek zastępczy. Wyszukiwanie w TMDB można wyłączyć dla wybranej kategorii (np. domowe wideo).
 - **Serwery Plex w nagłówku (1.2):** automatyczne wykrywanie w sieci (GDM) i status online/offline, także dla serwerów dodanych ręcznie.
 - **Kopie zapasowe ustawień (1.2):** punkt przywracania po każdej zmianie, przechowywany 30 dni (ostatni zawsze zostaje). Przywrócenie nie zmienia loginu ani hasła.
 - **Pływające okno ustawień z zakładkami (1.2)** i podpowiedzi ⓘ przy opcjach.
 - Przyciski **Google** i **Zwiastun (YouTube)** w karcie filmu.
+- **Języki i motyw (1.2.1):** angielski (domyślny) i polski, motyw ciemny lub jasny (Ustawienia → Konto). Język wybierasz też przy pierwszym logowaniu i w `setup.sh`. Tłumaczenia są w `locales/<kod>.json`, więc nowy język to nowy plik.
+- **Dziennik aktywności (1.2.1):** plik `logs/plexdl.log` z pobraniami, przeniesieniami (skąd → dokąd) i usunięciami. Podgląd przyciskiem **LOG** w Ustawienia → Konto, z opcjami Wyczyść i Eksportuj. Limit 1 MB, potem kopia `bcup01.log`, `bcup02.log`… Dziennik nie trafia do kopii ustawień.
+- **Przenoszenie odcinków (1.2.1):** cały serial, wybrany sezon albo wybrane odcinki (SnnEnn). Struktura folderów powstaje na dysku docelowym, a przenoszone są tylko wybrane pliki (z napisami).
+- **Postęp operacji (1.2.1):** prędkość, czas do końca i podsumowanie, co i skąd dokąd przeniesiono. Ikonka przy folderze, który zawiera dodatki (zwiastuny, napisy, kilka wersji). Dodatki nie są liczone jako filmy, a daty folderów są zachowywane.
+- **Typ kategorii „Inne (zachowaj nazwę)” (1.2.1)** dla nagrań, które nie są filmami ani serialami.
+- **Komendy terminala (1.2.1)** w Ustawienia → Konto, z przyciskiem kopiowania.
 - Działa na telefonie.
 
 ## Wymagania
@@ -41,17 +47,18 @@ Lekki menedżer pobierania dla Raspberry Pi. Wklejasz bezpośredni link do pliku
 cd ~
 git clone https://github.com/pwmeess/plex-downloader.git
 cd plex-downloader
-chmod +x setup.sh update.sh
+chmod +x setup.sh update.sh fix.sh
 ./setup.sh
 ```
 
 Skrypt wykonuje kolejno:
 
-1. instaluje `aria2`, `python3-venv` i `git`,
-2. tworzy środowisko `venv/` i instaluje zależności z `requirements.txt`,
-3. tworzy `config.json` i pyta o login i hasło,
-4. sprawdza, czy foldery bibliotek istnieją i czy można w nich zapisywać,
-5. rejestruje i uruchamia usługę `plex-downloader` (autostart po restarcie).
+1. pyta o język (1 – English, domyślny; 2 – Polski),
+2. instaluje `aria2`, `python3-venv` i `git`,
+3. tworzy środowisko `venv/` i instaluje zależności z `requirements.txt`,
+4. tworzy `config.json` i pyta o login i hasło,
+5. sprawdza, czy foldery bibliotek istnieją i czy można w nich zapisywać,
+6. rejestruje i uruchamia usługę `plex-downloader` (autostart po restarcie).
 
 Na koniec wyświetla adres, np. **http://192.168.1.10:8800**.
 
@@ -63,14 +70,31 @@ cd ~/plex-downloader
 ```
 
 Możesz też zrobić to ręcznie: `git pull && sudo systemctl restart plex-downloader`.
-W Ustawieniach jest przycisk **Sprawdź aktualizacje**, który pokazuje, czy na GitHubie są nowe zmiany.
+Nagłówek okna Ustawień pokazuje, czy na GitHubie są nowe zmiany.
+
+## Naprawa: `fix.sh`
+
+```bash
+cd ~/plex-downloader
+./fix.sh
+```
+
+Najpierw pyta o język, potem pokazuje menu:
+
+1. **Update (check and install)** – sprawdza GitHuba i instaluje nową wersję,
+2. **Reinstall (keep settings)** – pobiera kod od nowa i odbudowuje środowisko, ustawienia zostają,
+3. **Clean reinstall** – kasuje ustawienia, kopie, dzienniki i listę pobrań, potem instaluje od zera (potwierdzenie słowem YES/TAK),
+4. **Uninstall** – usuwa usługę z autostartu, opcjonalnie także folder aplikacji,
+5. **Cancel**.
+
+Filmy i seriale na dyskach nigdy nie są ruszane.
 
 ## Podgląd filmów: klucz TMDB
 
 1. Załóż darmowe konto na https://www.themoviedb.org/signup.
-2. Przejdź do **Ustawienia → API → Utwórz → Developer**. W formularzu wystarczy wpisać użytek prywatny.
+2. Przejdź do **Settings → API → Utwórz → Developer**. W formularzu wystarczy wpisać użytek prywatny.
 3. Skopiuj **API Key** albo **API Read Access Token**. Działa każdy z nich.
-4. W Plex Downloaderze wejdź w **Ustawienia → Podgląd filmów (TMDB)**, wklej klucz i kliknij **Zapisz**.
+4. W Plex Downloaderze wejdź w **Ustawienia → Podgląd i plakaty**, wklej klucz i kliknij **Zapisz**.
 
 Klucz jest zapisywany wyłącznie lokalnie w `config.json`. Bez klucza aplikacja działa normalnie, tylko bez karty podglądu.
 
@@ -91,13 +115,13 @@ Aktualizacja z wersji 1.0/1.1 przenosi starą konfigurację automatycznie. Jeśl
 Aplikacja **nie wykrywa dysków automatycznie**. Domyślne ścieżki to konfiguracja autora, więc u Ciebie najpewniej będą inne.
 
 1. Sprawdź, gdzie są zamontowane Twoje dyski, poleceniem `df -h`. Zobaczysz np. `/mnt/dysk1`.
-2. W panelu wejdź w **Ustawienia → Dyski docelowe** i dla każdego dysku wpisz:
+2. W panelu wejdź w **Ustawienia → Dyski** i dla każdego dysku wpisz:
    - **Nazwa przycisku**, np. „SSD 1TB”,
    - **Podpis**, np. nazwę udziału SMB (opcjonalnie),
    - **Punkt montowania**, np. `/mnt/dysk1` (służy do odczytu wolnego miejsca),
-   - **Folder filmów** i **Folder seriali**, czyli ścieżki z bibliotek Plexa, np. `/mnt/dysk1/Movies`.
-3. Dysk dodajesz przyciskiem **+ Dodaj dysk**, a usuwasz ikoną kosza. Przycisk **Uzupełnij foldery** dopisuje brakujące ścieżki według domyślnych nazw kategorii (np. `…/Plex 1T/Kids`). Na koniec kliknij **Zapisz**.
-4. Własne kategorie dodasz w zakładce **Kategorie**: nazwa przycisku, typ (film/serial) i domyślna nazwa folderu. W Plexie dodaj dla nich osobne biblioteki.
+   - **Folder** dla każdej kategorii, czyli ścieżki z bibliotek Plexa, np. `/mnt/dysk1/Movies`.
+3. Dysk dodajesz przyciskiem **+ Dodaj dysk**, a usuwasz ikoną kosza. Przycisk **Aktualizuj ścieżki** przeszukuje dysk i uzupełnia ścieżki folderów pasujących do kategorii (np. `Movies`/`Filmy`, `Kids`/`Dla dzieci`). Znalezione ścieżki są oznaczone na zielono, nieznalezione na czerwono, a każdą możesz poprawić ręcznie. Na koniec kliknij **Zapisz**.
+4. Własne kategorie dodasz w zakładce **Kategorie**: nazwa przycisku, typ (film, serial albo inne), domyślna nazwa folderu i przełącznik TMDB. W Plexie dodaj dla nich osobne biblioteki.
 
 Usunięcie dysku z listy nie kasuje żadnych plików, tylko chowa przycisk.
 
@@ -109,6 +133,8 @@ Jeśli biblioteka leży na karcie SD (bez osobnego dysku), odznacz **„Pobieraj
 journalctl -u plex-downloader -f               # logi na żywo
 sudo systemctl restart plex-downloader         # restart
 ./venv/bin/python app.py --set-password        # reset loginu / hasła (potem restart)
+./venv/bin/python app.py --set-language pl     # język interfejsu (en, pl)
+./fix.sh                                       # menu naprawy
 ```
 
 ## Pliki
@@ -121,11 +147,13 @@ sudo systemctl restart plex-downloader         # restart
 | `plexservers.py` | wykrywanie i status serwerów Plex w sieci |
 | `movieinfo.py` | podgląd filmu lub serialu z TMDB (tylko do wyświetlenia) |
 | `naming.py` | rozpoznawanie tytułu, roku i odcinka; nazewnictwo Plexa |
+| `i18n.py`, `locales/` | tłumaczenia (en, pl) |
+| `actlog.py` | dziennik aktywności (`logs/`) |
 | `config.py` | odczyt i zapis `config.json`, migracja, punkty przywracania (`backups/`) |
 | `templates/`, `static/` | interfejs |
-| `setup.sh`, `update.sh` | instalacja i aktualizacja |
+| `setup.sh`, `update.sh`, `fix.sh` | instalacja, aktualizacja, menu naprawy |
 
-`config.json` (hasło, klucze), `backups/` i `plexdl.db` (lista pobrań) nie trafiają do repozytorium (`.gitignore`).
+`config.json` (hasło, klucze), `backups/`, `logs/` i `plexdl.db` (lista pobrań) nie trafiają do repozytorium (`.gitignore`).
 
 ## Bezpieczeństwo
 

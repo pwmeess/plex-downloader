@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Instalator Plex Downloader dla Raspberry Pi OS.
-# Uruchom jako zwykły użytkownik (np. pi):  ./setup.sh
+# Plex Downloader installer for Raspberry Pi OS.
+# Run as a regular user (e.g. pi):  ./setup.sh
+# Optional: PLEXDL_LANG=en|pl skips the language question (used by fix.sh).
 set -euo pipefail
 
 SERVICE="plex-downloader"
@@ -12,41 +13,52 @@ c_ok()   { printf '\033[32m✔ %s\033[0m\n' "$*"; }
 c_info() { printf '\033[36m→ %s\033[0m\n' "$*"; }
 c_warn() { printf '\033[33m! %s\033[0m\n' "$*"; }
 
+# ---------------------------------------------------------------- language
+UI_LANG="${PLEXDL_LANG:-}"
+if [ -z "$UI_LANG" ]; then
+  echo
+  echo "  Choose language:"
+  echo "    1) English (default)"
+  echo "    2) Polski (Polish)"
+  read -r -p "  [1/2]: " ans || ans=""
+  case "$ans" in 2) UI_LANG="pl" ;; *) UI_LANG="en" ;; esac
+fi
+# L "english text" "polski tekst"
+L() { if [ "$UI_LANG" = "pl" ]; then printf '%s' "$2"; else printf '%s' "$1"; fi; }
+
 if [ "$(id -u)" -eq 0 ]; then
-  echo "Uruchom bez sudo, jako zwykły użytkownik:  ./setup.sh"
-  echo "(skrypt sam poprosi o sudo tam, gdzie jest potrzebne)"
+  L "Run without sudo, as a regular user:  ./setup.sh" "Uruchom bez sudo, jako zwykły użytkownik:  ./setup.sh"; echo
+  L "(the script asks for sudo itself where needed)" "(skrypt sam poprosi o sudo tam, gdzie jest potrzebne)"; echo
   exit 1
 fi
 
 echo
-echo "  Plex Downloader – instalacja"
-echo "  Katalog:     $APP_DIR"
-echo "  Użytkownik:  $RUN_USER"
+echo "  Plex Downloader – $(L "installation" "instalacja")"
+echo "  $(L "Folder:" "Katalog:")     $APP_DIR"
+echo "  $(L "User:" "Użytkownik:")       $RUN_USER"
 echo
 
-c_info "Instaluję pakiety systemowe (aria2, python3-venv, git)…"
+c_info "$(L "Installing system packages (aria2, python3-venv, git)…" "Instaluję pakiety systemowe (aria2, python3-venv, git)…")"
 sudo apt-get update -qq
 sudo apt-get install -y -qq aria2 python3 python3-venv python3-pip git >/dev/null
 c_ok "aria2c $(aria2c --version | head -1 | awk '{print $3}')"
 
-c_info "Tworzę środowisko Pythona (venv)…"
+c_info "$(L "Creating the Python environment (venv)…" "Tworzę środowisko Pythona (venv)…")"
 if [ ! -x "$APP_DIR/venv/bin/python" ]; then
   python3 -m venv "$APP_DIR/venv"
 fi
 "$APP_DIR/venv/bin/pip" install -q --upgrade pip
 "$APP_DIR/venv/bin/pip" install -q -r "$APP_DIR/requirements.txt"
-c_ok "Zależności Pythona zainstalowane"
-if "$APP_DIR/venv/bin/pip" install -q -r "$APP_DIR/requirements-optional.txt" 2>/dev/null; then
-  c_ok "Pillow zainstalowany (okładki .thumb.png)"
-else
-  c_warn "Nie udało się zainstalować Pillow – okładki będą zapisywane jako .thumb.jpg"
-fi
+c_ok "$(L "Python dependencies installed" "Zależności Pythona zainstalowane")"
 
 if [ ! -f "$APP_DIR/config.json" ]; then
   cp "$APP_DIR/config.example.json" "$APP_DIR/config.json"
   chmod 600 "$APP_DIR/config.json"
-  c_ok "Utworzono config.json z ustawieniami domyślnymi"
+  c_ok "$(L "Created config.json with default settings" "Utworzono config.json z ustawieniami domyślnymi")"
 fi
+
+"$APP_DIR/venv/bin/python" "$APP_DIR/app.py" --set-language "$UI_LANG"
+c_ok "$(L "Interface language: English (change it in Settings → Account)" "Język interfejsu: polski (zmienisz go w Ustawienia → Konto)")"
 
 if ! grep -q '"password_hash": "[^"]' "$APP_DIR/config.json"; then
   echo
@@ -54,13 +66,13 @@ if ! grep -q '"password_hash": "[^"]' "$APP_DIR/config.json"; then
   echo
 fi
 
-c_info "Sprawdzam foldery bibliotek z config.json…"
+c_info "$(L "Checking library folders from config.json…" "Sprawdzam foldery bibliotek z config.json…")"
 "$APP_DIR/venv/bin/python" "$APP_DIR/app.py" --check-folders
 
-c_info "Rejestruję usługę systemd ($SERVICE)…"
+c_info "$(L "Registering the systemd service" "Rejestruję usługę systemd") ($SERVICE)…"
 sudo tee "/etc/systemd/system/$SERVICE.service" >/dev/null <<EOF
 [Unit]
-Description=Plex Downloader (menedżer pobierania do biblioteki Plex)
+Description=Plex Downloader (download manager for the Plex library)
 After=network-online.target local-fs.target
 Wants=network-online.target
 
@@ -88,13 +100,14 @@ sleep 2
 PORT="$("$APP_DIR/venv/bin/python" -c "import json;print(json.load(open('$APP_DIR/config.json')).get('port',8800))")"
 IP="$(hostname -I | awk '{print $1}')"
 if systemctl is-active --quiet "$SERVICE"; then
-  c_ok "Usługa działa i uruchomi się automatycznie po restarcie Pi"
+  c_ok "$(L "The service is running and starts automatically after a reboot" "Usługa działa i uruchomi się automatycznie po restarcie Pi")"
   echo
-  echo "  Otwórz w przeglądarce:  http://$IP:$PORT"
+  echo "  $(L "Open in the browser:" "Otwórz w przeglądarce:")  http://$IP:$PORT"
   echo
-  echo "  Logi:        journalctl -u $SERVICE -f"
-  echo "  Aktualizacja: ./update.sh"
+  echo "  $(L "Logs:" "Logi:")          journalctl -u $SERVICE -f"
+  echo "  $(L "Update:" "Aktualizacja:")  ./update.sh"
+  echo "  $(L "Repair menu:" "Menu naprawy:")  ./fix.sh"
 else
-  c_warn "Usługa nie wystartowała. Sprawdź:  journalctl -u $SERVICE -n 50"
+  c_warn "$(L "The service did not start. Check:" "Usługa nie wystartowała. Sprawdź:")  journalctl -u $SERVICE -n 50"
   exit 1
 fi

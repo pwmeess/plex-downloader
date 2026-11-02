@@ -8,9 +8,9 @@
   "max_speed_mbps": 0,
   "require_mount": true,
   "categories": [
-    {"id": "movies", "label": "Filmy", "kind": "movie", "folder": "Movies"},
-    {"id": "tv", "label": "Seriale", "kind": "tv", "folder": "TV Shows"},
-    {"id": "kids", "label": "Dla dzieci", "kind": "movie", "folder": "Kids"}
+    {"id": "movies", "label": "Movies", "kind": "movie", "folder": "Movies", "tmdb": true},
+    {"id": "tv", "label": "TV Shows", "kind": "tv", "folder": "TV Shows", "tmdb": true},
+    {"id": "kids", "label": "Kids", "kind": "movie", "folder": "Kids", "tmdb": true}
   ],
   "disks": [
     {
@@ -26,7 +26,7 @@
     },
     {
       "id": "ssd512",
-      "label": "Dysk SSD 512GB",
+      "label": "SSD 512GB",
       "subtitle": "Plex Media Share 512",
       "mount": "/plex_media_512",
       "paths": {
@@ -37,7 +37,7 @@
     },
     {
       "id": "ssd1024",
-      "label": "Dysk SSD 1024GB",
+      "label": "SSD 1024GB",
       "subtitle": "Plex Media Share 1024",
       "mount": "/plex_media_1024",
       "paths": {
@@ -49,5 +49,7 @@
   ],
   "plex_servers": [],
   "plex_autodiscover": true,
-  "thumbs_mode": "online"
+  "thumbs_mode": "online",
+  "language": "",
+  "theme": "dark"
 }

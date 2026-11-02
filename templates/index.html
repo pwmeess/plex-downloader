@@ -1,13 +1,8 @@
 <!doctype html>
-<html lang="pl">
+<html lang="{{ lang }}" data-theme="{{ theme }}">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1a1f28">
-  <meta name="apple-mobile-web-app-capable" content="yes">
+{% include "_head.html" %}
   <title>Plex Downloader</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%232a2214'/%3E%3Cpath d='M9 5h4l5 7-5 7H9l5-7z' fill='%23e5a00d'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v={{ version }}">
 </head>
 <body>
 {% include "_icons.html" %}
@@ -16,11 +11,11 @@
 <main class="layout">
   <!-- formularz -->
   <section class="card">
-    <h2>Dodaj nowe pobieranie</h2>
+    <h2>{{ _("Add a new download") }}</h2>
     <form id="addForm" autocomplete="off">
       <div class="field">
-        <div class="field-label"><label for="url">Link do pliku wideo</label>
-          <button class="btn-soft small" type="button" id="clearBtn">Wyczyść</button></div>
+        <div class="field-label"><label for="url">{{ _("Video file link") }}</label>
+          <button class="btn-soft small" type="button" id="clearBtn">{{ _("Clear") }}</button></div>
         <input class="input url-input" id="url" type="url" inputmode="url" placeholder="https://…/Film.2024.1080p.mkv" required>
         <div class="hint" id="probeInfo"></div>
       </div>
@@ -30,59 +25,59 @@
       </div>
 
       <div class="field" id="movieFields">
-        <label class="field-label" for="name">Nazwa folderu i pliku</label>
+        <label class="field-label" for="name">{{ _("Folder and file name") }}</label>
         <div class="input-group">
-          <input class="input" id="name" placeholder="Tytuł Filmu (YYYY)">
-          <input class="suffix ext" id="extMovie" placeholder=".mkv" maxlength="6" aria-label="Rozszerzenie">
+          <input class="input" id="name" placeholder="{{ _('Movie Title (YYYY)') }}">
+          <input class="suffix ext" id="extMovie" placeholder=".mkv" maxlength="6" aria-label="{{ _('Extension') }}">
         </div>
         <div class="hint" id="nameHint"></div>
       </div>
 
       <div class="field" id="tvFields" hidden>
         <div class="tv-grid">
-          <div><label class="small-label" for="show">Nazwa serialu</label><input class="input" id="show" placeholder="Nazwa Serialu (YYYY)"></div>
-          <div><label class="small-label" for="season">Sezon</label><input class="input num" id="season" type="number" min="0" max="99" inputmode="numeric" value="1"></div>
-          <div><label class="small-label" for="episode">Odcinek</label><input class="input num" id="episode" type="number" min="0" max="999" inputmode="numeric" value="1"></div>
+          <div><label class="small-label" for="show">{{ _("TV show name") }}</label><input class="input" id="show" placeholder="{{ _('Show Name (YYYY)') }}"></div>
+          <div><label class="small-label" for="season">{{ _("Season") }}</label><input class="input num" id="season" type="number" min="0" max="99" inputmode="numeric" value="1"></div>
+          <div><label class="small-label" for="episode">{{ _("Episode") }}</label><input class="input num" id="episode" type="number" min="0" max="999" inputmode="numeric" value="1"></div>
         </div>
         <div style="margin-top:12px">
-          <label class="small-label" for="epTitle">Tytuł odcinka (opcjonalnie)</label>
+          <label class="small-label" for="epTitle">{{ _("Episode title (optional)") }}</label>
           <div class="input-group">
-            <input class="input" id="epTitle" placeholder="np. Pilot">
-            <input class="suffix ext" id="extTv" placeholder=".mkv" maxlength="6" aria-label="Rozszerzenie">
+            <input class="input" id="epTitle" placeholder="{{ _('e.g. Pilot') }}">
+            <input class="suffix ext" id="extTv" placeholder=".mkv" maxlength="6" aria-label="{{ _('Extension') }}">
           </div>
         </div>
       </div>
 
       <!-- opcje zaawansowane (nazewnictwo Plex) -->
       <div class="adv">
-        <label class="check adv-toggle"><input type="checkbox" id="advOn"> Opcje zaawansowane – oznaczenia Plex
-          <button type="button" class="info-i" data-tip="Dodatkowe znaczniki w nazwie zgodne z zasadami Plex: edycja filmu (np. wersja reżyserska, remaster), wersja pliku (np. 1080p, 4K – kilka wersji w jednym folderze) oraz ID TMDB, które gwarantuje trafne dopasowanie." data-href="https://support.plex.tv/articles/multiple-editions/">i</button></label>
+        <label class="check adv-toggle"><input type="checkbox" id="advOn"> {{ _("Advanced options – Plex tags") }}
+          <button type="button" class="info-i" data-tip="{{ _("Extra tags in the name following the Plex rules: movie edition (e.g. director's cut, remaster), file version (e.g. 1080p, 4K – several versions in one folder) and the TMDB ID, which guarantees an exact match.") }}" data-href="https://support.plex.tv/articles/multiple-editions/">i</button></label>
         <div class="adv-body" id="advBody" hidden>
           <div class="adv-grid">
             <div id="advEditionBox">
-              <label class="small-label" for="advEdition">Edycja <span class="muted">{edition-…}</span>
-                <button type="button" class="info-i" data-tip="Edycja filmu, np. Director's Cut, Extended Edition, Remastered 1997, VHS. Plex pokaże ją jako osobną edycję tego samego filmu. Trafia do nazwy folderu i pliku (zalecenie Plex), maks. 32 znaki. Wymaga Plex Pass na koncie administratora serwera." data-href="https://support.plex.tv/articles/multiple-editions/">i</button></label>
-              <input class="input" id="advEdition" list="editionList" maxlength="32" placeholder="np. Director's Cut">
+              <label class="small-label" for="advEdition">{{ _("Edition") }} <span class="muted">{edition-…}</span>
+                <button type="button" class="info-i" data-tip="{{ _("Movie edition, e.g. Director's Cut, Extended Edition, Remastered 1997, VHS. Plex shows it as a separate edition of the same movie. Added to the folder and file name (Plex recommendation), max. 32 characters. Requires Plex Pass on the server admin account.") }}" data-href="https://support.plex.tv/articles/multiple-editions/">i</button></label>
+              <input class="input" id="advEdition" list="editionList" maxlength="32" placeholder="{{ _("e.g. Director's Cut") }}">
               <datalist id="editionList"></datalist>
             </div>
             <div id="advVersionBox">
-              <label class="small-label" for="advVersion">Wersja pliku <span class="muted">„ - 1080p”</span>
-                <button type="button" class="info-i" data-tip="Oznaczenie wersji tego samego filmu, np. 4K, 1080p, Lektor PL. Dodawane tylko do nazwy pliku – kilka wersji w jednym folderze Plex połączy w jedną pozycję z wyborem wersji." data-href="https://support.plex.tv/articles/200381043-multi-version-movies/">i</button></label>
-              <input class="input" id="advVersion" list="versionList" maxlength="40" placeholder="np. 1080p">
+              <label class="small-label" for="advVersion">{{ _("File version") }} <span class="muted">“ - 1080p”</span>
+                <button type="button" class="info-i" data-tip="{{ _('Version label of the same movie, e.g. 4K, 1080p, Polish voice-over. Added to the file name only – Plex merges several versions in one folder into a single item with a version choice.') }}" data-href="https://support.plex.tv/articles/200381043-multi-version-movies/">i</button></label>
+              <input class="input" id="advVersion" list="versionList" maxlength="40" placeholder="{{ _('e.g. 1080p') }}">
               <datalist id="versionList"></datalist>
             </div>
           </div>
-          <label class="check"><input type="checkbox" id="advId"> Dodaj ID TMDB do nazwy folderu <span class="mono muted" id="advIdVal"></span>
-            <button type="button" class="info-i" data-tip="Znacznik {tmdb-12345} w nazwie folderu wskazuje Plexowi dokładnie ten film lub serial – przydatne przy remake'ach i tytułach o tej samej nazwie. ID pochodzi z karty podglądu (TMDB)." data-href="https://support.plex.tv/articles/naming-and-organizing-your-movie-media-files/">i</button></label>
+          <label class="check"><input type="checkbox" id="advId"> {{ _("Add the TMDB ID to the folder name") }} <span class="mono muted" id="advIdVal"></span>
+            <button type="button" class="info-i" data-tip="{{ _('The {tmdb-12345} tag in the folder name points Plex to exactly this movie or show – useful for remakes and identical titles. The ID comes from the preview card (TMDB).') }}" data-href="https://support.plex.tv/articles/naming-and-organizing-your-movie-media-files/">i</button></label>
         </div>
       </div>
 
       <div class="preview" id="preview" hidden></div>
 
-      <div class="field-label" style="margin-bottom:10px">Lokalizacja zapisu</div>
+      <div class="field-label" style="margin-bottom:10px">{{ _("Save location") }}</div>
       <div class="disks" id="disks"></div>
 
-      <button class="btn-primary" id="submitBtn" type="submit">POBIERZ PLIK</button>
+      <button class="btn-primary" id="submitBtn" type="submit">{{ _("DOWNLOAD FILE") }}</button>
       <div class="form-msg" id="formMsg"></div>
     </form>
   </section>
@@ -91,8 +86,8 @@
     <!-- kolejka -->
     <section class="card jobs-card">
       <div class="card-head">
-        <h2>Menedżer pobierania</h2>
-        <button class="btn-soft small" id="clearDone" type="button" hidden>Wyczyść zakończone</button>
+        <h2>{{ _("Download manager") }}</h2>
+        <button class="btn-soft small" id="clearDone" type="button" hidden>{{ _("Clear finished") }}</button>
       </div>
       <div class="engine-warn" id="engineWarn" hidden></div>
       <div class="jobs" id="jobs"></div>
@@ -101,8 +96,8 @@
     <!-- podgląd filmu (TMDB) -->
     <section class="card info-card" id="infoCard" hidden>
       <div class="info-head">
-        <h2 id="infoHeading">Podgląd filmu</h2>
-        <span class="info-src" title="Dane poglądowe z The Movie Database – nie są zapisywane">TMDB</span>
+        <h2 id="infoHeading">{{ _("Movie preview") }}</h2>
+        <span class="info-src" title="{{ _('Preview data from The Movie Database – not saved') }}">TMDB</span>
       </div>
       <div class="info-state" id="infoState"></div>
       <div class="info-body" id="infoBody" hidden>
@@ -121,7 +116,7 @@
     </section>
   </div>
 </main>
-<div class="foot-ver">Plex Downloader · wersja {{ version }}</div>
+<div class="foot-ver">Plex Downloader · {{ _("version") }} {{ version }}</div>
 
 {% include "_settings.html" %}
 

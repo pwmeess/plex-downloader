@@ -18,11 +18,14 @@ class FMTests(unittest.TestCase):
         os.environ["PLEXDL_FORCE_COPY"] = "1"
         cls.a = os.path.join(cls.tmp, "a", "Plex", "Movies")
         cls.b = os.path.join(cls.tmp, "b", "Plex", "Movies")
-        os.makedirs(cls.a); os.makedirs(cls.b)
+        cls.ta = os.path.join(cls.tmp, "a", "Plex", "TV Shows")
+        cls.tb = os.path.join(cls.tmp, "b", "Plex", "TV Shows")
+        for d in (cls.a, cls.b, cls.ta, cls.tb):
+            os.makedirs(d)
         with open(os.environ["PLEXDL_CONFIG"], "w") as f:
             json.dump({"require_mount": False, "disks": [
-                {"id": "a", "label": "A", "mount": os.path.join(cls.tmp, "a"), "paths": {"movies": cls.a}},
-                {"id": "b", "label": "B", "mount": os.path.join(cls.tmp, "b"), "paths": {"movies": cls.b}}]}, f)
+                {"id": "a", "label": "A", "mount": os.path.join(cls.tmp, "a"), "paths": {"movies": cls.a, "tv": cls.ta}},
+                {"id": "b", "label": "B", "mount": os.path.join(cls.tmp, "b"), "paths": {"movies": cls.b, "tv": cls.tb}}]}, f)
         import config
         config.CONFIG_PATH = os.environ["PLEXDL_CONFIG"]
         config.BACKUP_DIR = os.path.join(cls.tmp, "backups")
@@ -48,6 +51,76 @@ class FMTests(unittest.TestCase):
                 return op
             time.sleep(0.05)
         self.fail("operacja nie zakończyła się")
+
+    def test_extras_not_counted(self):
+        d = self.make(self.a, "Extras (2010)")
+        os.makedirs(os.path.join(d, "Trailers"))
+        with open(os.path.join(d, "Trailers", "trailer.mp4"), "wb") as f:
+            f.write(b"x" * 100)
+        info = self.fm.scan_item(d, "movie")
+        self.assertEqual(info["videos"], 1)
+        self.assertTrue(info["extras"])
+        plain = self.make(self.a, "Plain (2011)")
+        self.assertFalse(self.fm.scan_item(plain, "movie")["extras"])
+
+    def test_folder_dates_preserved(self):
+        src = self.make(self.a, "Old (1999)")
+        old = time.time() - 86400 * 400
+        os.utime(src, (old, old))
+        plan = self.fm.plan_move("a", "movies", ["Old (1999)"], "b", "movies")
+        self.assertEqual(self.wait(self.fm.ops.move(plan))["status"], "done")
+        self.assertAlmostEqual(os.stat(os.path.join(self.b, "Old (1999)")).st_mtime, old, delta=2)
+
+    def test_move_selected_episodes(self):
+        show = os.path.join(self.ta, "Show")
+        for se, ep in ((1, 1), (1, 2), (2, 1)):
+            d = os.path.join(show, "Season %02d" % se)
+            os.makedirs(d, exist_ok=True)
+            with open(os.path.join(d, "Show - S%02dE%02d.mkv" % (se, ep)), "wb") as f:
+                f.write(os.urandom(5000))
+        with open(os.path.join(show, "Season 01", "Show - S01E02.pl.srt"), "w") as f:
+            f.write("1\n")
+        eps = self.fm.list_episodes("a", "tv", "Show")
+        codes = [e["code"] for s in eps["seasons"] for e in s["episodes"]]
+        self.assertEqual(codes, ["S01E01", "S01E02", "S02E01"])
+        plan = self.fm.plan_episodes("a", "tv", "Show", ["Season 01/Show - S01E02.mkv"], "b", "tv")
+        self.assertTrue(plan["ok"], plan["problems"])
+        self.assertEqual(self.wait(self.fm.ops.move(plan))["status"], "done")
+        dst = os.path.join(self.tb, "Show", "Season 01")
+        self.assertTrue(os.path.isfile(os.path.join(dst, "Show - S01E02.mkv")))
+        self.assertTrue(os.path.isfile(os.path.join(dst, "Show - S01E02.pl.srt")))
+        self.assertFalse(os.path.exists(os.path.join(show, "Season 01", "Show - S01E02.mkv")))
+        self.assertTrue(os.path.isfile(os.path.join(show, "Season 01", "Show - S01E01.mkv")))
+        self.assertTrue(os.path.isfile(os.path.join(show, "Season 02", "Show - S02E01.mkv")))
+
+    def test_scan_paths(self):
+        m = os.path.join(self.tmp, "scan")
+        os.makedirs(os.path.join(m, "Plex", "Filmy")); os.makedirs(os.path.join(m, "Plex", "Seriale"))
+        r = self.fm.scan_paths(m, [{"id": "movies", "label": "Movies", "folder": "Movies"},
+                                   {"id": "tv", "label": "TV Shows", "folder": "TV Shows"},
+                                   {"id": "kids", "label": "Kids", "folder": "Kids"}])
+        self.assertEqual(r["movies"]["status"], "found")
+        self.assertTrue(r["movies"]["path"].endswith("Filmy"))
+        self.assertEqual(r["tv"]["status"], "found")
+        self.assertEqual(r["kids"]["status"], "missing")
+
+    def test_actlog_rotation(self):
+        import actlog
+        os.environ["PLEXDL_LOGS"] = os.path.join(self.tmp, "logs")
+        old = actlog.LIMIT
+        actlog.LIMIT = 400
+        try:
+            for i in range(40):
+                actlog.write("MOVE", "item %d: A → B" % i)
+            info = actlog.info()
+            self.assertGreaterEqual(len(info["backups"]), 2)
+            self.assertLessEqual(os.path.getsize(actlog.log_path()), 400)
+            self.assertIn("MOVE", actlog.read())
+            actlog.delete_backups()
+            self.assertEqual(actlog.info()["backups"], [])
+        finally:
+            actlog.LIMIT = old
+            del os.environ["PLEXDL_LOGS"]
 
     def test_traversal_rejected(self):
         for bad in ("..", "../x", "a/b", ".hidden", ""):

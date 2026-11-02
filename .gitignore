@@ -2,6 +2,7 @@
 config.json
 config.json.tmp
 backups/
+logs/
 
 # baza zadań
 *.db

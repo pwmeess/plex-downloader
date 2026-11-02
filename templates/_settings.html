@@ -1,134 +1,172 @@
 <dialog id="settings" class="window" aria-labelledby="setTitle">
   <div class="win-head" data-drag>
-    <h2 id="setTitle">Ustawienia</h2>
+    <h2 id="setTitle">{{ _("Settings") }}</h2>
     <span class="upd-status" id="updStatus"></span>
-    <button class="icon-btn win-close" type="button" data-close aria-label="Zamknij"><svg class="i"><use href="#i-x"/></svg></button>
+    <button class="icon-btn win-close" type="button" data-close aria-label="{{ _('Close') }}"><svg class="i"><use href="#i-x"/></svg></button>
   </div>
 
   <nav class="tabs" role="tablist">
-    <button type="button" role="tab" data-tab="disks" class="on"><svg class="i"><use href="#i-drive"/></svg>Dyski</button>
-    <button type="button" role="tab" data-tab="cats"><svg class="i"><use href="#i-cat"/></svg>Kategorie</button>
-    <button type="button" role="tab" data-tab="dl"><svg class="i"><use href="#i-down"/></svg>Pobieranie</button>
-    <button type="button" role="tab" data-tab="plex"><svg class="i"><use href="#i-server"/></svg>Serwery Plex</button>
-    <button type="button" role="tab" data-tab="preview"><svg class="i"><use href="#i-image"/></svg>Podgląd i okładki</button>
-    <button type="button" role="tab" data-tab="backups"><svg class="i"><use href="#i-history"/></svg>Kopie zapasowe</button>
-    <button type="button" role="tab" data-tab="account"><svg class="i"><use href="#i-user"/></svg>Konto</button>
-    <button type="button" role="tab" data-tab="vpn" class="tab-soon"><svg class="i"><use href="#i-shield"/></svg>VPN<span class="soon">wkrótce</span></button>
+    <button type="button" role="tab" data-tab="disks" class="on"><svg class="i"><use href="#i-drive"/></svg>{{ _("Disks") }}</button>
+    <button type="button" role="tab" data-tab="cats"><svg class="i"><use href="#i-cat"/></svg>{{ _("Categories") }}</button>
+    <button type="button" role="tab" data-tab="dl"><svg class="i"><use href="#i-down"/></svg>{{ _("Downloads") }}</button>
+    <button type="button" role="tab" data-tab="plex"><svg class="i"><use href="#i-server"/></svg>{{ _("Plex servers") }}</button>
+    <button type="button" role="tab" data-tab="preview"><svg class="i"><use href="#i-image"/></svg>{{ _("Preview & posters") }}</button>
+    <button type="button" role="tab" data-tab="backups"><svg class="i"><use href="#i-history"/></svg>{{ _("Backups") }}</button>
+    <button type="button" role="tab" data-tab="account"><svg class="i"><use href="#i-user"/></svg>{{ _("Account") }}</button>
+    <button type="button" role="tab" data-tab="vpn" class="tab-soon"><svg class="i"><use href="#i-shield"/></svg>VPN<span class="soon">{{ _("soon") }}</span></button>
   </nav>
 
   <div class="win-body">
     <!-- DYSKI -->
     <section class="tab-panel" data-panel="disks">
-      <p class="panel-intro">Każdy dysk ma folder dla każdej kategorii. Puste pole oznacza, że dana kategoria nie jest dostępna na tym dysku.
-        <button type="button" class="info-i" data-tip="Punkt montowania to katalog, pod którym system widzi dysk (sprawdzisz go poleceniem df -h). Służy do odczytu wolnego miejsca. Foldery kategorii to ścieżki bibliotek Plexa, np. /plex_media/Plex/Movies." data-href="https://support.plex.tv/articles/naming-and-organizing-your-movie-media-files/">i</button></p>
+      <p class="panel-intro">{{ _("Each disk has a folder for each category. An empty field means the category is not available on that disk.") }}
+        <button type="button" class="info-i" data-tip="{{ _('The mount point is the directory where the system sees the disk (check it with df -h). It is used to read free space. Category folders are the Plex library paths, e.g. /plex_media/Plex/Movies.') }}" data-href="https://support.plex.tv/articles/naming-and-organizing-your-movie-media-files/">i</button></p>
       <div id="diskRows"></div>
-      <button class="btn-soft small" type="button" id="addDisk">+ Dodaj dysk</button>
+      <button class="btn-soft small" type="button" id="addDisk">+ {{ _("Add disk") }}</button>
     </section>
 
     <!-- KATEGORIE -->
     <section class="tab-panel" data-panel="cats" hidden>
-      <p class="panel-intro">Kategorie to przyciski nad formularzem pobierania i w Menedżerze plików, np. Filmy, Seriale, Dla dzieci, Koncerty.
-        <button type="button" class="info-i" data-tip="Typ decyduje o nazewnictwie: „Film” zapisuje pliki jako Tytuł (Rok)/Tytuł (Rok).mkv, „Serial” jako Serial/Season 01/Serial - S01E01.mkv. W Plexie dodaj dla każdej kategorii osobną bibliotekę odpowiedniego typu." data-href="https://support.plex.tv/articles/naming-and-organizing-your-tv-show-files/">i</button></p>
-      <div class="cat-head"><span>Nazwa przycisku</span><span>Typ</span><span>Domyślny folder <button type="button" class="info-i" data-tip="Nazwa folderu używana przez przycisk „Uzupełnij foldery” w zakładce Dyski – dopisuje ją obok istniejących folderów kategorii, np. …/Plex 1T/Kids.">i</button></span><span></span></div>
+      <p class="panel-intro">{{ _("Categories are the buttons above the download form and in the File manager, e.g. Movies, TV Shows, Kids, Concerts.") }}
+        <button type="button" class="info-i" data-tip="{{ _('The type sets the naming: Movie saves files as Title (Year)/Title (Year).mkv, TV show as Show/Season 01/Show - S01E01.mkv, Other keeps the name you enter (e.g. home videos). In Plex add a separate library for each category.') }}" data-href="https://support.plex.tv/articles/naming-and-organizing-your-tv-show-files/">i</button></p>
+      <p class="panel-note"><svg class="i"><use href="#i-drive"/></svg>{{ _("Folder paths for each disk are set in the Disks tab.") }} <button type="button" class="linklike" data-goto="disks">{{ _("Go to Disks") }} →</button></p>
+      <div class="cat-head"><span>{{ _("Button name") }}</span><span>{{ _("Type") }}</span><span>{{ _("Default folder") }} <button type="button" class="info-i" data-tip="{{ _('Folder name used by the Update paths button in the Disks tab, e.g. Kids.') }}">i</button></span><span title="{{ _('Search TMDB for posters') }}">TMDB <button type="button" class="info-i" data-tip="{{ _('Search TMDB for posters for this category. Turn it off for private recordings (e.g. home videos) – their names are then never sent to TMDB.') }}">i</button></span><span></span></div>
       <div id="catRows"></div>
-      <button class="btn-soft small" type="button" id="addCat">+ Dodaj kategorię</button>
+      <button class="btn-soft small" type="button" id="addCat">+ {{ _("Add category") }}</button>
     </section>
 
     <!-- POBIERANIE -->
     <section class="tab-panel" data-panel="dl" hidden>
       <div class="grid-3">
-        <div><label for="sConn">Połączeń na plik (1–16) <button type="button" class="info-i" data-tip="Ile równoległych połączeń aria2 otwiera dla jednego pliku. Więcej połączeń zwykle przyspiesza pobieranie z serwerów premium; 6 to bezpieczna wartość.">i</button></label><input class="input" id="sConn" type="number" min="1" max="16"></div>
-        <div><label for="sConc">Równoległych pobrań</label><input class="input" id="sConc" type="number" min="1" max="10"></div>
-        <div><label for="sSpeed">Limit prędkości MB/s (0 = brak)</label><input class="input" id="sSpeed" type="number" min="0" step="0.5"></div>
+        <div><label for="sConn">{{ _("Connections per file (1–16)") }} <button type="button" class="info-i" data-tip="{{ _('How many parallel connections aria2 opens for one file. More connections usually speed up premium servers; 6 is a safe value.') }}">i</button></label><input class="input" id="sConn" type="number" min="1" max="16"></div>
+        <div><label for="sConc">{{ _("Parallel downloads") }}</label><input class="input" id="sConc" type="number" min="1" max="10"></div>
+        <div><label for="sSpeed">{{ _("Speed limit MB/s (0 = none)") }}</label><input class="input" id="sSpeed" type="number" min="0" step="0.5"></div>
       </div>
-      <label class="check"><input type="checkbox" id="sMount"> Pobieraj tylko na zamontowany dysk
-        <button type="button" class="info-i" data-tip="Chroni kartę SD: gdy dysk się odłączy, jego folder staje się zwykłym katalogiem na karcie i pobieranie mogłoby ją zapełnić. Wyłącz tylko, jeśli biblioteka leży na samej karcie SD.">i</button></label>
+      <label class="check"><input type="checkbox" id="sMount"> {{ _("Download only to a mounted disk") }}
+        <button type="button" class="info-i" data-tip="{{ _('Protects the SD card: when a disk disconnects, its folder becomes an ordinary directory on the card and a download could fill it up. Turn it off only if your library is on the SD card itself.') }}">i</button></label>
     </section>
 
     <!-- SERWERY PLEX -->
     <section class="tab-panel" data-panel="plex" hidden>
-      <label class="check"><input type="checkbox" id="sAutodisc"> Wykrywaj serwery Plex w sieci automatycznie
-        <button type="button" class="info-i" data-tip="Downloader co kilka minut wysyła zapytanie GDM (tak jak aplikacje Plex) i sprawdza adres /identity serwera. Nie wymaga logowania do Plexa i nic nie zmienia na serwerze.">i</button></label>
-      <h3>Stan serwerów</h3>
+      <label class="check"><input type="checkbox" id="sAutodisc"> {{ _("Discover Plex servers on the network automatically") }}
+        <button type="button" class="info-i" data-tip="{{ _('Every few minutes the Downloader sends a GDM query (like the Plex apps do) and checks the server /identity address. No Plex login is needed and nothing is changed on the server.') }}">i</button></label>
+      <h3>{{ _("Server status") }}</h3>
       <div id="plexList" class="plex-list"></div>
-      <button class="btn-soft small" type="button" id="plexDiscover"><svg class="i"><use href="#i-search"/></svg>Wyszukaj teraz</button>
-      <h3>Dodane ręcznie</h3>
+      <button class="btn-soft small" type="button" id="plexDiscover"><svg class="i"><use href="#i-search"/></svg>{{ _("Search now") }}</button>
+      <h3>{{ _("Added manually") }}</h3>
       <div id="plexRows"></div>
-      <button class="btn-soft small" type="button" id="addPlex">+ Dodaj serwer</button>
+      <button class="btn-soft small" type="button" id="addPlex">+ {{ _("Add server") }}</button>
     </section>
 
     <!-- PODGLĄD I OKŁADKI -->
     <section class="tab-panel" data-panel="preview" hidden>
-      <div><label class="small-label" for="sTmdb">Klucz API TMDB (API Key albo API Read Access Token)
-        <button type="button" class="info-i" data-tip="Darmowy klucz z themoviedb.org → Ustawienia → API. Służy do karty podglądu filmu i okładek w Menedżerze plików. Zapisywany tylko lokalnie." data-href="https://www.themoviedb.org/settings/api">i</button></label>
-        <input class="input mono" id="sTmdb" autocomplete="off" spellcheck="false" placeholder="wklej klucz z themoviedb.org"></div>
-      <h3>Okładki w Menedżerze plików</h3>
+      <div><label class="small-label" for="sTmdb">{{ _("TMDB API key (API Key or API Read Access Token)") }}
+        <button type="button" class="info-i" data-tip="{{ _('Free key from themoviedb.org → Settings → API. Used for the movie preview card and the posters in the File manager. Stored locally only.') }}" data-href="https://www.themoviedb.org/settings/api">i</button></label>
+        <input class="input mono" id="sTmdb" autocomplete="off" spellcheck="false" placeholder="{{ _('paste the key from themoviedb.org') }}"></div>
+      <h3>{{ _("Posters in the File manager") }}</h3>
       <div class="radios">
-        <label class="check"><input type="radio" name="thumbs" value="online"> Pobieraj brakujące okładki z TMDB i zapisuj na dysku</label>
-        <label class="check"><input type="radio" name="thumbs" value="local"> Tylko okładki już zapisane na dysku</label>
-        <label class="check"><input type="radio" name="thumbs" value="off"> Bez okładek (szybki widok, zastępczy obrazek)</label>
+        <label class="check"><input type="radio" name="thumbs" value="online"> {{ _("Download missing posters from TMDB and save them on the disk") }}</label>
+        <label class="check"><input type="radio" name="thumbs" value="local"> {{ _("Only posters already saved on the disk") }}</label>
+        <label class="check"><input type="radio" name="thumbs" value="off"> {{ _("No posters (fast view, placeholder image)") }}</label>
       </div>
-      <p class="hint">Okładka zapisuje się w folderze filmu jako <code>Tytuł (Rok).thumb.png</code>. Plex jej nie używa, korzysta z własnych plakatów. <span id="pillowNote"></span></p>
+      <p class="hint">{{ _("The poster is saved in the movie folder as") }} <code>Title (Year).thumb.jpg</code>. {{ _("Plex does not use it – it has its own posters.") }}</p>
       <div class="thumb-actions">
         <select class="input" id="thumbDisk"></select>
-        <button class="btn-soft small" type="button" id="thumbRefresh"><svg class="i"><use href="#i-retry"/></svg>Pobierz ponownie (nadpisz)</button>
-        <button class="btn-soft small btn-danger" type="button" id="thumbDelete"><svg class="i"><use href="#i-trash"/></svg>Usuń okładki z dysku</button>
+        <button class="btn-soft small" type="button" id="thumbRefresh"><svg class="i"><use href="#i-retry"/></svg>{{ _("Download again (overwrite)") }}</button>
+        <button class="btn-soft small btn-danger" type="button" id="thumbDelete"><svg class="i"><use href="#i-trash"/></svg>{{ _("Delete posters from disk") }}</button>
       </div>
       <span class="form-msg" id="thumbMsg"></span>
     </section>
 
     <!-- KOPIE ZAPASOWE -->
     <section class="tab-panel" data-panel="backups" hidden>
-      <p class="panel-intro">Po każdej zmianie ustawień zapisuje się punkt przywracania. Kopie starsze niż 30 dni są usuwane automatycznie, ale ostatnia zostaje zawsze.
-        <button type="button" class="info-i" data-tip="Przywrócenie kopii zmienia dyski, kategorie, serwery Plex i opcje. Login, hasło i klucze sesji zostają bez zmian – z bezpieczeństwa. Kopie są w folderze backups/ na Raspberry Pi (poza GitHubem).">i</button></p>
+      <p class="panel-intro">{{ _("Every settings change creates a restore point. Backups older than 30 days are removed automatically, but the latest one is always kept.") }}
+        <button type="button" class="info-i" data-tip="{{ _('Restoring a backup changes disks, categories, Plex servers and options. Username, password and session keys stay unchanged for security. Backups are in the backups/ folder on the Raspberry Pi (outside GitHub).') }}">i</button></p>
       <div id="backupList" class="backup-list"></div>
     </section>
 
     <!-- KONTO -->
     <section class="tab-panel" data-panel="account" hidden>
-      <div class="grid-acc">
-        <div><label for="aUser">Login</label><input class="input" id="aUser" autocomplete="username"></div>
-        <div><label for="aCur">Obecne hasło</label><input class="input" id="aCur" type="password" autocomplete="current-password"></div>
-        <div><label for="aNew">Nowe hasło</label><input class="input" id="aNew" type="password" autocomplete="new-password"></div>
+      <h3 class="first">{{ _("Interface") }}</h3>
+      <div class="grid-2">
+        <div><label class="small-label" for="uiLang">{{ _("Language") }}</label>
+          <select class="input" id="uiLang">{% for l in languages %}<option value="{{ l.code }}" {% if l.code == lang %}selected{% endif %}>{{ l.name }}</option>{% endfor %}</select></div>
+        <div><label class="small-label">{{ _("Theme") }}</label>
+          <div class="segmented theme-pick">
+            <button type="button" data-theme-set="dark" class="{{ 'on' if theme == 'dark' else '' }}">{{ _("Dark") }}</button>
+            <button type="button" data-theme-set="light" class="{{ 'on' if theme == 'light' else '' }}">{{ _("Light") }}</button>
+          </div></div>
       </div>
-      <div style="margin-top:12px"><button class="btn-soft small" type="button" id="savePwd">Zmień login / hasło</button> <span class="form-msg" id="pwdMsg"></span></div>
+
+      <h3>{{ _("Account") }}</h3>
+      <div class="grid-acc">
+        <div><label for="aUser">{{ _("Username") }}</label><input class="input" id="aUser" autocomplete="username"></div>
+        <div><label for="aCur">{{ _("Current password") }}</label><input class="input" id="aCur" type="password" autocomplete="current-password"></div>
+        <div><label for="aNew">{{ _("New password") }}</label><input class="input" id="aNew" type="password" autocomplete="new-password"></div>
+      </div>
+      <div style="margin-top:12px"><button class="btn-soft small" type="button" id="savePwd">{{ _("Change username / password") }}</button> <span class="form-msg" id="pwdMsg"></span></div>
+
+      <h3>{{ _("Activity log") }}</h3>
+      <div class="log-row"><button class="btn-soft small" type="button" id="openLog"><svg class="i"><use href="#i-history"/></svg>LOG</button>
+        <span class="muted" id="logInfo"></span></div>
+
+      <h3>{{ _("Terminal commands (SSH)") }} <button type="button" class="info-i" data-tip="{{ _('Log in to the Raspberry Pi over SSH (Terminal on Mac, PowerShell on Windows), then copy a command with the button on the right and paste it into the terminal.') }}">i</button></h3>
+      <div id="cmdList" class="cmd-list"></div>
     </section>
 
     <!-- VPN (wkrótce) -->
     <section class="tab-panel vpn-panel" data-panel="vpn" hidden>
       <div class="soon-banner"><svg class="i"><use href="#i-shield"/></svg>
-        <div><b>Dostęp spoza domu przez VPN – w przygotowaniu</b><br>Panel pozostanie niewidoczny w internecie. Zamiast otwierać porty w routerze, połączysz się przez prywatną sieć VPN.</div></div>
+        <div><b>{{ _("Remote access over VPN – in preparation") }}</b><br>{{ _("The panel will stay invisible on the internet. Instead of opening ports on the router, you will connect through a private VPN network.") }}</div></div>
       <div class="ph-grid">
-        <div class="ph"><label>Dostawca</label><select class="input" disabled><option>Tailscale (zalecany, bez otwierania portów)</option><option>WireGuard</option></select></div>
-        <div class="ph"><label>Panel dostępny przez</label><select class="input" disabled><option>Tylko sieć domowa</option><option>Sieć domowa + VPN</option></select></div>
-        <div class="ph"><label>Port panelu</label><input class="input" disabled value="8800"></div>
-        <div class="ph"><label>Status VPN</label><div class="ph-box">Nie zainstalowano · adres w VPN: 100.x.x.x:8800 · kod QR do telefonu</div></div>
+        <div class="ph"><label>{{ _("Provider") }}</label><select class="input" disabled><option>{{ _("Tailscale (recommended, no open ports)") }}</option><option>WireGuard</option></select></div>
+        <div class="ph"><label>{{ _("Panel available via") }}</label><select class="input" disabled><option>{{ _("Home network only") }}</option><option>{{ _("Home network + VPN") }}</option></select></div>
+        <div class="ph"><label>{{ _("Panel port") }}</label><input class="input" disabled value="8800"></div>
+        <div class="ph"><label>{{ _("VPN status") }}</label><div class="ph-box">{{ _("Not installed · VPN address: 100.x.x.x:8800 · QR code for your phone") }}</div></div>
       </div>
       <ul class="ph-list">
-        <li>Skrypt <code>setup-vpn.sh</code> na GitHubie: instaluje Tailscale i wyświetla link do zalogowania.</li>
-        <li>Logowanie do konta VPN odbywa się zawsze na stronie dostawcy. Panel nie przechowuje tych danych.</li>
-        <li>Instrukcje krok po kroku po polsku i angielsku.</li>
+        <li>{{ _("A setup-vpn.sh script on GitHub: installs Tailscale and shows a login link.") }}</li>
+        <li>{{ _("You always log in to the VPN account on the provider's website. The panel does not store those credentials.") }}</li>
+        <li>{{ _("Step-by-step guides in English and Polish.") }}</li>
       </ul>
     </section>
   </div>
 
   <div class="win-foot">
     <span class="form-msg" id="setMsg"></span>
-    <button class="btn-soft" type="button" data-close>Anuluj</button>
-    <button class="btn-accent" type="button" id="saveSettings">Zapisz</button>
+    <button class="btn-soft" type="button" data-close>{{ _("Cancel") }}</button>
+    <button class="btn-accent" type="button" id="saveSettings">{{ _("Save") }}</button>
+  </div>
+</dialog>
+
+<!-- okno dziennika -->
+<dialog id="logWin" class="window term" aria-labelledby="logTitle">
+  <div class="win-head" data-drag>
+    <h2 id="logTitle">{{ _("Activity log") }}</h2>
+    <span class="upd-status" id="logSize"></span>
+    <button class="icon-btn win-close" type="button" data-close-log aria-label="{{ _('Close') }}"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="win-body term-body"><pre id="logText"></pre></div>
+  <div class="win-foot">
+    <button class="btn-soft small btn-danger" type="button" id="logDelBackups" hidden></button>
+    <span class="spacer"></span>
+    <button class="btn-soft" type="button" id="logClear"><svg class="i"><use href="#i-trash"/></svg>{{ _("Clear") }}</button>
+    <a class="btn-soft" id="logExport" href="/api/log/export" download><svg class="i"><use href="#i-down"/></svg>{{ _("Export .log") }}</a>
+    <button class="btn-accent" type="button" data-close-log>{{ _("Close") }}</button>
   </div>
 </dialog>
 
 <template id="diskRowTpl">
   <div class="disk-row">
-    <div class="disk-row-head"><b class="row-title">Dysk</b>
+    <div class="disk-row-head"><b class="row-title">{{ _("Disk") }}</b>
       <span class="row-tools">
-        <button class="btn-ghost small fill-paths" type="button" title="Uzupełnij puste foldery kategorii według domyślnych nazw">Uzupełnij foldery</button>
-        <button class="icon-btn rm" type="button" title="Usuń dysk"><svg class="i"><use href="#i-trash"/></svg></button>
+        <button class="btn-ghost small fill-paths" type="button" title="{{ _('Search the disk for folders matching the categories and fill in the paths') }}"><svg class="i"><use href="#i-search"/></svg>{{ _("Update paths") }}</button>
+        <button class="icon-btn rm" type="button" title="{{ _('Remove disk') }}"><svg class="i"><use href="#i-trash"/></svg></button>
       </span></div>
-    <div><label>Nazwa przycisku</label><input class="input" data-k="label"></div>
-    <div><label>Podpis (np. udział SMB)</label><input class="input" data-k="subtitle"></div>
-    <div class="full"><label>Punkt montowania (do odczytu wolnego miejsca)</label><input class="input mono" data-k="mount"></div>
+    <div><label>{{ _("Button name") }}</label><input class="input" data-k="label"></div>
+    <div><label>{{ _("Caption (e.g. SMB share)") }}</label><input class="input" data-k="subtitle"></div>
+    <div class="full"><label>{{ _("Mount point (to read free space)") }}</label><input class="input mono" data-k="mount"></div>
     <div class="full cat-paths"></div>
+    <div class="full row-foot"><button type="button" class="linklike goto-cats">{{ _("Categories") }} →</button></div>
   </div>
 </template>
