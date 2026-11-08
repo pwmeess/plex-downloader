@@ -650,3 +650,14 @@ h3.fold-h { display: flex; align-items: center; gap: 8px; }
 .fold[aria-expanded=true] svg { transform: rotate(90deg); }
 .cmd.flash .cmd-code { animation: flash 1.6s ease-out; }
 @keyframes flash { 0%, 40% { box-shadow: 0 0 0 2px var(--accent); } 100% { box-shadow: 0 0 0 2px transparent; } }
+
+/* 1.2.6 */
+/* tekst wprowadzający z ikonką ⓘ w jednej linii (pre-line z .win-body łamał linię przed ikonką) */
+.win-body .panel-intro { white-space: normal; }
+.panel-intro .info-i { margin-left: 4px; }
+/* telefon: przyciski kategorii zawijają się zamiast rozpychać stronę */
+.segmented.cats { flex-wrap: wrap; max-width: 100%; }
+/* okno przenoszenia: „Pomiń weryfikację SHA-256” */
+.skip-verify { display: flex; align-items: center; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.skip-verify .check { margin-top: 0; }
+#sTmdb + .check { margin-top: 8px; }

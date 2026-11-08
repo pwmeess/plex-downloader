@@ -1,49 +1,48 @@
 # Plex Downloader
 
-Lekki menedżer pobierania dla Raspberry Pi. Wklejasz bezpośredni link do pliku wideo, wybierasz dysk, a aplikacja pobiera go wielowątkowo (aria2c) i zapisuje w strukturze, którą Plex od razu rozpoznaje.
+🇬🇧 **English** · 🇵🇱 [Polski](README.pl.md)
 
-- **Filmy:** `…/Movies/Tytuł (YYYY)/Tytuł (YYYY).mkv`
-- **Seriale:** `…/TV Shows/Serial/Season 01/Serial - S01E02.mkv`
-- **Dla dzieci i własne kategorie:** `…/Kids/Tytuł (YYYY)/…`, `…/Concerts/…` itd.
+A lightweight download manager for the Raspberry Pi. Paste a direct link to a video file, choose a disk, and the app downloads it with multiple connections (aria2c) into a folder structure that Plex recognises straight away.
 
-Plan kolejnych wersji: [ROADMAP.md](ROADMAP.md).
+- **Movies:** `…/Movies/Title (YYYY)/Title (YYYY).mkv`
+- **TV shows:** `…/TV Shows/Show/Season 01/Show - S01E02.mkv`
+- **Kids and custom categories:** `…/Kids/Title (YYYY)/…`, `…/Concerts/…` and so on
 
-## Funkcje
+Changelog: [CHANGELOG.md](CHANGELOG.md) · Roadmap: [ROADMAP.md](ROADMAP.md)
 
-- Logowanie (login i hasło), sesja „zapamiętaj mnie” na 30 dni, wylogowanie.
-- Automatyczne rozpoznanie nazwy, roku, sezonu i odcinka z nazwy pliku w linku, z możliwością edycji.
-- Rozszerzenie wykrywane z linku lub nagłówków HTTP.
-- Wybór dysku z podglądem wolnego miejsca. Dysk niezamontowany jest blokowany, więc pobieranie nie zapełni karty SD.
-- Sprawdzenie przed startem, czy plik zmieści się na dysku.
-- Pobieranie segmentowe, domyślnie 6 połączeń na plik (`aria2c -x6 -s6 -k1M`).
-- Postęp, prędkość, czas do końca, liczba połączeń i statusy: Oczekuje, Pobieranie, Wstrzymano, Finalizowanie, Zakończono, Błąd.
-- Wstrzymywanie i wznawianie. Zerwane transfery aria2 wznawia sama (HTTP Range).
-- Po restarcie Pi lub usługi przerwane pobierania wznawiają się automatycznie.
-- Atomowość: plik pobiera się do ukrytego folderu `.plexdl-tmp` na tym samym dysku, obok `Movies`, czyli poza biblioteką Plexa. Po zakończeniu jest przenoszony do biblioteki jedną operacją `rename`. Anulowanie lub błąd usuwa pliki tymczasowe, a folder docelowy nie zostaje utworzony.
-- Ustawienia w przeglądarce: dyski (etykiety i ścieżki), liczba połączeń, równoległe pobrania, limit prędkości, zmiana hasła, sprawdzanie aktualizacji.
-- **Podgląd filmu lub serialu (TMDB):** po wklejeniu linku pojawia się karta z polskim tytułem, plakatem, oceną, czasem trwania, gatunkami, reżyserem, obsadą i opisem. Dla seriali pokazuje też nazwę odcinka. Karta ma linki do IMDb, Filmwebu i TMDB oraz przycisk „Nie ten film?” z innymi trafieniami. Dane są tylko poglądowe i nic nie trafia do plików, bo Plex pobiera własne metadane.
-- **Kategorie (1.2):** Filmy, Seriale, Dla dzieci oraz dowolne własne kategorie typu „film” albo „serial”. Każdy dysk ma osobny folder dla każdej kategorii, a foldery mogą mieć dowolne nazwy.
-- **Opcje zaawansowane nazewnictwa Plex (1.2):** edycja `{edition-Director's Cut}` (Plex Pass), wersja pliku `- 1080p` (kilka wersji w jednym folderze) oraz ID `{tmdb-…}` dla trafnego dopasowania. Edycja jest wykrywana z nazwy pliku, np. `Directors.Cut`.
-- **Menedżer plików (1.2):** dwie kolumny z okładkami. Przeciągnij i upuść, żeby przenieść filmy między folderami i dyskami. Ten sam dysk to natychmiastowe przeniesienie, inny dysk to kopia, weryfikacja SHA-256 i dopiero wtedy usunięcie oryginału. Kosz usuwa cały folder filmu po potwierdzeniu.
-- **Okładki:** zapisywane w folderze filmu jako `Tytuł (Rok).thumb.jpg` (z TMDB). Gdy TMDB nic nie zwróci, plik nie powstaje i widać obrazek zastępczy. Wyszukiwanie w TMDB można wyłączyć dla wybranej kategorii (np. domowe wideo).
-- **Serwery Plex w nagłówku (1.2):** automatyczne wykrywanie w sieci (GDM) i status online/offline, także dla serwerów dodanych ręcznie.
-- **Kopie zapasowe ustawień (1.2):** punkt przywracania po każdej zmianie, przechowywany 30 dni (ostatni zawsze zostaje). Przywrócenie nie zmienia loginu ani hasła.
-- **Pływające okno ustawień z zakładkami (1.2)** i podpowiedzi ⓘ przy opcjach.
-- Przyciski **Google** i **Zwiastun (YouTube)** w karcie filmu.
-- **Języki i motyw (1.2.1):** angielski (domyślny) i polski, motyw ciemny lub jasny (Ustawienia → Konto). Język wybierasz też przy pierwszym logowaniu i w `setup.sh`. Tłumaczenia są w `locales/<kod>.json`, więc nowy język to nowy plik.
-- **Dziennik aktywności (1.2.1):** plik `logs/plexdl.log` z pobraniami, przeniesieniami (skąd → dokąd) i usunięciami. Podgląd przyciskiem **LOG** w Ustawienia → Konto, z opcjami Wyczyść i Eksportuj. Limit 1 MB, potem kopia `bcup01.log`, `bcup02.log`… Dziennik nie trafia do kopii ustawień.
-- **Przenoszenie odcinków (1.2.1):** cały serial, wybrany sezon albo wybrane odcinki (SnnEnn). Struktura folderów powstaje na dysku docelowym, a przenoszone są tylko wybrane pliki (z napisami).
-- **Postęp operacji (1.2.1):** prędkość, czas do końca i podsumowanie, co i skąd dokąd przeniesiono. Ikonka przy folderze, który zawiera dodatki (zwiastuny, napisy, kilka wersji). Dodatki nie są liczone jako filmy, a daty folderów są zachowywane.
-- **Typ kategorii „Inne (zachowaj nazwę)” (1.2.1)** dla nagrań, które nie są filmami ani serialami.
-- **Komendy terminala (1.2.1)** w Ustawienia → Konto, z przyciskiem kopiowania.
-- Działa na telefonie.
+## Features
 
-## Wymagania
+- Login with username and password, "remember me" for 30 days, log out.
+- Title, year, season and episode recognised from the file name in the link (editable).
+- File extension taken from the link or from the HTTP headers.
+- Disk picker with free space. A disk that is not mounted is blocked, so a download cannot fill the SD card.
+- Checks before starting that the file fits on the disk.
+- Segmented downloads, 6 connections per file by default (`aria2c -x6 -s6 -k1M`).
+- Progress, speed, time left, number of connections and states: Queued, Downloading, Paused, Finalizing, Done, Error.
+- Pause and resume. aria2 resumes broken transfers by itself (HTTP Range).
+- Interrupted downloads resume automatically after a reboot or a service restart.
+- Atomic: a file is downloaded into the hidden `.plexdl-tmp` folder on the same disk, next to `Movies` (outside the Plex library), and moved into the library with a single `rename` when it is complete. Cancelling or an error removes the temporary files and no target folder is created.
+- **Movie and TV preview (TMDB):** after pasting a link you get a card with the title, poster, rating, runtime, genres, director, cast and plot, plus links to IMDb, Filmweb, TMDB, Google and the YouTube trailer. Nothing from it is written to the files – Plex fetches its own metadata.
+- **Categories:** Movies, TV Shows, Kids and any custom category of type movie, TV show or "other (keep name)". Each disk has its own folder for each category; folder names are up to you.
+- **Advanced Plex naming:** edition `{edition-Director's Cut}` (Plex Pass), file version `- 1080p` (several versions in one folder) and `{tmdb-…}` ID for exact matching.
+- **File manager:** two columns with posters. Drag and drop movies between folders and disks. Same disk = instant move; another disk = copy → SHA-256 verification → only then the original is removed. Move a whole TV show, one season or selected episodes.
+- **Two-stage progress (1.2.6):** "copying X of Y" and "verifying X of Y" with the real file size, and one time-left estimate for both stages.
+- **"Skip SHA-256 verification after moving" (1.2.6):** option in the move confirmation (off by default). About twice as fast; only file sizes are compared before the original is deleted.
+- **Posters:** saved in the movie folder as `Title (Year).thumb.jpg` (from TMDB). TMDB lookups can be switched off per category (e.g. home videos).
+- **Plex servers in the header:** automatic discovery on the network (GDM) and online/offline status, also for servers added manually.
+- **Settings backups:** a restore point after every change, kept for 30 days (the latest is always kept). Restoring never changes the username or password.
+- **Languages and themes:** English (default) and Polish, dark or light theme (Settings → Account). Translations live in `locales/<code>.json`, so a new language is a new file.
+- **Activity log:** `logs/plexdl.log` with downloads, moves (from → to) and deletions; **LOG** viewer in Settings → Account with Clear and Export. 1 MB limit, then `bcup01.log`, `bcup02.log`…
+- **Hidden TMDB key (1.2.6):** the key field is masked like a password, with "Show key" on demand; the panel does not send the key to the browser until you ask for it.
+- **Terminal commands** with a copy button in Settings → Account.
+- Works on phones.
 
-- Raspberry Pi OS (32- lub 64-bit), Python 3.7 lub nowszy.
-- Dyski zamontowane na stałe (`/etc/fstab`), z prawem zapisu dla użytkownika, który uruchamia usługę (zwykle `pi`).
+## Requirements
 
-## Instalacja
+- Raspberry Pi OS (32- or 64-bit), Python 3.7 or newer.
+- Disks mounted permanently (`/etc/fstab`) and writable for the user running the service (usually `pi`).
+
+## Installation
 
 ```bash
 cd ~
@@ -53,117 +52,104 @@ chmod +x setup.sh update.sh fix.sh
 ./setup.sh
 ```
 
-Skrypt wykonuje kolejno:
+The script:
 
-1. pyta o język (1 – English, domyślny; 2 – Polski),
-2. instaluje `aria2`, `python3-venv` i `git`,
-3. tworzy środowisko `venv/` i instaluje zależności z `requirements.txt`,
-4. tworzy `config.json` i pyta o login i hasło,
-5. sprawdza, czy foldery bibliotek istnieją i czy można w nich zapisywać,
-6. rejestruje i uruchamia usługę `plex-downloader` (autostart po restarcie).
+1. asks for the language (1 – English, default; 2 – Polski),
+2. installs `aria2`, `python3-venv` and `git`,
+3. creates the `venv/` environment and installs `requirements.txt`,
+4. creates `config.json` and asks for a username and password,
+5. checks that the library folders exist and are writable,
+6. registers and starts the `plex-downloader` service (starts automatically after a reboot).
 
-Na koniec wyświetla adres, np. **http://192.168.1.10:8800**.
+At the end it prints the address, e.g. **http://192.168.1.10:8800**. `setup.sh` always installs the latest **stable** version.
 
-## Aktualizacja
+## Updating
 
 ```bash
 cd ~/plex-downloader
 ./update.sh
 ```
 
-Możesz też zrobić to ręcznie: `git pull && sudo systemctl restart plex-downloader`.
-Nagłówek okna Ustawień pokazuje, czy na GitHubie są nowe zmiany.
+The header of the Settings window shows whether a newer stable version is available.
 
-## Wersje: stabilna i BETA
+## Stable and BETA versions
 
-- **Stabilna** (gałąź `main`): instaluje ją `setup.sh` i aktualizuje `update.sh`. Panel sprawdza i ogłasza tylko wersje stabilne.
-- **BETA** (gałąź `beta`): nowe, mniej przetestowane funkcje. Instaluje się ją i aktualizuje wyłącznie przez `fix.sh` (opcja 4). Przed pierwszym przejściem na BETA `fix.sh` zapisuje obecne ustawienia, a przy wyjściu z BETA (opcja 5) wraca do wersji stabilnej, usuwa ustawienia eksperymentalne i przywraca zapisane.
+- **Stable** (branch `main`): installed by `setup.sh` and updated by `update.sh`. The panel only announces stable versions.
+- **BETA** (branch `beta`): new, less tested features (for example the VPN preview). Installed and updated only with `fix.sh` (option 4). Before the first switch to BETA, `fix.sh` saves your settings; leaving BETA (option 5) returns to stable, removes the experimental settings and restores the saved ones.
 
-## Naprawa: `fix.sh`
+## Repair menu: `fix.sh`
 
 ```bash
 cd ~/plex-downloader
 ./fix.sh
 ```
 
-Najpierw pyta o język, potem pokazuje menu:
+It asks for the language first, then shows:
 
-1. **Update (check and install)** – sprawdza GitHuba i instaluje nową wersję stabilną,
-2. **Reinstall (keep settings)** – pobiera kod od nowa i odbudowuje środowisko, ustawienia zostają,
-3. **Clean reinstall** – kasuje ustawienia, kopie, dzienniki i listę pobrań, potem instaluje wersję stabilną od zera (potwierdzenie słowem YES/TAK),
-4. **Install / update the latest BETA** – instaluje lub aktualizuje wersję BETA,
-5. **Leave BETA** – powrót do wersji stabilnej z usunięciem ustawień eksperymentalnych (bez dodatkowych pytań),
-6. **Uninstall** – usuwa usługę z autostartu, opcjonalnie także folder aplikacji,
+1. **Update (check and install)** – checks GitHub and installs a new stable version,
+2. **Reinstall (keep settings)** – fetches the code again and rebuilds the environment, settings stay,
+3. **Clean reinstall** – deletes settings, backups, logs and the download list, then installs the stable version from scratch (confirm with YES),
+4. **Install / update the latest BETA**,
+5. **Leave BETA** – back to stable, experimental settings removed (no extra questions),
+6. **Uninstall** – removes the service from autostart, optionally also the app folder,
 7. **Cancel**.
 
-Filmy i seriale na dyskach nigdy nie są ruszane.
+Movies and TV shows on the disks are never touched.
 
-## Podgląd filmów: klucz TMDB
+## Movie preview: TMDB key
 
-1. Załóż darmowe konto na https://www.themoviedb.org/signup.
-2. Przejdź do **Settings → API → Utwórz → Developer**. W formularzu wystarczy wpisać użytek prywatny.
-3. Skopiuj **API Key** albo **API Read Access Token**. Działa każdy z nich.
-4. W Plex Downloaderze wejdź w **Ustawienia → Podgląd i plakaty**, wklej klucz i kliknij **Zapisz**.
+1. Create a free account at https://www.themoviedb.org/signup.
+2. Go to **Settings → API → Create → Developer**. "Personal use" is enough in the form.
+3. Copy the **API Key** or the **API Read Access Token** – either works.
+4. In Plex Downloader open **Settings → Preview & posters**, paste the key and click **Save**.
 
-Klucz jest zapisywany wyłącznie lokalnie w `config.json`. Bez klucza aplikacja działa normalnie, tylko bez karty podglądu.
+The key is stored only locally in `config.json`. Without a key the app works normally, just without the preview card.
 
-## Domyślne dyski (`config.example.json`)
+## Your own disks
 
-| Przycisk | Filmy | Seriale | Dla dzieci |
-|---|---|---|---|
-| Pendrive 256GB | `/plex_media/Plex/Movies` | `/plex_media/Plex/TV Shows` | `/plex_media/Plex/Kids` |
-| Dysk SSD 512GB | `/plex_media_512/Plex 512/Movies` | `/plex_media_512/Plex 512/TV Shows` | `/plex_media_512/Plex 512/Kids` |
-| Dysk SSD 1024GB | `/plex_media_1024/Plex 1T/Movies` | `/plex_media_1024/Plex 1T/TV Shows` | `/plex_media_1024/Plex 1T/Kids` |
+The default paths in `config.example.json` are the author's layout, so yours will most likely differ.
 
-Aktualizacja z wersji 1.0/1.1 przenosi starą konfigurację automatycznie. Jeśli obok folderu `Movies` istnieje folder `Kids`, zostaje od razu przypisany do kategorii „Dla dzieci”.
+1. Check where your disks are mounted with `df -h`, e.g. `/mnt/disk1`.
+2. In **Settings → Disks** enter for each disk:
+   - **Button name**, e.g. "SSD 1TB",
+   - **Subtitle**, e.g. the SMB share name (optional),
+   - **Mount point**, e.g. `/mnt/disk1` (used to read free space),
+   - **Folder** for each category – the Plex library paths, e.g. `/mnt/disk1/Movies`.
+3. **Update paths** scans the disk and fills in folders that match the categories (e.g. `Movies`/`Filmy`, `Kids`/`Dla dzieci`). Found paths are marked green, missing ones red, and you can edit any of them. Click **Save**.
+4. Add custom categories in the **Categories** tab: button name, type, default folder name and TMDB switch. Add a separate Plex library for each one.
 
-Ścieżki zmienisz w **Ustawieniach** albo w `config.json`.
+Removing a disk from the list never deletes files – it only hides the button.
 
-## Własne dyski (inna instalacja niż autora)
+**Library on the SD card (not recommended, e.g. for testing):** use the mount point `/` and folders in your home directory, e.g. `/home/pi/Plex/Movies`. Keep in mind the limited capacity, wear and speed of SD cards.
 
-Aplikacja **nie wykrywa dysków automatycznie**. Domyślne ścieżki to konfiguracja autora, więc u Ciebie najpewniej będą inne.
-
-1. Sprawdź, gdzie są zamontowane Twoje dyski, poleceniem `df -h`. Zobaczysz np. `/mnt/dysk1`.
-2. W panelu wejdź w **Ustawienia → Dyski** i dla każdego dysku wpisz:
-   - **Nazwa przycisku**, np. „SSD 1TB”,
-   - **Podpis**, np. nazwę udziału SMB (opcjonalnie),
-   - **Punkt montowania**, np. `/mnt/dysk1` (służy do odczytu wolnego miejsca),
-   - **Folder** dla każdej kategorii, czyli ścieżki z bibliotek Plexa, np. `/mnt/dysk1/Movies`.
-3. Dysk dodajesz przyciskiem **+ Dodaj dysk**, a usuwasz ikoną kosza. Przycisk **Aktualizuj ścieżki** przeszukuje dysk i uzupełnia ścieżki folderów pasujących do kategorii (np. `Movies`/`Filmy`, `Kids`/`Dla dzieci`). Znalezione ścieżki są oznaczone na zielono, nieznalezione na czerwono, a każdą możesz poprawić ręcznie. Na koniec kliknij **Zapisz**.
-4. Własne kategorie dodasz w zakładce **Kategorie**: nazwa przycisku, typ (film, serial albo inne), domyślna nazwa folderu i przełącznik TMDB. W Plexie dodaj dla nich osobne biblioteki.
-
-Usunięcie dysku z listy nie kasuje żadnych plików, tylko chowa przycisk.
-
-Jeśli biblioteka leży na karcie SD (bez osobnego dysku), odznacz **„Pobieraj tylko na zamontowany dysk”**.
-
-## Przydatne polecenia
+## Useful commands
 
 ```bash
-journalctl -u plex-downloader -f               # logi na żywo
+journalctl -u plex-downloader -f               # live logs
 sudo systemctl restart plex-downloader         # restart
-./venv/bin/python app.py --set-password        # reset loginu / hasła (potem restart)
-./venv/bin/python app.py --set-language pl     # język interfejsu (en, pl)
-./fix.sh                                       # menu naprawy
+./venv/bin/python app.py --set-password        # reset username / password (then restart)
+./venv/bin/python app.py --set-language en     # interface language (en, pl)
+./fix.sh                                       # repair menu
 ```
 
-## Pliki
+## Files
 
-| Plik | Rola |
+| File | Role |
 |---|---|
-| `app.py` | serwer WWW (Flask + waitress), logowanie, API |
-| `downloader.py` | sterowanie aria2c przez JSON-RPC, kolejka, finalizacja, sprzątanie |
-| `filemanager.py` | Menedżer plików: lista, przenoszenie z weryfikacją, usuwanie, okładki |
-| `plexservers.py` | wykrywanie i status serwerów Plex w sieci |
-| `movieinfo.py` | podgląd filmu lub serialu z TMDB (tylko do wyświetlenia) |
-| `naming.py` | rozpoznawanie tytułu, roku i odcinka; nazewnictwo Plexa |
-| `i18n.py`, `locales/` | tłumaczenia (en, pl) |
-| `actlog.py` | dziennik aktywności (`logs/`) |
-| `config.py` | odczyt i zapis `config.json`, migracja, punkty przywracania (`backups/`) |
-| `templates/`, `static/` | interfejs |
-| `setup.sh`, `update.sh`, `fix.sh` | instalacja, aktualizacja, menu naprawy |
+| `app.py` | web server (Flask + waitress), login, API |
+| `downloader.py` | aria2c control over JSON-RPC, queue, finalizing, cleanup |
+| `filemanager.py` | File manager: listing, verified moves, deleting, posters |
+| `plexservers.py` | Plex server discovery and status |
+| `movieinfo.py` | movie / TV preview from TMDB (display only) |
+| `naming.py` | title, year and episode recognition; Plex naming |
+| `i18n.py`, `locales/` | translations (en, pl) |
+| `actlog.py` | activity log (`logs/`) |
+| `config.py` | `config.json`, migration, restore points (`backups/`) |
+| `templates/`, `static/` | user interface |
+| `setup.sh`, `update.sh`, `fix.sh` | install, update, repair menu |
 
-`config.json` (hasło, klucze), `backups/`, `logs/` i `plexdl.db` (lista pobrań) nie trafiają do repozytorium (`.gitignore`).
+`config.json` (password, keys), `backups/`, `logs/` and `plexdl.db` (download list) are never committed (`.gitignore`).
 
-## Bezpieczeństwo
+## Security
 
-Aplikacja jest przeznaczona do sieci domowej. Nie wystawiaj portu 8800 do internetu. Do zdalnego dostępu użyj VPN, np. Tailscale lub WireGuard.
+The app is meant for a home network. Do not expose port 8800 to the internet. For remote access use a VPN such as Tailscale or WireGuard.

@@ -279,6 +279,16 @@
     } catch (e) { toast(e.message, true); }
     loadBackups();
   });
+  $("#sTmdb").addEventListener("input", (e) => { e.target.dataset.dirty = "1"; });
+  $("#sTmdbShow").addEventListener("change", async (e) => {
+    const tk = $("#sTmdb");
+    if (e.target.checked) {
+      if (!tk.dataset.dirty && !tk.value) {
+        try { tk.value = (await api("/api/settings/tmdb-key")).key || ""; } catch (er) { toast(er.message, true); }
+      }
+      tk.type = "text";
+    } else tk.type = "password";
+  });
   function setCmdsOpen(open) {
     $("#cmdList").hidden = !open;
     $("#cmdToggle").setAttribute("aria-expanded", open ? "true" : "false");
@@ -315,7 +325,7 @@
       (li.backups.length ? " · " + t("log backups: {n}", { n: li.backups.length }) : "");
     const dir = cfg.app_dir || "~/plex-downloader";
     const cmds = [
-      [t("Connect from your computer (Terminal / PowerShell)"), `ssh ${cfg.system_user || "pi"}@${cfg.ip || "192.168.1.10"}`],
+      [t("Connect from your computer (Terminal / PowerShell)"), `ssh ${cfg.system_user || "pi"}@${cfg.ip || "<raspberry-pi-ip>"}`],
       [t("Update Plex Downloader"), `cd ${dir} && ./update.sh`],
       [t("Repair menu: update, reinstall, factory reset, uninstall"), `cd ${dir} && ./fix.sh`, "fix"],
       [t("Service status"), "systemctl status plex-downloader"],
@@ -427,7 +437,11 @@
     $("#sSpeed").value = cfg.max_speed_mbps;
     $("#sMount").checked = !!cfg.require_mount;
     $("#sAutodisc").checked = !!cfg.plex_autodiscover;
-    $("#sTmdb").value = cfg.tmdb_api_key || "";
+    // klucz TMDB: pole puste i zamaskowane; zapisany klucz widać dopiero po „Pokaż klucz”
+    const tk = $("#sTmdb");
+    tk.value = ""; tk.type = "password"; tk.dataset.dirty = "";
+    tk.placeholder = cfg.tmdb_key_set ? t("Saved key: {mask}", { mask: cfg.tmdb_key_mask }) : t("paste the key from themoviedb.org");
+    $("#sTmdbShow").checked = false;
     $$("input[name=thumbs]").forEach((r) => { r.checked = r.value === cfg.thumbs_mode; });
     $("#aUser").value = cfg.username; $("#aCur").value = ""; $("#aNew").value = "";
   }
@@ -461,7 +475,7 @@
       plex_autodiscover: $("#sAutodisc").checked,
       connections_per_file: $("#sConn").value, max_concurrent: $("#sConc").value,
       max_speed_mbps: $("#sSpeed").value, require_mount: $("#sMount").checked,
-      tmdb_api_key: $("#sTmdb").value,
+      tmdb_api_key: $("#sTmdb").dataset.dirty ? $("#sTmdb").value : null,
       thumbs_mode: ($("input[name=thumbs]:checked") || {}).value || "online",
     };
     try {

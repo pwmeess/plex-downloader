@@ -291,13 +291,27 @@ def api_settings_get():
                    max_concurrent=cfg.get("max_concurrent"),
                    max_speed_mbps=cfg.get("max_speed_mbps"),
                    require_mount=cfg.get("require_mount"),
-                   tmdb_api_key=cfg.get("tmdb_api_key", ""),
+                   # klucz TMDB nie trafia do przeglądarki – tylko maska (pełny: /api/settings/tmdb-key)
+                   tmdb_key_set=bool(cfg.get("tmdb_api_key")),
+                   tmdb_key_mask=_mask_key(cfg.get("tmdb_api_key", "")),
                    plex_servers=cfg.get("plex_servers", []),
                    plex_autodiscover=cfg.get("plex_autodiscover", True),
                    thumbs_mode=cfg.get("thumbs_mode", "online"),
                    port=cfg.get("port", 8800), language=i18n.current(), theme=cfg.get("theme", "dark"),
                    app_dir=BASE_DIR, system_user=getpass.getuser(), ip=plexservers.lan_ip(),
                    log=actlog.info())
+
+
+def _mask_key(key):
+    key = key or ""
+    return ("•" * 10 + key[-3:]) if len(key) > 6 else ("•" * len(key))
+
+
+@app.route("/api/settings/tmdb-key")
+@login_required
+def api_tmdb_key():
+    """Pełny klucz – tylko na żądanie (pole „Pokaż klucz”)."""
+    return jsonify(key=config.get().get("tmdb_api_key", ""))
 
 
 def _abs_path(value, what):
@@ -373,7 +387,9 @@ def api_settings_post():
         speed = max(0.0, float(data.get("max_speed_mbps") or 0))
     except (TypeError, ValueError) as e:
         return err(str(e) if isinstance(e, ValueError) and str(e) else _("Invalid values."))
-    tmdb_key = re.sub(r"\s+", "", data.get("tmdb_api_key") or "")
+    # None = pole nie było zmieniane → zostaje zapisany klucz
+    raw_key = data.get("tmdb_api_key")
+    tmdb_key = config.get().get("tmdb_api_key", "") if raw_key is None else re.sub(r"\s+", "", raw_key)
     mode = data.get("thumbs_mode") if data.get("thumbs_mode") in ("online", "local", "off") else "online"
     config.update(note=data.get("note") or "Settings saved",
                   categories=cats, disks=disks, connections_per_file=conns, max_concurrent=conc,
@@ -517,7 +533,7 @@ def api_fm_plan():
 @login_required
 def api_fm_move():
     d = request.get_json(silent=True) or {}
-    return fm_call(lambda: {"op": fm.ops.move(_plan(d))["id"]})
+    return fm_call(lambda: {"op": fm.ops.move(_plan(d), verify=not d.get("skip_verify"))["id"]})
 
 
 @app.route("/api/fm/episodes")

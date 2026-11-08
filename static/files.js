@@ -253,6 +253,19 @@
     return body;
   }
 
+  // „Pomiń weryfikację SHA-256” – tylko przy przenoszeniu na inny dysk, domyślnie odznaczone
+  function skipVerifyBox() {
+    const row = el("div", "skip-verify");
+    const lab = el("label", "check");
+    const cb = el("input"); cb.type = "checkbox";
+    lab.append(cb, document.createTextNode(" " + t("Skip SHA-256 verification after moving")));
+    const tip = el("button", "info-i", "i"); tip.type = "button";
+    tip.dataset.tip = t("About twice as fast: the copy is not read a second time to compare checksums. Only the file sizes are compared before the original is deleted, so a damaged copy may go unnoticed. Recommended only for files you can download again.");
+    row.append(lab, tip);
+    row.cb = cb;
+    return row;
+  }
+
   async function moveItems(src, dst, names) {
     if (!names.length) return;
     if (!dst.disk || !dst.cat) { toast(t("Choose a disk and category in the other column."), true); return; }
@@ -262,9 +275,13 @@
     let plan;
     try { plan = await api("/api/fm/plan", req); }
     catch (e) { await modal({ title: t("Cannot move"), body: e.message, danger: true }); return; }
-    const ok = await modal({ title: t("Move files?"), body: planBody(plan), wide: true,
+    const body = planBody(plan);
+    const sv = skipVerifyBox();
+    if (!plan.same_fs) body.appendChild(sv);
+    const ok = await modal({ title: t("Move files?"), body, wide: true,
       buttons: [{ label: t("Cancel"), value: false }, { label: t("Confirm"), value: true, cls: "btn-accent", disabled: !plan.ok }] });
     if (!ok) return;
+    if (!plan.same_fs && sv.cb.checked) req.skip_verify = true;
     startMove(src, req);
   }
 
@@ -293,7 +310,8 @@
       });
     });
     const planBox = el("div");
-    box.append(modeRow, grid, planBox);
+    const sv = skipVerifyBox(); sv.hidden = true;
+    box.append(modeRow, grid, planBox, sv);
     let req = null, planOk = false, seq = 0;
     async function refresh() {
       const mode = sel.value;
@@ -310,6 +328,7 @@
         const plan = await api("/api/fm/plan", req);
         if (my !== seq) return;
         planBox.replaceChildren(planBody(plan)); planOk = plan.ok; setBtn();
+        sv.hidden = plan.same_fs;
       } catch (e) { if (my === seq) planBox.replaceChildren(el("p", "bad", e.message)); }
     }
     let dlgRef = null;
@@ -320,6 +339,7 @@
     const ok = await modal({ title: t("Move TV show?"), body: box, wide: true,
       buttons: [{ label: t("Cancel"), value: false }, { label: t("Confirm"), value: () => (planOk ? true : undefined), cls: "btn-accent", disabled: true }] });
     if (!ok) return;
+    if (!sv.hidden && sv.cb.checked) req.skip_verify = true;
     startMove(src, req);
   }
 
@@ -399,8 +419,14 @@
       row.appendChild(bar);
       const meta = el("div", "op-meta muted");
       const parts = [t("{a}/{b} items", { a: o.items_done, b: o.items_total })];
-      if (o.type === "move" && o.total) parts.push(t("{a} of {b}", { a: fmtSize(o.done), b: fmtSize(o.total) }) + (o.same_fs ? "" : " (" + t("copy + verification") + ")"));
-      if (o.status === "running" && o.speed) parts.push(fmtSpeed(o.speed), t("remaining: {eta}", { eta: fmtEta(o.eta) }));
+      if (o.type === "move" && o.total) {
+        const size = o.size || o.total;
+        if (o.same_fs) parts.push(t("{a} of {b}", { a: fmtSize(o.done), b: fmtSize(o.total) }));
+        else if (o.phase === "verify") parts.push(t("Copied {b}", { b: fmtSize(size) }), t("verifying {a} of {b}", { a: fmtSize(o.verified || 0), b: fmtSize(size) }));
+        else if (o.status === "running" || o.status === "queued") parts.push(t("copying {a} of {b}", { a: fmtSize(o.copied || 0), b: fmtSize(size) }) + (o.verify === false ? " · " + t("without verification") : ""));
+        else parts.push(fmtSize(size) + (o.verify === false ? " · " + t("without verification") : ""));
+      }
+      if (o.status === "running" && o.speed) parts.push(fmtSpeed(o.speed), t("remaining: {eta}", { eta: fmtEta(o.eta) }) + (o.verify ? " (" + t("copy + verification") + ")" : ""));
       if (o.current) parts.push(o.current);
       meta.textContent = parts.join(" · ");
       row.appendChild(meta);
@@ -409,7 +435,8 @@
         const done = (o.log || []).filter((l) => l.ok);
         if (done.length && o.status !== "running") {
           const ul = el("ul", "op-done");
-          done.slice(0, 8).forEach((l) => ul.appendChild(el("li", null, `${o.show ? o.show + "/" : ""}${l.name}: ${o.src_disk} → ${o.dst_disk}`)));
+          const nv = o.verify === false && !o.same_fs ? " (" + t("without verification") + ")" : "";
+          done.slice(0, 8).forEach((l) => ul.appendChild(el("li", null, `${o.show ? o.show + "/" : ""}${l.name}: ${o.src_disk} → ${o.dst_disk}${nv}`)));
           if (done.length > 8) ul.appendChild(el("li", "muted", t("… and {n} more", { n: done.length - 8 })));
           row.appendChild(ul);
         }

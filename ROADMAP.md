@@ -1,88 +1,106 @@
-# Plex Downloader – plan rozwoju (To-Do)
+# Plex Downloader – roadmap
 
-Ostatnia aktualizacja: 2 listopada 2026 · stabilna: **1.2.5** · BETA: **1.2.6-beta**
+🇬🇧 **English** · 🇵🇱 [Polski](ROADMAP.pl.md) · Changelog: [CHANGELOG.md](CHANGELOG.md)
 
-## Stałe zasady (sprawdzać przy każdej wersji)
+Last updated: 8 November 2026 · stable: **1.2.6** · BETA: **1.2.8-beta**
 
-- **Języki:** angielski domyślny, polski w `locales/pl.json`. Każdy nowy tekst w interfejsie od razu dostaje tłumaczenie.
-- **Opisy:** w interfejsie tylko krótkie etykiety. Dłuższe wyjaśnienia trafiają do podpowiedzi ⓘ (chmurki).
-- **Skrypty:** `setup.sh` i `fix.sh` zaczynają od wyboru języka (1 English domyślny, 2 Polski). `update.sh` jest tylko po angielsku.
-- **Bezpieczeństwo danych:** żaden skrypt ani funkcja nie usuwa filmów ani seriali bez wyraźnego potwierdzenia w panelu. Przywrócenie kopii ustawień nie zmienia loginu ani hasła.
-- **Trzy scenariusze instalacji** (każdą nową funkcję, kreator i instrukcję sprawdzać pod każdym z nich):
-  1. **Zalecany:** Plex i Downloader na jednym Pi, biblioteka na dyskach zewnętrznych (SSD, pendrive).
-  2. **Testowy (niezalecany):** jedno Pi bez dysków, biblioteka na karcie SD, opcjonalnie udostępniona przez SMB.
-  3. **Dwa urządzenia:** Plex na jednym komputerze, Downloader z Menedżerem plików na drugim, oba ze stałym IP. Biblioteka jest dostępna dla obu, np. jako udział sieciowy SMB lub NFS zamontowany na stałe.
-- **Dwie linie wydań:** stabilna w gałęzi `main` (setup.sh, update.sh, panel ogłasza tylko ją) i BETA w gałęzi `beta` (tylko przez `fix.sh`). Nowe funkcje trafiają najpierw do BETA, po sprawdzeniu do stabilnej. Każde wydanie dostaje tag `vX.Y.Z` (BETA: `vX.Y.Z-beta`).
-- **Przed wydaniem:** testy automatyczne, zrzuty ekranu w wersjach EN/PL i w motywie ciemnym/jasnym, aktualizacja README i tego pliku.
+## Ground rules (checked for every release)
 
-## Wydane wersje
+- **Languages:** English is the default (also README, CHANGELOG and this roadmap, each with a Polish version next to it); Polish lives in `locales/pl.json`. Every new interface string gets a translation right away (enforced by a test).
+- **Descriptions:** short labels in the interface; longer explanations go into ⓘ tooltips.
+- **Scripts:** `setup.sh` and `fix.sh` start with a language choice (1 English – default, 2 Polski). `update.sh` is English only.
+- **Data safety:** no script or feature deletes movies or TV shows without an explicit confirmation in the panel. Restoring a settings backup never changes the username or password.
+- **Three installation scenarios** (every new feature, the wizard and the guides are checked against each):
+  1. **Recommended:** Plex and Downloader on one Pi, library on external disks (SSD, USB stick).
+  2. **Testing (not recommended):** one Pi without disks, library on the SD card, optionally shared over SMB.
+  3. **Two devices:** Plex on one computer, Downloader with the File manager on another, both with fixed IPs; the library is reachable by both, e.g. a permanently mounted SMB or NFS share.
+- **Two release lines:** stable on `main` (setup.sh, update.sh; the panel only announces stable) and BETA on `beta` (only via `fix.sh`). New features land in BETA first, then in stable. Every release gets a `vX.Y.Z` tag (BETA: `vX.Y.Z-beta`). Numbering: BETA is two steps ahead of stable (e.g. stable 1.2.6 → BETA 1.2.8-beta).
+- **Before a release:** automated tests, screenshots in EN/PL and dark/light, README, CHANGELOG and this file updated.
 
-| Wersja | Najważniejsze zmiany |
+## Released
+
+See [CHANGELOG.md](CHANGELOG.md) for details.
+
+| Version | Highlights |
 |---|---|
-| 1.0.0 | Pobieranie z bezpośrednich linków (aria2c, 6 połączeń), nazewnictwo Plex, 3 dyski, wznawianie po restarcie, logowanie, usługa systemd |
-| 1.1.0 | Karta podglądu filmu i serialu z TMDB (plakat, ocena, obsada, linki IMDb/Filmweb) |
-| 1.2.0 | Menedżer plików (2 kolumny, przeciąganie, kopia z weryfikacją SHA-256), kategorie, edycje i wersje Plex, status serwerów Plex, kopie ustawień, okno Ustawień, przyciski Google/YouTube |
-| 1.2.1 | Język EN/PL, motyw ciemny i jasny, dziennik aktywności, przenoszenie sezonów i odcinków, „Aktualizuj ścieżki”, komendy terminala, `fix.sh` |
-| 1.2.2 | Usuwanie zaznaczonych kopii ustawień, zwijane komendy, poprawka podpowiedzi |
-| 1.2.5 (stabilna) | 1.2.2 bez zapowiedzi VPN; podział na wersje stabilne i BETA, sprawdzanie aktualizacji tylko dla stabilnej, nowe menu `fix.sh` |
-| 1.2.6-beta | 1.2.2 z zapowiedziami VPN i tym samym podziałem wersji; baza do prac nad 1.3 |
+| 1.0.0 | Downloads from direct links (aria2c, 6 connections), Plex naming, 3 disks, resume after restart, login, systemd service |
+| 1.1.0 | Movie and TV preview card from TMDB |
+| 1.2.0 | File manager (two columns, drag and drop, SHA-256 verified copies), categories, Plex editions and versions, Plex server status, settings backups, Settings window |
+| 1.2.1 | EN/PL interface, dark and light themes, activity log, season and episode moves, "Update paths", terminal commands, `fix.sh` |
+| 1.2.2 | Delete selected settings backups, collapsible commands, tooltip fix |
+| 1.2.5 (stable) | Stable and BETA channels, update check for stable only, new `fix.sh` menu, no VPN preview |
+| 1.2.6-beta | 1.2.2 with the VPN preview, first BETA |
+| 1.2.6 (stable) | Two-stage move progress, "Skip SHA-256 verification", hidden TMDB key, phone and ⓘ layout fixes, neutral `ssh` address, translation test, English documentation |
+| 1.2.8-beta | 1.2.6 + VPN preview; base for 1.3 |
 
-## 1.3 – kreator pierwszego uruchomienia, instrukcje, wybór wersji
+## To fix
 
-**Kreator pierwszego uruchomienia**
-- [ ] Kolejne kroki: język → motyw → konto → sposób instalacji → dyski i foldery → serwer Plex → klucz TMDB (opcjonalny) → podsumowanie.
-- [ ] Wybór sposobu instalacji (odpowiada trzem scenariuszom):
-  - [ ] „Dyski zewnętrzne (zalecane)”: skanowanie podłączonych dysków (`lsblk`/`df`), propozycja folderów `Movies`, `TV Shows`, `Kids`.
-  - [ ] „Biblioteka na karcie SD (niezalecana)”: punkt montowania `/`, foldery w `~/Plex/…` tworzone automatycznie, ostrzeżenie o pojemności, zużyciu karty i prędkości (w ⓘ).
-  - [ ] „Plex na innym urządzeniu”: adres IP serwera Plex, sprawdzenie połączenia, wskazanie zamontowanego udziału sieciowego, test zapisu. Uwaga w ⓘ, że Plex i Downloader muszą widzieć te same pliki (ścieżki mogą się różnić).
-- [ ] Sprawdzenie uprawnień do zapisu i wolnego miejsca na każdym folderze.
-- [ ] Tworzenie brakujących folderów na żądanie.
-- [ ] W każdym kroku linki do instrukcji: HTML w nowym oknie i PDF do pobrania.
-- [ ] Ponowne uruchomienie kreatora z Ustawień.
+All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
+- [ ] **Version tags on GitHub:** `v1.2.5`, `v1.2.6`, `v1.2.6-beta` and `v1.2.8-beta` exist only locally (pushing tags is blocked in Claude's environment). Add them by hand in GitHub → Releases (Draft a new release → tag → branch `main` or `beta`).
 
-**Ustawienia**
-- [ ] Eksport i import ustawień (plik JSON, bez hasła; przy imporcie podgląd zmian).
-- [ ] Gotowy szablon „Biblioteka na karcie SD (niezalecana)” w zakładce Dyski.
+## Demo website (Netlify)
 
-**Instrukcje (EN i PL, HTML w aplikacji + PDF)**
-- [ ] Instalacja serwera Plex na Raspberry Pi, w tym:
-  - [ ] wariant z dyskami zewnętrznymi (fstab, uprawnienia),
-  - [ ] wariant testowy z biblioteką na karcie SD (niezalecany): tworzenie folderu, udostępnienie przez SMB, ograniczenia.
-- [ ] Instalacja Plex Downloadera (`setup.sh`, pierwsze logowanie, kreator).
-- [ ] Konfiguracja na dwóch urządzeniach: stałe IP, udział SMB/NFS montowany w fstab, ręczne dodanie serwera Plex w Ustawieniach.
-- [ ] Obsługa: Menedżer plików, kopie ustawień, dziennik, `update.sh`, `fix.sh`, przywracanie ustawień fabrycznych.
-- [ ] Bezpieczeństwo sieci domowej (bez DMZ i przekierowania portu 8800, mocne hasła, Samba z `valid users`).
+- [x] Demo (first 1.2.5, now **1.2.6**): the real interface with an in-browser simulation, EN/PL, welcome window, data kept for max. 24 h, log out wipes everything, external links blocked, made-up names, IPs and keys, generated posters.
+- [ ] Publish on Netlify and link the demo from the README.
+- [ ] Demo sources (`demo.js`, build script) in the repository under `demo/`, so it can be rebuilt with one command after each stable release.
+- [ ] After 1.3: point the guide link in the welcome window to the EN/PL guides (HTML and PDF).
 
-**Wybór wersji w `fix.sh` (zmiana sposobu wydawania w repozytorium)**
-- [x] Linie stabilna (`main`) i BETA (`beta`), instalacja i wyjście z BETA w `fix.sh` (od 1.2.5 / 1.2.6-beta).
-- [ ] Każde wydanie od **1.2.5** ma tag git `vX.Y.Z` i wydanie na GitHubie z listą zmian.
-- [ ] Plik `CHANGELOG.md` z historią wersji.
-- [ ] Nowa opcja w `fix.sh`: „Zainstaluj inną wersję”. Pokazuje listę stabilnych wersji od 1.2.5 z krótkim opisem. Przed zmianą tworzy kopię `config.json`, potem przełącza kod na wybrany tag, odbudowuje środowisko i restartuje usługę.
-- [ ] Panel i `update.sh` wiedzą, że zainstalowana jest wersja przypięta (starsza). Dostępny jest powrót do najnowszej.
-- [ ] Zgodność ustawień: nowsze wersje migrują `config.json` automatycznie. Przy cofnięciu do starszej wersji przywracana jest kopia ustawień z tamtego okresu, jeśli istnieje. Zachowanie sprawdzić w testach.
+## 1.3 – first-run wizard, guides, version choice
 
-## 1.4 – dostęp zdalny przez VPN
+**First-run wizard**
+- [ ] Steps: language → theme → account → installation type → disks and folders → Plex server → TMDB key (optional) → summary.
+- [ ] Installation type (matches the three scenarios):
+  - [ ] "External disks (recommended)": scan connected disks (`lsblk`/`df`), suggest `Movies`, `TV Shows`, `Kids` folders.
+  - [ ] "Library on the SD card (not recommended)": mount point `/`, folders under `~/Plex/…` created automatically, warning about capacity, wear and speed (in ⓘ).
+  - [ ] "Plex on another device": Plex server IP, connection check, mounted network share, write test. ⓘ note that Plex and Downloader must see the same files (paths may differ).
+- [ ] Check write permissions and free space for every folder.
+- [ ] Create missing folders on request.
+- [ ] Links to the guides in every step: HTML in a new window and PDF to download.
+- [ ] Re-run the wizard from Settings.
 
-Zapowiedzi VPN (zakładka i przycisk w nagłówku) są widoczne tylko w BETA; w wersji stabilnej wrócą razem z działającą funkcją.
+**Settings**
+- [ ] Export and import settings (JSON, without the password; preview of changes on import).
+- [ ] Ready-made "Library on the SD card (not recommended)" template in the Disks tab.
 
-- [ ] Skrypt `setup-vpn.sh`: instalacja Tailscale i link do logowania.
-- [ ] Zakładka VPN: wybór „tylko sieć domowa” lub „sieć domowa + VPN”, port panelu, status i adres VPN, kod QR dla telefonu.
-- [ ] Panel bez otwartych portów na routerze.
-- [ ] Instrukcja EN/PL (Tailscale na Pi, telefonie i komputerze).
+**Guides (EN and PL, HTML in the app + PDF)**
+- [ ] Installing Plex Media Server on a Raspberry Pi:
+  - [ ] with external disks (fstab, permissions),
+  - [ ] test setup with the library on the SD card (not recommended): folder, SMB share, limitations.
+- [ ] Installing Plex Downloader (`setup.sh`, first login, wizard).
+- [ ] Two-device setup: fixed IPs, SMB/NFS share in fstab, adding the Plex server manually.
+- [ ] Everyday use: File manager, settings backups, activity log, `update.sh`, `fix.sh`, factory reset.
+- [ ] Home network security (no DMZ, no port forwarding for 8800, strong passwords, Samba with `valid users`).
 
-## 1.5 – dodawanie plików z komputera i z pendrive'a
+**Choosing a version in `fix.sh`**
+- [x] Stable (`main`) and BETA (`beta`) lines; installing and leaving BETA in `fix.sh` (since 1.2.5 / 1.2.6-beta).
+- [x] `CHANGELOG.md` (since 1.2.6).
+- [ ] Every release since **1.2.5** has a git tag `vX.Y.Z` and a GitHub release with notes.
+- [ ] New `fix.sh` option "Install another version": list of stable versions since 1.2.5 with a short description; backs up `config.json`, switches to the chosen tag, rebuilds the environment and restarts the service.
+- [ ] Panel and `update.sh` know when an older (pinned) version is installed; one step back to the latest.
+- [ ] Settings compatibility: newer versions migrate `config.json` automatically; going back restores a settings backup from that time if one exists. Covered by tests.
 
-Status: **jeszcze nie zrobione** (omawiane wcześniej, zaplanowane na tę wersję).
-- [ ] Przeciągnięcie pliku z komputera do okna przeglądarki: wysyłanie w częściach ze wznawianiem, pasek postępu, wybór dysku i kategorii, nazwa zgodna z Plex.
-- [ ] Wysyłanie kilku plików naraz (np. cały sezon z napisami).
-- [ ] Import z pendrive'a podłączonego do Pi: wykrycie, lista plików, kopiowanie z weryfikacją SHA-256 do wybranej kategorii.
-- [ ] Sprawdzenie wolnego miejsca przed wysłaniem.
+## 1.4 – remote access over VPN
 
-## Pomysły do decyzji (bez przypisanej wersji)
+The VPN preview (Settings tab and header badge) is visible only in BETA; it returns to stable together with the working feature.
 
-Propozycje Claude, które warto rozważyć, ale nie zostały jeszcze zatwierdzone:
-- [ ] Automatyczne odświeżenie biblioteki Plex po pobraniu lub przeniesieniu (wymaga tokenu Plex).
-- [ ] Powiadomienie o zakończonym pobieraniu (np. Telegram lub e-mail).
-- [ ] Harmonogram pobierania (np. tylko w nocy) i limit prędkości zależny od pory dnia.
-- [ ] Stan dysków (SMART, temperatura) w zakładce Dyski.
-- [ ] Wyszukiwanie i pobieranie napisów (np. OpenSubtitles).
+- [ ] `setup-vpn.sh`: installs Tailscale and prints the sign-in link.
+- [ ] VPN tab: "home network only" or "home network + VPN", panel port, VPN status and address, QR code for phones.
+- [ ] No open ports on the router.
+- [ ] EN/PL guide (Tailscale on the Pi, phone and computer).
+
+## 1.5 – adding files from a computer and a USB stick
+
+Status: **not started yet** (discussed, planned for this version).
+- [ ] Drag a file from the computer into the browser window: chunked upload with resume, progress bar, disk and category choice, Plex naming.
+- [ ] Several files at once (e.g. a whole season with subtitles).
+- [ ] Import from a USB stick plugged into the Pi: detection, file list, SHA-256 verified copy into the chosen category.
+- [ ] Free-space check before uploading.
+
+## Ideas to decide (no version yet)
+
+Suggestions from Claude, not approved yet:
+- [ ] Refresh the Plex library automatically after a download or move (needs a Plex token).
+- [ ] Notification when a download finishes (e.g. Telegram or e-mail).
+- [ ] Download schedule (e.g. nights only) and time-based speed limit.
+- [ ] Disk health (SMART, temperature) in the Disks tab.
+- [ ] Subtitle search and download (e.g. OpenSubtitles).
