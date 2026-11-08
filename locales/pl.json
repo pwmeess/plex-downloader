@@ -449,11 +449,11 @@
  "Update available ({v}) – run {cmd}": "Dostępna aktualizacja ({v}) – uruchom {cmd}",
  "Update available (%s). Run %s on the Raspberry Pi.": "Dostępna aktualizacja (%s). Uruchom %s na Raspberry Pi.",
  "About twice as fast: the copy is not read a second time to compare checksums. Only the file sizes are compared before the original is deleted, so a damaged copy may go unnoticed. Recommended only for files you can download again.": "Mniej więcej dwa razy szybciej: kopia nie jest czytana drugi raz w celu porównania sum kontrolnych. Przed usunięciem oryginału porównywany jest tylko rozmiar plików, więc uszkodzona kopia może przejść niezauważona. Zalecane tylko dla plików, które możesz pobrać ponownie.",
- "Copied {b}": "Skopiowano {b}",
  "Saved key: {mask}": "Zapisany klucz: {mask}",
  "Show key": "Pokaż klucz",
  "Skip SHA-256 verification after moving": "Pomiń weryfikację SHA-256 po przeniesieniu",
  "copying {a} of {b}": "kopiowanie {a} z {b}",
  "verifying {a} of {b}": "weryfikacja {a} z {b}",
- "without verification": "bez weryfikacji"
+ "without verification": "bez weryfikacji",
+ "copied {b}": "skopiowano {b}"
 }

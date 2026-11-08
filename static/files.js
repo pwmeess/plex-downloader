@@ -422,7 +422,7 @@
       if (o.type === "move" && o.total) {
         const size = o.size || o.total;
         if (o.same_fs) parts.push(t("{a} of {b}", { a: fmtSize(o.done), b: fmtSize(o.total) }));
-        else if (o.phase === "verify") parts.push(t("Copied {b}", { b: fmtSize(size) }), t("verifying {a} of {b}", { a: fmtSize(o.verified || 0), b: fmtSize(size) }));
+        else if (o.phase === "verify") parts.push(t("copied {b}", { b: fmtSize(size) }), t("verifying {a} of {b}", { a: fmtSize(o.verified || 0), b: fmtSize(size) }));
         else if (o.status === "running" || o.status === "queued") parts.push(t("copying {a} of {b}", { a: fmtSize(o.copied || 0), b: fmtSize(size) }) + (o.verify === false ? " · " + t("without verification") : ""));
         else parts.push(fmtSize(size) + (o.verify === false ? " · " + t("without verification") : ""));
       }
