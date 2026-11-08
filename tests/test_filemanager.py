@@ -71,6 +71,25 @@ class FMTests(unittest.TestCase):
         self.assertEqual(self.wait(self.fm.ops.move(plan))["status"], "done")
         self.assertAlmostEqual(os.stat(os.path.join(self.b, "Old (1999)")).st_mtime, old, delta=2)
 
+    def test_move_without_verification(self):
+        self.make(self.a, "Fast (2001)")
+        plan = self.fm.plan_move("a", "movies", ["Fast (2001)"], "b", "movies")
+        op = self.fm.ops.move(plan, verify=False)
+        self.assertEqual(op["total"], plan["total"])  # only the copy stage is counted
+        done = self.wait(op)
+        self.assertEqual(done["status"], "done")
+        self.assertEqual(done["verified"], 0)
+        self.assertEqual(done["copied"], plan["total"])
+        self.assertTrue(os.path.isdir(os.path.join(self.b, "Fast (2001)")))
+
+    def test_progress_counters_with_verification(self):
+        self.make(self.a, "Slow (2002)")
+        plan = self.fm.plan_move("a", "movies", ["Slow (2002)"], "b", "movies")
+        done = self.wait(self.fm.ops.move(plan))
+        self.assertEqual(done["total"], plan["total"] * 2)
+        self.assertEqual(done["copied"], plan["total"])
+        self.assertEqual(done["verified"], plan["total"])
+
     def test_move_selected_episodes(self):
         show = os.path.join(self.ta, "Show")
         for se, ep in ((1, 1), (1, 2), (2, 1)):

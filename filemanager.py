@@ -433,16 +433,20 @@ class Ops:
             op["current"] = ""
 
     # ---- przenoszenie
-    def move(self, plan):
+    def move(self, plan, verify=True):
+        """verify=False: kopia bez drugiego odczytu (SHA-256); przed usunięciem oryginału
+        porównywany jest tylko rozmiar plików."""
         if not plan["ok"]:
             raise FMError("; ".join(plan["problems"]) or _("The operation cannot be performed."))
         src_label = "%s / %s" % (plan["src"]["disk_label"], plan["src"]["category_label"])
         dst_label = "%s / %s" % (plan["dst"]["disk_label"], plan["dst"]["category_label"])
-        total = plan["total"] * (1 if plan["same_fs"] else 2)  # kopia + weryfikacja
+        verify = bool(verify) and not plan["same_fs"]
+        # pasek postępu: kopia (+ weryfikacja); osobne liczniki copied / verified dla każdego etapu
+        total = plan["total"] * (2 if verify else 1)
         return self._new("move", dst_label, total, plan=plan, items_total=len(plan["items"]),
                          same_fs=plan["same_fs"], src_label=src_label, dst_label=dst_label,
                          src_disk=plan["src"]["disk_label"], dst_disk=plan["dst"]["disk_label"],
-                         show=plan.get("show"))
+                         show=plan.get("show"), verify=verify, size=plan["total"], copied=0, verified=0)
 
     def _run_move(self, op):
         plan = op["plan"]
@@ -469,12 +473,14 @@ class Ops:
                     op["phase"] = "move"
                     os.rename(src, dst)
                     op["done"] += it["size"]
+                    op["copied"] = op.get("copied", 0) + it["size"]
                 else:
                     self._copy_verify_swap(op, src, dst, dbase)
                 op["items_done"] += 1
                 op["log"].append({"name": name, "ok": True})
-                actlog.write("MOVE", "%s%s: %s → %s" % (plan["show"] + "/" if episodes else "", name,
-                                                       op["src_label"], op["dst_label"]))
+                actlog.write("MOVE", "%s%s: %s → %s%s" % (plan["show"] + "/" if episodes else "", name,
+                                                         op["src_label"], op["dst_label"],
+                                                         "" if op.get("verify", True) or plan["same_fs"] else " (no SHA-256 verification)"))
                 _size_cache.pop(src, None)
             except Exception as e:
                 msg = _("Cancelled") if op["cancel"] else str(e)
@@ -531,10 +537,12 @@ class Ops:
                         pass
             else:
                 files.append(("",) + self._copy_file(op, src, tmp))
-            op["phase"] = "verify"
+            verify = op.get("verify", True)
+            if verify:
+                op["phase"] = "verify"
             for r, size, digest in files:
                 p = os.path.join(tmp, r) if r else tmp
-                if os.path.getsize(p) != size or self._hash(op, p) != digest:
+                if os.path.getsize(p) != size or (verify and self._hash(op, p) != digest):
                     raise FMError(_("copy verification failed (%s) – the original was left untouched") % (r or os.path.basename(src)))
             if op["cancel"]:
                 raise FMError(_("Cancelled"))
@@ -556,7 +564,7 @@ class Ops:
             raise FMError(_("copied correctly, but the original could not be removed: %s") % e)
 
     def _copy_file(self, op, src, dst):
-        h = hashlib.sha256()
+        h = hashlib.sha256() if op.get("verify", True) else None
         size = 0
         with open(src, "rb") as fi, open(dst, "wb") as fo:
             while True:
@@ -565,17 +573,19 @@ class Ops:
                 buf = fi.read(CHUNK)
                 if not buf:
                     break
-                h.update(buf)
+                if h:
+                    h.update(buf)
                 fo.write(buf)
                 size += len(buf)
                 op["done"] += len(buf)
+                op["copied"] = op.get("copied", 0) + len(buf)
             fo.flush()
             os.fsync(fo.fileno())
         try:
             shutil.copystat(src, dst)
         except OSError:
             pass
-        return size, h.hexdigest()
+        return size, (h.hexdigest() if h else "")
 
     def _hash(self, op, path):
         h = hashlib.sha256()
@@ -588,6 +598,7 @@ class Ops:
                     break
                 h.update(buf)
                 op["done"] += len(buf)
+                op["verified"] = op.get("verified", 0) + len(buf)
         return h.hexdigest()
 
     # ---- okładki: odświeżenie dla całego dysku

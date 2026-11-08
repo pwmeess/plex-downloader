@@ -61,7 +61,8 @@
     <section class="tab-panel" data-panel="preview" hidden>
       <div><label class="small-label" for="sTmdb">{{ _("TMDB API key (API Key or API Read Access Token)") }}
         <button type="button" class="info-i" data-tip="{{ _('Free key from themoviedb.org → Settings → API. Used for the movie preview card and the posters in the File manager. Stored locally only.') }}" data-href="https://www.themoviedb.org/settings/api">i</button></label>
-        <input class="input mono" id="sTmdb" autocomplete="off" spellcheck="false" placeholder="{{ _('paste the key from themoviedb.org') }}"></div>
+        <input class="input mono" id="sTmdb" type="password" autocomplete="new-password" data-lpignore="true" data-1p-ignore spellcheck="false" placeholder="{{ _('paste the key from themoviedb.org') }}">
+        <label class="check"><input type="checkbox" id="sTmdbShow"> {{ _("Show key") }}</label></div>
       <h3>{{ _("Posters in the File manager") }}</h3>
       <div class="radios">
         <label class="check"><input type="radio" name="thumbs" value="online"> {{ _("Download missing posters from TMDB and save them on the disk") }}</label>
