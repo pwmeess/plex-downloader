@@ -778,3 +778,16 @@ h3.fold-h { display: flex; align-items: center; gap: 8px; }
 .ed-tools .linklike { font-size: 13px; }
 .ed-count { margin-left: auto; font-size: 12px; }
 .ed-count.bad { color: var(--err); }
+
+/* 1.3.0-beta2: eksport / import ustawień, szablon karty SD */
+.disk-add { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.io-box { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 0 0 14px; }
+.io-box h3, .bk-title { font-size: 13px; font-weight: 600; margin: 0 0 8px; display: flex; align-items: center; gap: 6px; }
+.io-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 6px; }
+.io-row .check { margin-top: 0; }
+.tag.bad { color: var(--err); border-color: rgba(239,91,91,.4); }
+.imp-preview .imp-sec { border-top: 1px solid var(--line); padding: 8px 0; }
+.imp-preview .imp-list { margin: 6px 0 0 26px; padding: 0; font-size: 13px; color: var(--muted); }
+.imp-preview .imp-list li { margin: 3px 0; overflow-wrap: anywhere; }
+.imp-preview .mono, .path-list .mono, .path-list li { font-family: var(--mono); font-size: 12.5px; }
+.path-list { margin: 6px 0 0 18px; padding: 0; overflow-wrap: anywhere; }

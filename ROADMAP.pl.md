@@ -2,7 +2,7 @@
 
 🇬🇧 [English](ROADMAP.md) · 🇵🇱 **Polski** · Historia zmian: [CHANGELOG.md](CHANGELOG.md)
 
-Ostatnia aktualizacja: 9 listopada 2026 · stabilna: **1.2.7** · BETA: **1.3.0-beta1**
+Ostatnia aktualizacja: 9 listopada 2026 · stabilna: **1.2.7** · BETA: **1.3.0-beta2**
 
 ## Stałe zasady (sprawdzać przy każdej wersji)
 
@@ -34,6 +34,7 @@ Ostatnia aktualizacja: 9 listopada 2026 · stabilna: **1.2.7** · BETA: **1.3.0-
 | 1.2.7 (stabilna) | Optymalizacja rozpoznawania tytułów na podstawie wklejonego linka; ostrzeżenie, gdy link otwiera stronę WWW zamiast pliku |
 | 1.2.9-beta | 1.2.7 + zapowiedzi VPN, `fix.sh` w oknie z podmenu Serwer |
 | 1.3.0-beta1 | Kreator konfiguracji (trzy sposoby instalacji, wykrywanie dysków i folderów, komendy do udziału sieciowego) |
+| 1.3.0-beta2 | Eksport i import ustawień z podglądem zmian, szablon dysku „Karta SD (niezalecane)” |
 
 ## Do poprawy
 
@@ -61,8 +62,8 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
 - [x] Ponowne uruchomienie kreatora z Ustawień.
 
 **Ustawienia**
-- [ ] Eksport i import ustawień (plik JSON, bez hasła; przy imporcie podgląd zmian).
-- [ ] Gotowy szablon „Biblioteka na karcie SD (niezalecana)” w zakładce Dyski.
+- [x] Eksport i import ustawień (plik JSON, bez hasła; przy imporcie podgląd zmian).
+- [x] Gotowy szablon „Biblioteka na karcie SD (niezalecana)” w zakładce Dyski.
 
 **Instrukcje (EN i PL, HTML w aplikacji + PDF)**
 - [ ] Instalacja serwera Plex na Raspberry Pi, w tym:
@@ -75,7 +76,7 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
 
 **Kolejne kroki wydań**
 - [x] `1.3.0-beta1`: kreator pierwszego uruchomienia (podmenu serwera w `fix.sh` weszło już do 1.2.9-beta).
-- [ ] `1.3.0-beta2`: eksport i import ustawień, szablon „Karta SD”.
+- [x] `1.3.0-beta2`: eksport i import ustawień, szablon „Karta SD”.
 - [ ] `1.3.0-beta3`: instrukcje EN/PL (HTML w aplikacji + PDF).
 - [ ] `1.3.0-beta4`: „Zainstaluj inną wersję” w `fix.sh`.
 - [ ] `1.3.0`: wydanie stabilne.

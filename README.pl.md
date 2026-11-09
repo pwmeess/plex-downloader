@@ -30,6 +30,7 @@ Historia zmian: [CHANGELOG.md](CHANGELOG.md) · Plan kolejnych wersji: [ROADMAP.
 - **Okładki:** zapisywane w folderze filmu jako `Tytuł (Rok).thumb.jpg` (z TMDB). Gdy TMDB nic nie zwróci, plik nie powstaje i widać obrazek zastępczy. Wyszukiwanie w TMDB można wyłączyć dla wybranej kategorii (np. domowe wideo).
 - **Serwery Plex w nagłówku (1.2):** automatyczne wykrywanie w sieci (GDM) i status online/offline, także dla serwerów dodanych ręcznie.
 - **Kopie zapasowe ustawień (1.2):** punkt przywracania po każdej zmianie, przechowywany 30 dni (ostatni zawsze zostaje). Przywrócenie nie zmienia loginu ani hasła.
+- **Eksport i import ustawień (1.3.0-beta2):** plik JSON bez loginu, hasła i kluczy (klucz TMDB opcjonalnie); przy imporcie widać, co się zmieni, i można wybrać sekcje.
 - **Pływające okno ustawień z zakładkami (1.2)** i podpowiedzi ⓘ przy opcjach.
 - Przyciski **Google** i **Zwiastun (YouTube)** w karcie filmu.
 - **Języki i motyw (1.2.1):** angielski (domyślny) i polski, motyw ciemny lub jasny (Ustawienia → Konto). Język wybierasz też przy pierwszym logowaniu i w `setup.sh`. Tłumaczenia są w `locales/<kod>.json`, więc nowy język to nowy plik.
@@ -142,7 +143,7 @@ Aplikacja **nie wykrywa dysków automatycznie**. Domyślne ścieżki to konfigur
 
 Usunięcie dysku z listy nie kasuje żadnych plików, tylko chowa przycisk.
 
-**Biblioteka na karcie SD (niezalecane, np. do testów):** wpisz punkt montowania `/` i foldery w katalogu domowym, np. `/home/pi/Plex/Movies`. Opcja „Pobieraj tylko na zamontowany dysk” może zostać włączona. Pamiętaj o ograniczonej pojemności, zużyciu i prędkości karty.
+**Biblioteka na karcie SD (niezalecane, np. do testów):** wpisz punkt montowania `/` i foldery w katalogu domowym, np. `/home/pi/Plex/Movies`. Opcja „Pobieraj tylko na zamontowany dysk” może zostać włączona. Pamiętaj o ograniczonej pojemności, zużyciu i prędkości karty. W BETA (1.3.0-beta2) przycisk **+ Karta SD (niezalecane)** w Ustawienia → Dyski wypełnia to za Ciebie i może utworzyć foldery.
 
 ## Biblioteka na innym komputerze (udział sieciowy)
 

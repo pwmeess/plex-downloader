@@ -91,6 +91,33 @@
     rows[rows.length - 1].scrollIntoView({ behavior: "smooth", block: "center" });
   });
 
+  // szablon „Karta SD (niezalecane)”: punkt montowania / i foldery w ~/Plex/…
+  $("#addSdDisk").addEventListener("click", async () => {
+    syncFromDom();
+    const home = (cfg.home || "/home/pi").replace(/\/+$/, "");
+    const paths = {};
+    cfg.categories.forEach((c) => { paths[key(c)] = home + "/Plex/" + (c.folder || c.label); });
+    cfg.disks.push({ id: "", label: t("SD card"), subtitle: t("not recommended"), mount: "/", paths });
+    renderDisks();
+    const rows = $$("#diskRows .disk-row");
+    rows[rows.length - 1].scrollIntoView({ behavior: "smooth", block: "center" });
+    const list = Object.values(paths);
+    try {
+      const r = await api("/api/wizard/check", { paths: list });
+      const missing = r.result.filter((x) => !x.exists).map((x) => x.path);
+      if (!missing.length) return;
+      const body = el("div");
+      body.appendChild(el("p", null, t("These folders do not exist yet. Create them now?")));
+      const ul = el("ul", "path-list"); missing.forEach((m) => ul.appendChild(el("li", "mono", m))); body.appendChild(ul);
+      const ok = await modal({ title: t("Create folders"), body,
+        buttons: [{ label: t("Not now"), value: false }, { label: t("Create"), value: true, cls: "btn-accent" }] });
+      if (!ok) return;
+      const c = await api("/api/wizard/create", { paths: missing });
+      if (c.problems.length) toast(c.problems.join("\n"), true);
+      else toast(t("Folders created: {n}", { n: c.created.length }));
+    } catch (e) { toast(e.message, true); }
+  });
+
   // ------------------------------------------------------------------ kategorie
   function renderCats() {
     const box = $("#catRows");
@@ -279,6 +306,92 @@
     } catch (e) { toast(e.message, true); }
     loadBackups();
   });
+  // ------------------------------------------------------------------ eksport / import ustawień
+  $("#expBtn").addEventListener("click", () => {
+    const a = el("a"); a.href = "/api/settings/export" + ($("#expTmdb").checked ? "?tmdb=1" : "");
+    a.download = ""; document.body.appendChild(a); a.click(); a.remove();
+  });
+  $("#impBtn").addEventListener("click", () => { $("#impFile").value = ""; $("#impFile").click(); });
+  const SECTION = {
+    disks: () => t("Disks"), categories: () => t("Categories"), plex: () => t("Plex servers"),
+    downloads: () => t("Download options"), preview: () => t("Preview & posters"), interface: () => t("Interface (language, theme)"),
+  };
+  const FIELD = {
+    plex_autodiscover: () => t("Find Plex servers on the network"), connections_per_file: () => t("Connections per file"),
+    max_concurrent: () => t("Downloads at the same time"), max_speed_mbps: () => t("Speed limit (MB/s, 0 = no limit)"),
+    require_mount: () => t("Block disks that are not mounted"), thumbs_mode: () => t("Posters"),
+    tmdb_api_key: () => t("TMDB key"), language: () => t("Language"), theme: () => t("Theme"),
+  };
+  const VALUE = { dark: () => t("Dark"), light: () => t("Light"), en: () => "English", pl: () => "Polski",
+                  online: () => t("from TMDB"), local: () => t("only saved"), off: () => t("none") };
+  const showVal = (v) => (v === true ? t("yes") : v === false ? t("no") : v === "" || v == null ? "–"
+                          : VALUE[v] ? VALUE[v]() : String(v));
+  function listNames(arr, f) { return (arr || []).map(f).join(", ") || "–"; }
+  $("#impFile").addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    let data;
+    try { data = JSON.parse(await f.text()); } catch (er) { toast(t("This is not a Plex Downloader settings file."), true); return; }
+    let pv;
+    try { pv = await api("/api/settings/import/preview", { data }); } catch (er) { toast(er.message, true); return; }
+    const names = Object.keys(pv.sections);
+    if (!names.length) { toast(t("The file has no settings to import."), true); return; }
+    const body = el("div", "imp-preview");
+    const meta = pv.meta || {};
+    body.appendChild(el("p", "muted", t("File: {name} · version {v} · exported {when}", { name: f.name, v: meta.version || "?", when: meta.exported || "?" })));
+    body.appendChild(el("p", null, t("Choose what to import. Unchecked parts stay as they are now. Username and password never change.")));
+    const boxes = {};
+    names.forEach((n) => {
+      const sec = pv.sections[n];
+      const box = el("div", "imp-sec");
+      const lab = el("label", "check");
+      const cb = el("input"); cb.type = "checkbox"; cb.checked = sec.changes.length > 0; boxes[n] = cb;
+      lab.append(cb, " ", el("b", null, SECTION[n]()));
+      if (!sec.changes.length) lab.appendChild(el("span", "tag", t("no changes")));
+      box.appendChild(lab);
+      const ul = el("ul", "imp-list");
+      sec.changes.forEach((c) => {
+        let txt;
+        if (c.key === "disks") txt = null;
+        else if (c.key === "categories") txt = t("{old} → {new}", { old: listNames(c.old, (x) => x.label), new: listNames(c.new, (x) => x.label) });
+        else if (c.key === "plex_servers") txt = t("{old} → {new}", { old: listNames(c.old, (x) => x.name + " (" + x.host + ")"), new: listNames(c.new, (x) => x.name + " (" + x.host + ")") });
+        else txt = (FIELD[c.key] ? FIELD[c.key]() : c.key) + ": " + t("{old} → {new}", { old: showVal(c.old), new: showVal(c.new) });
+        if (txt) ul.appendChild(el("li", null, txt));
+      });
+      if (sec.disks) {
+        sec.disks.forEach((d) => {
+          const li = el("li");
+          li.append(el("b", null, d.label), " ", el("span", "mono muted", d.mount));
+          if (!d.mounted) li.appendChild(el("span", "tag bad", t("not found on this device")));
+          const ok = d.paths.filter((p) => p.exists && p.writable).length;
+          const miss = d.paths.length - ok;
+          li.appendChild(el("span", "muted", " · " + t("folders found: {ok}, missing: {miss}", { ok, miss })));
+          ul.appendChild(li);
+        });
+        if (!sec.disks.length) ul.appendChild(el("li", "muted", t("no disks in the file")));
+      }
+      if (ul.childElementCount) box.appendChild(ul);
+      body.appendChild(box);
+    });
+    body.appendChild(el("p", "hint", t("A restore point is created first, so you can undo the import in this tab.")));
+    const chosen = await modal({ title: t("Import settings"), wide: true, body,
+      buttons: [{ label: t("Cancel"), value: false },
+                { label: t("Import selected"), cls: "btn-accent", value: () => {
+                  const s = names.filter((n) => boxes[n].checked);
+                  if (!s.length) { toast(t("Nothing selected."), true); return undefined; }
+                  return s;
+                } }] });
+    if (!chosen) return;
+    try {
+      const r = await api("/api/settings/import", { data, sections: chosen });
+      toast(t("Settings imported."));
+      if (r.reload) { setTimeout(() => location.reload(), 600); return; }
+      await load(); showTab("backups");
+      document.dispatchEvent(new CustomEvent("pd:settings-saved"));
+      window.PD.refreshStatus();
+    } catch (er) { toast(er.message, true); }
+  });
+
   $("#sTmdb").addEventListener("input", (e) => { e.target.dataset.dirty = "1"; });
   $("#sTmdbShow").addEventListener("change", async (e) => {
     const tk = $("#sTmdb");

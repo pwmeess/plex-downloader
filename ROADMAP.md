@@ -2,7 +2,7 @@
 
 🇬🇧 **English** · 🇵🇱 [Polski](ROADMAP.pl.md) · Changelog: [CHANGELOG.md](CHANGELOG.md)
 
-Last updated: 9 November 2026 · stable: **1.2.7** · BETA: **1.3.0-beta1**
+Last updated: 9 November 2026 · stable: **1.2.7** · BETA: **1.3.0-beta2**
 
 ## Ground rules (checked for every release)
 
@@ -36,6 +36,7 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 | 1.2.7 (stable) | Better title recognition from pasted links; links that open a web page instead of a file are reported |
 | 1.2.9-beta | 1.2.7 + VPN preview, `fix.sh` in a window with the Server submenu |
 | 1.3.0-beta1 | Setup wizard (three installation types, disk and folder detection, network share commands) |
+| 1.3.0-beta2 | Settings export / import with a preview of changes, “SD card (not recommended)” disk template |
 
 ## To fix
 
@@ -63,8 +64,8 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
 - [x] Re-run the wizard from Settings.
 
 **Settings**
-- [ ] Export and import settings (JSON, without the password; preview of changes on import).
-- [ ] Ready-made "Library on the SD card (not recommended)" template in the Disks tab.
+- [x] Export and import settings (JSON, without the password; preview of changes on import).
+- [x] Ready-made "Library on the SD card (not recommended)" template in the Disks tab.
 
 **Guides (EN and PL, HTML in the app + PDF)**
 - [ ] Installing Plex Media Server on a Raspberry Pi:
@@ -77,7 +78,7 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
 
 **Release steps**
 - [x] `1.3.0-beta1`: first-run wizard (the `fix.sh` server submenu already shipped in 1.2.9-beta).
-- [ ] `1.3.0-beta2`: settings export / import, SD-card template.
+- [x] `1.3.0-beta2`: settings export / import, SD-card template.
 - [ ] `1.3.0-beta3`: EN/PL guides (HTML in the app + PDF).
 - [ ] `1.3.0-beta4`: "Install another version" in `fix.sh`.
 - [ ] `1.3.0`: stable release.

@@ -2,6 +2,14 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
+## 1.3.0-beta2 – 2026-11-09 (BETA)
+
+- **Settings export and import** (Settings → Backups → Export and import):
+  - **Export settings** downloads a JSON file with disks, categories, Plex servers, download options, preview options, language and theme. The username, password and session keys are never included; the TMDB key only when “include the TMDB key” is ticked.
+  - **Import settings…** checks the file and first shows what would change, section by section (disks with a check whether their folders exist on this device, categories, Plex servers, download options, preview & posters, interface). Only the ticked sections are applied; a restore point is created first, so the import can be undone.
+  - Invalid values in the file (relative paths, unknown options, numbers out of range, unsafe host names) are ignored or limited.
+- **“+ SD card (not recommended)”** in Settings → Disks: adds a disk with the mount point `/` and folders in the home folder (`~/Plex/Movies`…) for every category, and offers to create missing folders. ⓘ explains why the SD card is not recommended.
+
 ## 1.3.0-beta1 – 2026-11-09 (BETA)
 
 - **Disk tiles (download page and File manager):** drag a tile to change the order of the disks (also with the gear: move left / right, handy on phones); the order is the same on both pages and in Settings. The gear in the top-left corner of a tile also renames the disk (max. 16 characters). Tiles are laid out in rows of three.

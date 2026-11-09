@@ -31,6 +31,7 @@ Changelog: [CHANGELOG.md](CHANGELOG.md) · Roadmap: [ROADMAP.md](ROADMAP.md)
 - **Posters:** saved in the movie folder as `Title (Year).thumb.jpg` (from TMDB). TMDB lookups can be switched off per category (e.g. home videos).
 - **Plex servers in the header:** automatic discovery on the network (GDM) and online/offline status, also for servers added manually.
 - **Settings backups:** a restore point after every change, kept for 30 days (the latest is always kept). Restoring never changes the username or password.
+- **Settings export and import (1.3.0-beta2):** a JSON file without the username, password and keys (TMDB key optional); on import you see what changes and choose the sections to apply.
 - **Languages and themes:** English (default) and Polish, dark or light theme (Settings → Account). Translations live in `locales/<code>.json`, so a new language is a new file.
 - **Activity log:** `logs/plexdl.log` with downloads, moves (from → to) and deletions; **LOG** viewer in Settings → Account with Clear and Export. 1 MB limit, then `bcup01.log`, `bcup02.log`…
 - **Hidden TMDB key (1.2.6):** the key field is masked like a password, with "Show key" on demand; the panel does not send the key to the browser until you ask for it.
@@ -124,7 +125,7 @@ The default paths in `config.example.json` are the author's layout, so yours wil
 
 Removing a disk from the list never deletes files – it only hides the button.
 
-**Library on the SD card (not recommended, e.g. for testing):** use the mount point `/` and folders in your home directory, e.g. `/home/pi/Plex/Movies`. Keep in mind the limited capacity, wear and speed of SD cards.
+**Library on the SD card (not recommended, e.g. for testing):** use the mount point `/` and folders in your home directory, e.g. `/home/pi/Plex/Movies`. In BETA (1.3.0-beta2) the **+ SD card (not recommended)** button in Settings → Disks fills this in and can create the folders. Keep in mind the limited capacity, wear and speed of SD cards.
 
 ## Library on another computer (network share)
 

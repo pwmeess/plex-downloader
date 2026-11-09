@@ -309,7 +309,7 @@ def api_settings_get():
                    thumbs_mode=cfg.get("thumbs_mode", "online"),
                    port=cfg.get("port", 8800), language=i18n.current(), theme=cfg.get("theme", "dark"),
                    app_dir=BASE_DIR, system_user=getpass.getuser(), ip=plexservers.lan_ip(),
-                   log=actlog.info())
+                   home=wizard.home_dir(), log=actlog.info())
 
 
 def _mask_key(key):
@@ -408,6 +408,159 @@ def api_settings_post():
     plexservers.monitor.refresh()
     actlog.write("SETTINGS", _("Settings saved"))
     return jsonify(ok=True)
+
+
+# ---------------------------------------------------------------- eksport / import ustawień
+EXPORT_KEYS = ("categories", "disks", "plex_servers", "plex_autodiscover", "connections_per_file", "max_concurrent",
+               "max_speed_mbps", "require_mount", "thumbs_mode", "language", "theme")
+IMPORT_SECTIONS = {
+    "disks": ("disks",),
+    "categories": ("categories",),
+    "plex": ("plex_servers", "plex_autodiscover"),
+    "downloads": ("connections_per_file", "max_concurrent", "max_speed_mbps", "require_mount"),
+    "preview": ("thumbs_mode", "tmdb_api_key"),
+    "interface": ("language", "theme"),
+}
+
+
+@app.route("/api/settings/export")
+@login_required
+def api_settings_export():
+    """Plik JSON z ustawieniami – bez loginu, hasła i kluczy sesji (klucz TMDB tylko na życzenie)."""
+    from flask import Response
+    import json as _json
+    cfg = config.get()
+    out = {"_plexdl": {"app": "plex-downloader", "version": VERSION, "exported": time.strftime("%Y-%m-%d %H:%M")}}
+    for k in EXPORT_KEYS:
+        out[k] = cfg.get(k)
+    if request.args.get("tmdb") == "1" and cfg.get("tmdb_api_key"):
+        out["tmdb_api_key"] = cfg["tmdb_api_key"]
+    actlog.write("SETTINGS", "settings exported%s" % (" (with TMDB key)" if "tmdb_api_key" in out else ""))
+    name = "plexdl-settings-%s.json" % time.strftime("%Y%m%d-%H%M")
+    return Response(_json.dumps(out, indent=2, ensure_ascii=False), mimetype="application/json",
+                    headers={"Content-Disposition": "attachment; filename=%s" % name})
+
+
+def _import_clean(data):
+    """Sprawdza plik importu; zwraca słownik gotowych wartości (tylko klucze, które są w pliku)."""
+    if not isinstance(data, dict) or not isinstance(data.get("_plexdl"), dict):
+        raise ValueError(_("This is not a Plex Downloader settings file."))
+    out = {}
+    if isinstance(data.get("categories"), list):
+        cats, seen = [], set()
+        for raw in data["categories"]:
+            if not isinstance(raw, dict) or not str(raw.get("label") or "").strip():
+                continue
+            label = str(raw["label"]).strip()[:40]
+            cid = str(raw.get("id") or "")
+            if not re.match(r"^[a-z0-9-]{1,24}$", cid) or cid in seen:
+                cid = re.sub(r"[^a-z0-9]+", "-", label.lower()).strip("-")[:20] or "cat"
+                while cid in seen:
+                    cid = cid[:20] + "-" + uuid.uuid4().hex[:3]
+            seen.add(cid)
+            kind = raw.get("kind") if raw.get("kind") in ("movie", "tv", "other") else "movie"
+            cats.append({"id": cid, "label": label, "kind": kind,
+                         "folder": naming.sanitize(str(raw.get("folder") or ""))[:60],
+                         "tmdb": bool(raw.get("tmdb", True)) and kind != "other"})
+        if cats:
+            out["categories"] = cats
+    if isinstance(data.get("disks"), list):
+        disks = []
+        for raw in data["disks"]:
+            if not isinstance(raw, dict):
+                continue
+            label = str(raw.get("label") or "").strip()[:40]
+            mount = _abs_path(str(raw.get("mount") or ""), label or "?")
+            if not label or not mount:
+                continue
+            paths = {}
+            for cid, val in (raw.get("paths") or {}).items():
+                p = _abs_path(str(val or ""), "%s – %s" % (label, cid))
+                if p:
+                    paths[str(cid)] = p
+            did = str(raw.get("id") or "")
+            disks.append({"id": did if re.match(r"^[a-z0-9_-]{1,32}$", did) else uuid.uuid4().hex[:8],
+                          "label": label, "subtitle": str(raw.get("subtitle") or "")[:40], "mount": mount, "paths": paths})
+        out["disks"] = disks
+    if isinstance(data.get("plex_servers"), list):
+        servers = []
+        for raw in data["plex_servers"]:
+            host = str((raw or {}).get("host") or "").strip()
+            if host and re.match(r"^[A-Za-z0-9.\-:]+$", host):
+                port = int(raw.get("port") or 32400)
+                if 1 <= port <= 65535:
+                    servers.append({"id": str(raw.get("id") or uuid.uuid4().hex[:6])[:12],
+                                    "name": str(raw.get("name") or host)[:40], "host": host, "port": port})
+        out["plex_servers"] = servers
+    if "plex_autodiscover" in data:
+        out["plex_autodiscover"] = bool(data["plex_autodiscover"])
+    if "connections_per_file" in data:
+        out["connections_per_file"] = max(1, min(16, int(data["connections_per_file"])))
+    if "max_concurrent" in data:
+        out["max_concurrent"] = max(1, min(10, int(data["max_concurrent"])))
+    if "max_speed_mbps" in data:
+        out["max_speed_mbps"] = max(0.0, float(data["max_speed_mbps"] or 0))
+    if "require_mount" in data:
+        out["require_mount"] = bool(data["require_mount"])
+    if data.get("thumbs_mode") in ("online", "local", "off"):
+        out["thumbs_mode"] = data["thumbs_mode"]
+    if isinstance(data.get("tmdb_api_key"), str) and data["tmdb_api_key"].strip():
+        out["tmdb_api_key"] = re.sub(r"\s+", "", data["tmdb_api_key"])
+    if data.get("language") in {l["code"] for l in i18n.available()}:
+        out["language"] = data["language"]
+    if data.get("theme") in ("dark", "light"):
+        out["theme"] = data["theme"]
+    return out
+
+
+@app.route("/api/settings/import/preview", methods=["POST"])
+@login_required
+def api_settings_import_preview():
+    try:
+        new = _import_clean((request.get_json(silent=True) or {}).get("data"))
+    except (TypeError, ValueError) as e:
+        return err(str(e) or _("Invalid values."))
+    cfg = config.get()
+    meta = ((request.get_json(silent=True) or {}).get("data") or {}).get("_plexdl") or {}
+    sections = {}
+    for sec, keys in IMPORT_SECTIONS.items():
+        present = [k for k in keys if k in new]
+        if not present:
+            continue
+        changes = [{"key": k, "old": cfg.get(k) if k != "tmdb_api_key" else bool(cfg.get(k)),
+                    "new": new[k] if k != "tmdb_api_key" else True}
+                   for k in present if (cfg.get(k) != new[k])]
+        sections[sec] = {"changes": changes}
+    # dyski: czy foldery z pliku istnieją na tym urządzeniu
+    if "disks" in new:
+        paths = [p for d in new["disks"] for p in d["paths"].values()]
+        status = {x["path"]: x for x in wizard.check(paths)}
+        sections["disks"]["disks"] = [{"label": d["label"], "mount": d["mount"], "mounted": os.path.isdir(d["mount"]),
+                                       "paths": [dict(status.get(p, {}), cat=c) for c, p in d["paths"].items()]}
+                                      for d in new["disks"]]
+    return jsonify(meta=meta, sections=sections)
+
+
+@app.route("/api/settings/import", methods=["POST"])
+@login_required
+def api_settings_import():
+    d = request.get_json(silent=True) or {}
+    try:
+        new = _import_clean(d.get("data"))
+    except (TypeError, ValueError) as e:
+        return err(str(e) or _("Invalid values."))
+    chosen = [s for s in (d.get("sections") or []) if s in IMPORT_SECTIONS]
+    changes = {k: new[k] for s in chosen for k in IMPORT_SECTIONS[s] if k in new}
+    if not changes:
+        return err(_("Nothing selected."))
+    lang = changes.pop("language", None)
+    config.update(note="Settings imported", **changes)
+    if lang and lang != config.get().get("language"):
+        config.set_language(lang)
+    manager.apply_settings()
+    plexservers.monitor.refresh()
+    actlog.write("SETTINGS", "settings imported: %s" % ", ".join(chosen))
+    return jsonify(ok=True, reload=bool(lang) or "theme" in changes)
 
 
 # ---------------------------------------------------------------- dyski: kolejność i nazwa (strona główna, Menedżer plików)
