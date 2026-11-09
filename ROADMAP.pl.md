@@ -71,6 +71,7 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
   - [ ] wariant testowy z biblioteką na karcie SD (niezalecany): tworzenie folderu, udostępnienie przez SMB, ograniczenia.
 - [ ] Instalacja Plex Downloadera (`setup.sh`, pierwsze logowanie, kreator).
 - [ ] Konfiguracja na dwóch urządzeniach: stałe IP, udział SMB/NFS montowany w fstab, ręczne dodanie serwera Plex w Ustawieniach.
+  - [ ] Przykład (już w README): jeden dysk, dwie ścieżki (`/media/ssd1` na Pi z Plexem, `/mnt/ssd1` na Pi z Downloaderem), „Aktualizuj ścieżki” po imporcie, jedna kategoria z różnymi nazwami folderów na dwóch dyskach (`Concerts` / `Live`) i oba foldery w jednej bibliotece Plex, hasło ze znakiem `\` w `.smbcredentials`.
 - [ ] Obsługa: Menedżer plików, kopie ustawień, dziennik, `update.sh`, `fix.sh`, przywracanie ustawień fabrycznych.
 - [ ] Bezpieczeństwo sieci domowej (bez DMZ i przekierowania portu 8800, mocne hasła, Samba z `valid users`).
 

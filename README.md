@@ -150,6 +150,38 @@ To mount the share automatically after every restart, add this line to `/etc/fst
 
 Then run `sudo mount -a` – if it shows no error, the share will be mounted after a restart too. In the setup wizard choose **Plex on another device** (the share appears in the list) or enter `/mnt/plex` as the mount point in **Settings → Disks**. The same commands are shown in the wizard with copy buttons.
 
+> **Password with a `\`:** `printf` changes a backslash in the password, so mounting fails with `mount error(13): Permission denied`. Fix the password by hand: `nano ~/.smbcredentials`.
+
+### One disk, two different paths
+
+Each device sees the shared disk under its own path. Example: the disk "SSD 1TB" is plugged into the Plex Pi, and the Plex Downloader Pi mounts it over SMB.
+
+| | Plex Pi | Plex Downloader Pi |
+|---|---|---|
+| Mount point | `/media/ssd1` | `/mnt/ssd1` |
+| Folder of the "Concerts" category | `/media/ssd1/Library/Concerts` | `/mnt/ssd1/Library/Concerts` |
+
+In Plex Downloader always enter the paths **of the device the panel runs on**. A path copied from the Plex Pi (`/media/ssd1/…`) does not exist on the other Pi, and the panel shows "Folder does not exist". The same happens after importing settings from another device.
+
+Easiest fix: **Settings → Disks → Update paths** for that disk, then **Save**. Since 1.3.0-beta2 the panel moves such a path onto its own mount point (`/media/ssd1/Library/Concerts` → `/mnt/ssd1/Library/Concerts`) when the folder exists there. The paths in Plex itself stay as they are – Plex uses its own (`/media/ssd1/…`).
+
+### One category, different folder names on the disks
+
+A category is just a button in the panel – every disk has its own folder field for it, so the folder names may differ. Example: the **Concerts** category, folder `Concerts` on "SSD 1TB" and `Live` on "Pendrive 256GB":
+
+| Disk | Folder of the "Concerts" category |
+|---|---|
+| SSD 1TB | `/mnt/ssd1/Library/Concerts` |
+| Pendrive 256GB | `/mnt/usb256/Library/Live` |
+
+How to set it up by hand:
+
+1. **Settings → Disks**: for each disk enter the full path of its folder in **Folder: Concerts** (or click the yellow **Create** next to an empty field and type the name, e.g. `Live`).
+2. **Save**. "Update paths" will not break it – an existing path is kept, and folder names used on other disks (`Concerts`, `Live`) are also searched for.
+3. In Plex add **both folders to the same library**: Plex → "Concerts" library → **Edit** → **Add folders** → choose `Concerts` on one disk and `Live` on the other. Plex shows the movies from both as one library.
+
+Want the same name everywhere? Rename the folder on the disk (over SMB or with `mv "/mnt/usb256/Library/Live" "/mnt/usb256/Library/Concerts"`), then fix the path in **Settings → Disks** and in the Plex library – in that order, before downloading anything new.
+
 ## Useful commands
 
 ```bash

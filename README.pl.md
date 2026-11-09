@@ -168,6 +168,38 @@ sudo mount -t cifs //192.168.1.10/SHARE /mnt/plex -o credentials=/home/pi/.smbcr
 
 Potem uruchom `sudo mount -a` – jeśli nie pokaże błędu, udział zamontuje się też po restarcie. W kreatorze wybierz **Plex na innym urządzeniu** (udział pojawi się na liście) albo wpisz `/mnt/plex` jako punkt montowania w **Ustawienia → Dyski**. Te same komendy kreator pokazuje z przyciskami kopiowania.
 
+> **Hasło ze znakiem `\`:** `printf` zmienia ukośnik wsteczny w haśle, przez co montowanie kończy się błędem `mount error(13): Permission denied`. Wtedy popraw hasło ręcznie: `nano ~/.smbcredentials`.
+
+### Ten sam dysk, dwie różne ścieżki
+
+Każde urządzenie widzi wspólny dysk pod własną ścieżką. Przykład: dysk „SSD 1TB” jest podłączony do Pi z Plexem, a Pi z Plex Downloaderem ma go zamontowanego przez SMB.
+
+| | Pi z Plexem | Pi z Plex Downloaderem |
+|---|---|---|
+| Punkt montowania | `/media/ssd1` | `/mnt/ssd1` |
+| Folder kategorii „Koncerty” | `/media/ssd1/Biblioteka/Concerts` | `/mnt/ssd1/Biblioteka/Concerts` |
+
+W Plex Downloaderze zawsze wpisuj ścieżki **tego urządzenia, na którym działa panel**. Ścieżka przepisana z Pi z Plexem (`/media/ssd1/…`) na drugim Pi nie istnieje – panel pokaże wtedy „Folder nie istnieje”. To samo dzieje się po imporcie ustawień z drugiego urządzenia.
+
+Najprościej: **Ustawienia → Dyski → Aktualizuj ścieżki** przy danym dysku, potem **Zapisz**. Od wersji 1.3.0-beta2 panel sam przenosi taką ścieżkę na swój punkt montowania (`/media/ssd1/Biblioteka/Concerts` → `/mnt/ssd1/Biblioteka/Concerts`), jeśli folder tam istnieje. Ścieżki w samym Plexie zostają bez zmian – Plex korzysta ze swoich (`/media/ssd1/…`).
+
+### Ta sama kategoria, różne nazwy folderów na dyskach
+
+Kategoria to tylko przycisk w panelu – każdy dysk ma dla niej własne pole z folderem, więc nazwy folderów mogą się różnić. Przykład: kategoria **Koncerty**, na dysku „SSD 1TB” folder `Concerts`, a na „Pendrive 256GB” folder `Live`:
+
+| Dysk | Folder kategorii „Koncerty” |
+|---|---|
+| SSD 1TB | `/mnt/ssd1/Biblioteka/Concerts` |
+| Pendrive 256GB | `/mnt/usb256/Biblioteka/Live` |
+
+Jak to ustawić ręcznie:
+
+1. **Ustawienia → Dyski**, przy każdym dysku w polu **Folder: Koncerty** wpisz pełną ścieżkę do jego folderu (albo kliknij żółte **Utwórz** przy pustym polu i wpisz nazwę, np. `Live`).
+2. **Zapisz**. „Aktualizuj ścieżki” tego nie zepsuje – istniejąca ścieżka zostaje, a nazwy folderów używane na innych dyskach (`Concerts`, `Live`) panel też bierze pod uwagę przy szukaniu.
+3. W Plexie dodaj **oba foldery do tej samej biblioteki**: Plex → biblioteka „Koncerty” → **Edytuj** → **Dodaj foldery** → wskaż `Concerts` na jednym dysku i `Live` na drugim. Plex pokaże filmy z obu jako jedną bibliotekę.
+
+Chcesz mieć wszędzie jedną nazwę? Zmień nazwę folderu na dysku (np. przez SMB lub `mv "/mnt/usb256/Biblioteka/Live" "/mnt/usb256/Biblioteka/Concerts"`), popraw ścieżkę w **Ustawienia → Dyski** i w bibliotece Plex – w tej kolejności, zanim pobierzesz coś nowego.
+
 ## Przydatne polecenia
 
 ```bash

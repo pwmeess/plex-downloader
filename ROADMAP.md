@@ -73,6 +73,7 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
   - [ ] test setup with the library on the SD card (not recommended): folder, SMB share, limitations.
 - [ ] Installing Plex Downloader (`setup.sh`, first login, wizard).
 - [ ] Two-device setup: fixed IPs, SMB/NFS share in fstab, adding the Plex server manually.
+  - [ ] Example (already in the README): one disk with two paths (`/media/ssd1` on the Plex Pi, `/mnt/ssd1` on the Downloader Pi), "Update paths" after an import, one category with different folder names on two disks (`Concerts` / `Live`) and both folders in one Plex library, a password with `\` in `.smbcredentials`.
 - [ ] Everyday use: File manager, settings backups, activity log, `update.sh`, `fix.sh`, factory reset.
 - [ ] Home network security (no DMZ, no port forwarding for 8800, strong passwords, Samba with `valid users`).
 
