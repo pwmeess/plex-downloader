@@ -455,5 +455,6 @@
  "copying {a} of {b}": "kopiowanie {a} z {b}",
  "verifying {a} of {b}": "weryfikacja {a} z {b}",
  "without verification": "bez weryfikacji",
- "copied {b}": "skopiowano {b}"
+ "copied {b}": "skopiowano {b}",
+ "The link opens a web page, not a video file. The site may require logging in, or the link has expired – copy the direct link to the file.": "Link otwiera stronę WWW, a nie plik wideo. Serwis może wymagać zalogowania albo link wygasł – skopiuj bezpośredni link do pliku."
 }

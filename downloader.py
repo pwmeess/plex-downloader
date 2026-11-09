@@ -108,13 +108,21 @@ def probe(url, timeout=12):
             size = int(hdr["Content-Length"])
         resumable = hdr.get("Accept-Ranges", "").lower() == "bytes" or bool(cr)
         ctype = (hdr.get("Content-Type") or "").split(";")[0].strip().lower()
-        fname = (naming.filename_from_content_disposition(hdr.get("Content-Disposition"))
-                 or naming.filename_from_url(final_url) or naming.filename_from_url(url))
+        # strona WWW zamiast pliku (logowanie, weryfikacja wieku, wygasły link) – zwykle po przekierowaniu
+        page = ctype in ("text/html", "application/xhtml+xml")
+        from_final = naming.filename_from_url(final_url)
+        from_url = naming.filename_from_url(url)
+        # nazwa z adresu po przekierowaniu tylko wtedy, gdy wygląda na plik wideo
+        # (inaczej np. „L2Rsb2Fk…” – zakodowany adres strony logowania)
+        if page or not naming.split_ext(from_final)[1]:
+            from_final = ""
+        fname = (("" if page else naming.filename_from_content_disposition(hdr.get("Content-Disposition")))
+                 or from_final or from_url)
     _, ext = naming.split_ext(fname)
     if not ext:
         ext = CONTENT_TYPES.get(ctype, "")
-    return {"filename": fname, "size": size, "resumable": resumable,
-            "content_type": ctype, "ext": ext}
+    return {"filename": fname, "size": None if page else size, "resumable": False if page else resumable,
+            "content_type": ctype, "ext": ext, "page": page}
 
 
 def disk_status(d):
