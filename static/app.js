@@ -334,7 +334,9 @@
       fillLists(r);
       applyGuess(r);
       const parts = [];
-      if (r.reachable) {
+      if (r.reachable && r.page) {
+        parts.push(el("span", "warn", t("The link opens a web page, not a video file. The site may require logging in, or the link has expired – copy the direct link to the file.")));
+      } else if (r.reachable) {
         parts.push(el("span", "ok", "✓ " + t("Link works")));
         if (r.size) parts.push(el("span", null, t("Size: {s}", { s: fmtSize(r.size) })));
         parts.push(r.resumable
