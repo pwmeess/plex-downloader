@@ -767,6 +767,17 @@ ALIASES = {
 }
 
 
+def _rebase(path, mount):
+    """Ścieżka z innego urządzenia (np. /plex_media_1024/Plex 1T/Home Video z Pi z Plexem) przeniesiona
+    na ten punkt montowania (/mnt/plex_1024/Plex 1T/Home Video) – jeśli taki folder tu istnieje."""
+    parts = [x for x in (path or "").split("/") if x]
+    for k in range(1, len(parts)):
+        cand = os.path.join(mount, *parts[k:])
+        if os.path.isdir(cand):
+            return cand
+    return None
+
+
 def scan_paths(mount, categories, current=None, max_depth=3, max_dirs=4000):
     """Szuka na dysku folderów pasujących do kategorii. Zwraca {id: {path, status}}:
     status = ok (obecna ścieżka istnieje), found (znaleziono), missing (nie znaleziono)."""
@@ -777,6 +788,7 @@ def scan_paths(mount, categories, current=None, max_depth=3, max_dirs=4000):
     for c in categories:
         names = {(c.get("folder") or "").strip().lower(), (c.get("label") or "").strip().lower()}
         names |= set(ALIASES.get(c.get("id"), []))
+        names |= {n.strip().lower() for n in c.get("names") or [] if isinstance(n, str)}
         wanted[c["id"]] = {n for n in names if n}
     found, visited = {}, 0
     queue = [(mount, 0)]
@@ -816,7 +828,7 @@ def scan_paths(mount, categories, current=None, max_depth=3, max_dirs=4000):
                     break
             if hit:
                 break
-        hit = hit or found.get(cid)
+        hit = hit or found.get(cid) or _rebase(cur, mount)
         out[cid] = {"path": hit or cur or "", "status": "found" if hit else "missing"}
     return out
 

@@ -123,6 +123,16 @@ class FMTests(unittest.TestCase):
         self.assertEqual(r["tv"]["status"], "found")
         self.assertEqual(r["kids"]["status"], "missing")
 
+    def test_scan_paths_other_device(self):
+        """A path copied from another Pi is moved onto this mount point; folder names from other disks count."""
+        m = os.path.join(self.tmp, "scan2")
+        os.makedirs(os.path.join(m, "Plex 1T", "Home Video")); os.makedirs(os.path.join(m, "Plex 1T", "reddot"))
+        cats = [{"id": "home", "label": "Domowe wideo", "folder": "Domowe wideo"},
+                {"id": "red", "label": "Red", "folder": "Red", "names": ["reddot"]}]
+        r = self.fm.scan_paths(m, cats, {"home": "/plex_media_1024/Plex 1T/Home Video"})
+        self.assertEqual(r["home"], {"path": os.path.join(m, "Plex 1T", "Home Video"), "status": "found"})
+        self.assertEqual(r["red"]["path"], os.path.join(m, "Plex 1T", "reddot"))
+
     def test_actlog_rotation(self):
         import actlog
         os.environ["PLEXDL_LOGS"] = os.path.join(self.tmp, "logs")

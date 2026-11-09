@@ -736,8 +736,15 @@ def api_log_delete_backups():
 def api_disks_scan():
     d = request.get_json(silent=True) or {}
     try:
-        return jsonify(result=fm.scan_paths((d.get("mount") or "").strip(), d.get("categories") or [],
-                                            d.get("paths") or {}))
+        cats = [c for c in d.get("categories") or [] if isinstance(c, dict) and c.get("id")]
+        # nazwy folderów tej kategorii z innych dysków (np. „Home Video” zamiast „Domowe wideo”)
+        current = d.get("paths") or {}
+        for c in cats:
+            names = {os.path.basename(str(p).rstrip("/")) for disk in config.get().get("disks", [])
+                     for k, p in (disk.get("paths") or {}).items() if k == c["id"] and p}
+            names |= {os.path.basename(str(current.get(c["id"]) or "").rstrip("/"))}
+            c["names"] = [n for n in names if n]
+        return jsonify(result=fm.scan_paths((d.get("mount") or "").strip(), cats, current))
     except fm.FMError as e:
         return err(str(e))
 
