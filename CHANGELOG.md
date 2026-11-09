@@ -9,6 +9,7 @@ All notable changes to Plex Downloader. Stable versions live on the `main` branc
   - Mounted disks and network shares are detected; category folders are found automatically; every folder is checked for write permission and free space; missing folders can be created.
   - Network share: step-by-step commands to mount an SMB share (also after restarts via `/etc/fstab`) with copy buttons.
   - Nothing is saved until Finish; the previous settings are kept as a restore point.
+  - TMDB step: “Show key” now shows the saved key, and the button switches between “Skip” and “Next” as you type (fixed after the first tests).
 - README (EN/PL): new section "Library on another computer (network share)" with the mount commands.
 
 ## 1.2.9-beta – 2026-11-09 (BETA)

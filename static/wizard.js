@@ -351,9 +351,15 @@
       const inp = el("input", "input mono"); inp.type = "password"; inp.autocomplete = "new-password"; inp.spellcheck = false;
       inp.placeholder = S.tmdb_key_set ? t("Saved key: {mask}", { mask: S.tmdb_key_mask }) : t("paste the key from themoviedb.org");
       inp.value = W.tmdbKey || "";
-      inp.addEventListener("input", () => { W.tmdbKey = inp.value.trim(); saveW(); });
+      inp.addEventListener("input", () => { W.tmdbKey = inp.value.trim(); saveW(); updateNext(); });
       const show = el("label", "check"); const scb = el("input"); scb.type = "checkbox";
-      scb.addEventListener("change", () => { inp.type = scb.checked ? "text" : "password"; });
+      scb.addEventListener("change", async () => {
+        // „Show key”: the saved key is fetched only now (it is not sent to the browser before)
+        if (scb.checked && !inp.value && S.tmdb_key_set) {
+          try { inp.value = (await api("/api/settings/tmdb-key")).key || ""; } catch (e) { toast(e.message, true); }
+        }
+        inp.type = scb.checked ? "text" : "password";
+      });
       show.append(scb, document.createTextNode(" " + t("Show key")));
       box.append(inp, show);
       return box;
@@ -439,10 +445,16 @@
     $("#wzBody").replaceChildren(VIEWS[step.id]());
     $("#wzBack").hidden = W.step === 0;
     const next = $("#wzNext");
-    next.textContent = step.id === "summary" ? t("Finish") : step.id === "tmdb" && !W.tmdbKey ? t("Skip") : t("Next");
+    updateNext();
     next.hidden = step.id === "language";
     const g = $("#wzGuide"); g.href = GUIDE[LANG] || GUIDE.en; g.textContent = t("Installation guide") + " ↗";
     window.scrollTo({ top: 0 });
+  }
+  // „Skip” only when there is no key at all (nothing saved, nothing typed)
+  function updateNext() {
+    const step = STEPS[W.step];
+    $("#wzNext").textContent = step.id === "summary" ? t("Finish")
+      : step.id === "tmdb" && !W.tmdbKey && !S.tmdb_key_set ? t("Skip") : t("Next");
   }
   $("#wzBack").addEventListener("click", () => { if (W.step > 0) { W.step--; saveW(); render(); } });
   $("#wzNext").addEventListener("click", (e) => {
