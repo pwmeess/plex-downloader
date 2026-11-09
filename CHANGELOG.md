@@ -9,6 +9,9 @@ All notable changes to Plex Downloader. Stable versions live on the `main` branc
   - **Import settings…** checks the file and first shows what would change, section by section (disks with a check whether their folders exist on this device, categories, Plex servers, download options, preview & posters, interface). Only the ticked sections are applied; a restore point is created first, so the import can be undone.
   - Invalid values in the file (relative paths, unknown options, numbers out of range, unsafe host names) are ignored or limited.
 - **“+ SD card (not recommended)”** in Settings → Disks: adds a disk with the mount point `/` and folders in the home folder (`~/Plex/Movies`…) for every category, and offers to create missing folders. ⓘ explains why the SD card is not recommended.
+- After the first tests:
+  - **“Create” next to an empty category folder** in Settings → Disks: a small yellow button opens a helper with the proposed path (next to the other folders of that disk, e.g. `/plex_media/Plex/Red`); the folder name can be changed (e.g. `reddot`), the folder is created and linked to the category – then Save.
+  - Import: disks from another device (none of them mounted here) are unticked by default.
 
 ## 1.3.0-beta1 – 2026-11-09 (BETA)
 

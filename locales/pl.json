@@ -596,5 +596,14 @@
  "{old} → {new}": "{old} → {new}",
  "from TMDB": "z TMDB",
  "only saved": "tylko zapisane",
- "none": "brak"
+ "none": "brak",
+ "Create a folder for this category on the disk": "Utwórz folder tej kategorii na dysku",
+ "Creates the folder for the category “{name}” on this disk and fills in the path. You can change the folder name.": "Tworzy folder kategorii „{name}” na tym dysku i wpisuje ścieżkę. Nazwę folderu możesz zmienić.",
+ "Parent folder": "Folder nadrzędny",
+ "Folder name": "Nazwa folderu",
+ "Enter an absolute parent folder and a folder name without /.": "Wpisz bezwzględny folder nadrzędny i nazwę folderu bez /.",
+ "After creating, click Save to keep the path.": "Po utworzeniu kliknij Zapisz, żeby zachować ścieżkę.",
+ "Create category folder": "Utwórz folder kategorii",
+ "Folder created – click Save": "Folder utworzony – kliknij Zapisz",
+ "Folder already exists – linked, click Save": "Folder już istnieje – podłączony, kliknij Zapisz"
 }

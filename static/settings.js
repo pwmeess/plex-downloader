@@ -49,7 +49,12 @@
       const inp = el("input", "input mono"); inp.dataset.cat = key(c);
       inp.value = (d.paths || {})[key(c)] || "";
       inp.placeholder = t("(none – category not available on this disk)");
-      inp.addEventListener("input", () => { w.classList.remove("bad", "found"); msg.textContent = ""; });
+      const mk = el("button", "mk-folder", t("Create")); mk.type = "button";
+      mk.title = t("Create a folder for this category on the disk");
+      const upd = () => { mk.hidden = !!inp.value.trim(); };
+      inp.addEventListener("input", () => { w.classList.remove("bad", "found"); msg.textContent = ""; upd(); });
+      mk.addEventListener("click", () => createCatFolder(row, c, inp, w, msg, upd));
+      lab.appendChild(mk); upd();
       const msg = el("div", "path-msg");
       w.append(lab, inp, msg);
       paths.appendChild(w);
@@ -83,6 +88,43 @@
     });
     return row;
   }
+  // „Utwórz” przy pustym folderze kategorii: proponowana ścieżka obok pozostałych folderów dysku
+  function suggestParent(row) {
+    const count = {};
+    $$("input[data-cat]", row).forEach((i) => {
+      const v = i.value.trim().replace(/\/+$/, "");
+      if (v.lastIndexOf("/") > 0) { const p = v.slice(0, v.lastIndexOf("/")); count[p] = (count[p] || 0) + 1; }
+    });
+    const best = Object.keys(count).sort((a, b) => count[b] - count[a])[0];
+    return best || ($("[data-k=mount]", row).value.trim().replace(/\/+$/, "") || "");
+  }
+  async function createCatFolder(row, c, inp, w, msg, upd) {
+    const body = el("div", "mkdir-box");
+    body.appendChild(el("p", null, t("Creates the folder for the category “{name}” on this disk and fills in the path. You can change the folder name.", { name: c.label })));
+    const l1 = el("label", "small-label", t("Parent folder")); const parent = el("input", "input mono"); parent.value = suggestParent(row);
+    const l2 = el("label", "small-label", t("Folder name")); const name = el("input", "input mono"); name.value = c.folder || c.label || "";
+    name.maxLength = 60;
+    const prev = el("p", "mkdir-prev mono");
+    const full = () => parent.value.trim().replace(/\/+$/, "") + "/" + name.value.trim();
+    const valid = () => parent.value.trim().startsWith("/") && name.value.trim() && !/[\/\\]|^\.\.?$/.test(name.value.trim());
+    const refresh = () => { prev.textContent = valid() ? full() : t("Enter an absolute parent folder and a folder name without /."); };
+    [parent, name].forEach((x) => x.addEventListener("input", refresh)); refresh();
+    body.append(l1, parent, l2, name, prev, el("p", "hint", t("After creating, click Save to keep the path.")));
+    body._onOpen = () => { name.focus(); name.select(); };
+    const ok = await modal({ title: t("Create category folder"), body,
+      buttons: [{ label: t("Cancel"), value: false },
+                { label: t("Create"), cls: "btn-accent", value: () => (valid() ? true : undefined) }] });
+    if (!ok) return;
+    const path = full();
+    try {
+      const r = await api("/api/wizard/create", { paths: [path] });
+      if (r.problems.length) { toast(r.problems.join("\n"), true); return; }
+      inp.value = path; upd();
+      w.classList.remove("bad"); w.classList.add("found");
+      msg.textContent = r.created.length ? t("Folder created – click Save") : t("Folder already exists – linked, click Save");
+    } catch (e) { toast(e.message, true); }
+  }
+
   $("#addDisk").addEventListener("click", () => {
     syncFromDom();
     cfg.disks.push({ id: "", label: "", subtitle: "", mount: "", paths: {} });
@@ -345,7 +387,9 @@
       const sec = pv.sections[n];
       const box = el("div", "imp-sec");
       const lab = el("label", "check");
-      const cb = el("input"); cb.type = "checkbox"; cb.checked = sec.changes.length > 0; boxes[n] = cb;
+      const cb = el("input"); cb.type = "checkbox"; boxes[n] = cb;
+      // dyski z innego urządzenia (żaden nie jest tu zamontowany) – domyślnie odznaczone
+      cb.checked = sec.changes.length > 0 && !(sec.disks && sec.disks.length && sec.disks.every((d) => !d.mounted));
       lab.append(cb, " ", el("b", null, SECTION[n]()));
       if (!sec.changes.length) lab.appendChild(el("span", "tag", t("no changes")));
       box.appendChild(lab);

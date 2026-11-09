@@ -791,3 +791,8 @@ h3.fold-h { display: flex; align-items: center; gap: 8px; }
 .imp-preview .imp-list li { margin: 3px 0; overflow-wrap: anywhere; }
 .imp-preview .mono, .path-list .mono, .path-list li { font-family: var(--mono); font-size: 12.5px; }
 .path-list { margin: 6px 0 0 18px; padding: 0; overflow-wrap: anywhere; }
+.cat-path .mk-folder { margin-left: auto; font: inherit; font-size: 11.5px; font-weight: 600; color: var(--accent-ink); background: var(--accent); border: 0; border-radius: 5px; padding: 1px 8px; cursor: pointer; }
+.cat-path .mk-folder:hover { background: var(--accent-2); }
+.cat-path .mk-folder[hidden] { display: none; }
+.mkdir-box .input { width: 100%; margin-bottom: 10px; }
+.mkdir-prev { font-family: var(--mono); font-size: 13px; color: var(--accent); overflow-wrap: anywhere; margin: 4px 0 8px; }
