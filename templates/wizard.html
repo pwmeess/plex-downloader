@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="{{ lang }}" data-theme="{{ theme }}">
+<head>
+{% include "_head.html" %}
+  <title>{{ _("Setup wizard") }} · Plex Downloader</title>
+</head>
+<body class="wz-page">
+{% include "_icons.html" %}
+<header class="wz-top">
+  <div class="brand"><span class="brand-mark"><svg class="i"><use href="#i-logo"/></svg></span>Plex Downloader</div>
+  <span class="wz-title">{{ _("Setup wizard") }}</span>
+  <a class="btn-ghost small" id="wzExit" href="/" hidden>{{ _("Close without saving") }}</a>
+</header>
+<main class="wz-wrap">
+  <ol class="wz-steps" id="wzSteps"></ol>
+  <section class="card wz-card">
+    <div id="wzRedo" class="panel-note" hidden><svg class="i"><use href="#i-retry"/></svg><span>{{ _("Finishing the wizard replaces your disks, Plex servers and TMDB key. Your current settings are kept as a restore point (Settings → Backups).") }}</span></div>
+    <div id="wzBody"></div>
+    <div class="wz-nav">
+      <button class="btn-soft" type="button" id="wzBack">{{ _("Back") }}</button>
+      <a class="wz-guide" id="wzGuide" target="_blank" rel="noopener"></a>
+      <span class="spacer"></span>
+      <button class="btn-primary small" type="button" id="wzNext">{{ _("Next") }}</button>
+    </div>
+  </section>
+</main>
+<div class="foot-ver">Plex Downloader · {{ _("version") }} {{ version }}</div>
+<script src="{{ url_for('static', filename='common.js') }}?v={{ version }}"></script>
+<script src="{{ url_for('static', filename='wizard.js') }}?v={{ version }}"></script>
+</body>
+</html>

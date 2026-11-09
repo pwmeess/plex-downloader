@@ -2,7 +2,7 @@
 
 🇬🇧 **English** · 🇵🇱 [Polski](ROADMAP.pl.md) · Changelog: [CHANGELOG.md](CHANGELOG.md)
 
-Last updated: 9 November 2026 · stable: **1.2.7** · BETA: **1.2.9-beta**
+Last updated: 9 November 2026 · stable: **1.2.7** · BETA: **1.3.0-beta1**
 
 ## Ground rules (checked for every release)
 
@@ -34,7 +34,8 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 | 1.2.6 (stable) | Two-stage move progress, "Skip SHA-256 verification", hidden TMDB key, phone and ⓘ layout fixes, neutral `ssh` address, translation test, English documentation |
 | 1.2.8-beta | 1.2.6 + VPN preview; base for 1.3 |
 | 1.2.7 (stable) | Better title recognition from pasted links; links that open a web page instead of a file are reported |
-| 1.2.9-beta | 1.2.7 + VPN preview; base for 1.3.0-beta1 |
+| 1.2.9-beta | 1.2.7 + VPN preview, `fix.sh` in a window with the Server submenu |
+| 1.3.0-beta1 | Setup wizard (three installation types, disk and folder detection, network share commands) |
 
 ## To fix
 
@@ -51,15 +52,15 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
 ## 1.3 – first-run wizard, guides, version choice
 
 **First-run wizard**
-- [ ] Steps: language → theme → account → installation type → disks and folders → Plex server → TMDB key (optional) → summary.
-- [ ] Installation type (matches the three scenarios):
-  - [ ] "External disks (recommended)": scan connected disks (`lsblk`/`df`), suggest `Movies`, `TV Shows`, `Kids` folders.
-  - [ ] "Library on the SD card (not recommended)": mount point `/`, folders under `~/Plex/…` created automatically, warning about capacity, wear and speed (in ⓘ).
-  - [ ] "Plex on another device": Plex server IP, connection check, mounted network share, write test. ⓘ note that Plex and Downloader must see the same files (paths may differ).
-- [ ] Check write permissions and free space for every folder.
-- [ ] Create missing folders on request.
-- [ ] Links to the guides in every step: HTML in a new window and PDF to download.
-- [ ] Re-run the wizard from Settings.
+- [x] Steps: language → theme → installation type → disks and folders → Plex server → TMDB key (optional) → summary (the account is created by `setup.sh`).
+- [x] Installation type (matches the three scenarios):
+  - [x] "External disks (recommended)": scan connected disks (`lsblk`/`df`), suggest `Movies`, `TV Shows`, `Kids` folders.
+  - [x] "Library on the SD card (not recommended)": mount point `/`, folders under `~/Plex/…` created automatically, warning about capacity, wear and speed (in ⓘ).
+  - [x] "Plex on another device": Plex server IP, connection check, mounted network share, write test. ⓘ note that Plex and Downloader must see the same files (paths may differ).
+- [x] Check write permissions and free space for every folder.
+- [x] Create missing folders on request.
+- [ ] Links to the guides in every step: HTML in a new window and PDF to download (for now the link opens the README; HTML/PDF guides come in beta3).
+- [x] Re-run the wizard from Settings.
 
 **Settings**
 - [ ] Export and import settings (JSON, without the password; preview of changes on import).
@@ -75,7 +76,7 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
 - [ ] Home network security (no DMZ, no port forwarding for 8800, strong passwords, Samba with `valid users`).
 
 **Release steps**
-- [ ] `1.3.0-beta1`: first-run wizard (the `fix.sh` server submenu already shipped in 1.2.9-beta).
+- [x] `1.3.0-beta1`: first-run wizard (the `fix.sh` server submenu already shipped in 1.2.9-beta).
 - [ ] `1.3.0-beta2`: settings export / import, SD-card template.
 - [ ] `1.3.0-beta3`: EN/PL guides (HTML in the app + PDF).
 - [ ] `1.3.0-beta4`: "Install another version" in `fix.sh`.

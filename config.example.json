@@ -51,5 +51,6 @@
   "plex_autodiscover": true,
   "thumbs_mode": "online",
   "language": "",
-  "theme": "dark"
+  "theme": "dark",
+  "wizard_done": false
 }

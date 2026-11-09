@@ -35,6 +35,7 @@ Changelog: [CHANGELOG.md](CHANGELOG.md) · Roadmap: [ROADMAP.md](ROADMAP.md)
 - **Activity log:** `logs/plexdl.log` with downloads, moves (from → to) and deletions; **LOG** viewer in Settings → Account with Clear and Export. 1 MB limit, then `bcup01.log`, `bcup02.log`…
 - **Hidden TMDB key (1.2.6):** the key field is masked like a password, with "Show key" on demand; the panel does not send the key to the browser until you ask for it.
 - **Terminal commands** with a copy button in Settings → Account.
+- **Setup wizard (1.3.0-beta1):** first-run guide for disks and folders, Plex server and TMDB key; can be run again from Settings.
 - Works on phones.
 
 ## Requirements
@@ -62,6 +63,8 @@ The script:
 6. registers and starts the `plex-downloader` service (starts automatically after a reboot).
 
 At the end it prints the address, e.g. **http://192.168.1.10:8800**. `setup.sh` always installs the latest **stable** version.
+
+**Setup wizard (1.3, BETA):** after the first login a wizard guides you through language, theme, where the library is stored (external disks – recommended, SD card – not recommended, or Plex on another device), disks and folders (found automatically, missing ones created), the Plex server and the TMDB key. You can run it again from **Settings → Account → Run setup wizard**.
 
 ## Updating
 
@@ -122,6 +125,29 @@ The default paths in `config.example.json` are the author's layout, so yours wil
 Removing a disk from the list never deletes files – it only hides the button.
 
 **Library on the SD card (not recommended, e.g. for testing):** use the mount point `/` and folders in your home directory, e.g. `/home/pi/Plex/Movies`. Keep in mind the limited capacity, wear and speed of SD cards.
+
+## Library on another computer (network share)
+
+Plex can run on another computer (for example a second Raspberry Pi) while Plex Downloader runs here. Both must see the same files, so the library folder of the Plex computer is shared over SMB and mounted on this Raspberry Pi. Give both devices a fixed IP address in your router.
+
+Run these commands on the Raspberry Pi with Plex Downloader (replace `192.168.1.10`, `SHARE`, `USER` and `PASSWORD`; `pi` is the user that runs the service):
+
+```bash
+sudo apt install -y cifs-utils                    # tools for SMB shares
+sudo mkdir -p /mnt/plex                           # folder for the share
+# save the share password in a file only you can read
+printf 'username=USER\npassword=PASSWORD\n' > ~/.smbcredentials && chmod 600 ~/.smbcredentials
+# mount now (test)
+sudo mount -t cifs //192.168.1.10/SHARE /mnt/plex -o credentials=/home/pi/.smbcredentials,uid=pi,gid=pi,iocharset=utf8
+```
+
+To mount the share automatically after every restart, add this line to `/etc/fstab` (`sudo nano /etc/fstab`):
+
+```
+//192.168.1.10/SHARE /mnt/plex cifs credentials=/home/pi/.smbcredentials,uid=pi,gid=pi,iocharset=utf8,_netdev,nofail 0 0
+```
+
+Then run `sudo mount -a` – if it shows no error, the share will be mounted after a restart too. In the setup wizard choose **Plex on another device** (the share appears in the list) or enter `/mnt/plex` as the mount point in **Settings → Disks**. The same commands are shown in the wizard with copy buttons.
 
 ## Useful commands
 

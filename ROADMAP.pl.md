@@ -2,7 +2,7 @@
 
 🇬🇧 [English](ROADMAP.md) · 🇵🇱 **Polski** · Historia zmian: [CHANGELOG.md](CHANGELOG.md)
 
-Ostatnia aktualizacja: 9 listopada 2026 · stabilna: **1.2.7** · BETA: **1.2.9-beta**
+Ostatnia aktualizacja: 9 listopada 2026 · stabilna: **1.2.7** · BETA: **1.3.0-beta1**
 
 ## Stałe zasady (sprawdzać przy każdej wersji)
 
@@ -32,7 +32,8 @@ Ostatnia aktualizacja: 9 listopada 2026 · stabilna: **1.2.7** · BETA: **1.2.9-
 | 1.2.6 (stabilna) | Postęp przenoszenia w dwóch etapach, „Pomiń weryfikację SHA-256”, ukryty klucz TMDB, poprawki wyglądu (telefon, ⓘ), neutralny adres w komendzie `ssh`, test tłumaczeń, dokumentacja po angielsku |
 | 1.2.8-beta | 1.2.6 + zapowiedzi VPN; baza do prac nad 1.3 |
 | 1.2.7 (stabilna) | Optymalizacja rozpoznawania tytułów na podstawie wklejonego linka; ostrzeżenie, gdy link otwiera stronę WWW zamiast pliku |
-| 1.2.9-beta | 1.2.7 + zapowiedzi VPN; baza do 1.3.0-beta1 |
+| 1.2.9-beta | 1.2.7 + zapowiedzi VPN, `fix.sh` w oknie z podmenu Serwer |
+| 1.3.0-beta1 | Kreator konfiguracji (trzy sposoby instalacji, wykrywanie dysków i folderów, komendy do udziału sieciowego) |
 
 ## Do poprawy
 
@@ -49,15 +50,15 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
 ## 1.3 – kreator pierwszego uruchomienia, instrukcje, wybór wersji
 
 **Kreator pierwszego uruchomienia**
-- [ ] Kolejne kroki: język → motyw → konto → sposób instalacji → dyski i foldery → serwer Plex → klucz TMDB (opcjonalny) → podsumowanie.
-- [ ] Wybór sposobu instalacji (odpowiada trzem scenariuszom):
-  - [ ] „Dyski zewnętrzne (zalecane)”: skanowanie podłączonych dysków (`lsblk`/`df`), propozycja folderów `Movies`, `TV Shows`, `Kids`.
-  - [ ] „Biblioteka na karcie SD (niezalecana)”: punkt montowania `/`, foldery w `~/Plex/…` tworzone automatycznie, ostrzeżenie o pojemności, zużyciu karty i prędkości (w ⓘ).
-  - [ ] „Plex na innym urządzeniu”: adres IP serwera Plex, sprawdzenie połączenia, wskazanie zamontowanego udziału sieciowego, test zapisu. Uwaga w ⓘ, że Plex i Downloader muszą widzieć te same pliki (ścieżki mogą się różnić).
-- [ ] Sprawdzenie uprawnień do zapisu i wolnego miejsca na każdym folderze.
-- [ ] Tworzenie brakujących folderów na żądanie.
-- [ ] W każdym kroku linki do instrukcji: HTML w nowym oknie i PDF do pobrania.
-- [ ] Ponowne uruchomienie kreatora z Ustawień.
+- [x] Kolejne kroki: język → motyw → sposób instalacji → dyski i foldery → serwer Plex → klucz TMDB (opcjonalny) → podsumowanie (konto tworzy `setup.sh`).
+- [x] Wybór sposobu instalacji (odpowiada trzem scenariuszom):
+  - [x] „Dyski zewnętrzne (zalecane)”: skanowanie podłączonych dysków (`lsblk`/`df`), propozycja folderów `Movies`, `TV Shows`, `Kids`.
+  - [x] „Biblioteka na karcie SD (niezalecana)”: punkt montowania `/`, foldery w `~/Plex/…` tworzone automatycznie, ostrzeżenie o pojemności, zużyciu karty i prędkości (w ⓘ).
+  - [x] „Plex na innym urządzeniu”: adres IP serwera Plex, sprawdzenie połączenia, wskazanie zamontowanego udziału sieciowego, test zapisu. Uwaga w ⓘ, że Plex i Downloader muszą widzieć te same pliki (ścieżki mogą się różnić).
+- [x] Sprawdzenie uprawnień do zapisu i wolnego miejsca na każdym folderze.
+- [x] Tworzenie brakujących folderów na żądanie.
+- [ ] W każdym kroku linki do instrukcji: HTML w nowym oknie i PDF do pobrania (na razie link prowadzi do README; instrukcje HTML/PDF w beta3).
+- [x] Ponowne uruchomienie kreatora z Ustawień.
 
 **Ustawienia**
 - [ ] Eksport i import ustawień (plik JSON, bez hasła; przy imporcie podgląd zmian).
@@ -73,7 +74,7 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
 - [ ] Bezpieczeństwo sieci domowej (bez DMZ i przekierowania portu 8800, mocne hasła, Samba z `valid users`).
 
 **Kolejne kroki wydań**
-- [ ] `1.3.0-beta1`: kreator pierwszego uruchomienia (podmenu serwera w `fix.sh` weszło już do 1.2.9-beta).
+- [x] `1.3.0-beta1`: kreator pierwszego uruchomienia (podmenu serwera w `fix.sh` weszło już do 1.2.9-beta).
 - [ ] `1.3.0-beta2`: eksport i import ustawień, szablon „Karta SD”.
 - [ ] `1.3.0-beta3`: instrukcje EN/PL (HTML w aplikacji + PDF).
 - [ ] `1.3.0-beta4`: „Zainstaluj inną wersję” w `fix.sh`.

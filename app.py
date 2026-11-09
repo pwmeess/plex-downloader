@@ -25,6 +25,7 @@ import i18n
 from i18n import _
 import movieinfo
 import naming
+import wizard
 import plexservers
 from downloader import Manager, disk_status, probe
 
@@ -123,9 +124,18 @@ welcome = app.route("/welcome", methods=["GET", "POST"], endpoint="welcome")(log
 @app.route("/")
 @login_required
 def index():
+    if not config.get().get("wizard_done"):
+        return redirect(url_for("setup_wizard"))
     if not config.get().get("language"):
         return redirect(url_for("welcome"))
     return render_template("index.html", version=VERSION, user=session.get("user"), page="home")
+
+
+@app.route("/setup")
+@login_required
+def setup_wizard():
+    """Kreator pierwszego uruchomienia (także ponownie z Ustawień)."""
+    return render_template("wizard.html", version=VERSION, user=session.get("user"), page="wizard")
 
 
 @app.route("/files")
@@ -399,6 +409,92 @@ def api_settings_post():
     manager.apply_settings()
     plexservers.monitor.refresh()
     actlog.write("SETTINGS", _("Settings saved"))
+    return jsonify(ok=True)
+
+
+# ---------------------------------------------------------------- kreator
+@app.route("/api/wizard/state")
+@login_required
+def api_wizard_state():
+    cfg = config.get()
+    return jsonify(mounts=wizard.mounts(), home=wizard.home_dir(), system_user=getpass.getuser(),
+                   ip=plexservers.lan_ip(), port=cfg.get("port", 8800), categories=cfg["categories"],
+                   disks=cfg.get("disks", []), language=cfg.get("language") or i18n.current(),
+                   theme=cfg.get("theme", "dark"), wizard_done=bool(cfg.get("wizard_done")),
+                   tmdb_key_set=bool(cfg.get("tmdb_api_key")), tmdb_key_mask=_mask_key(cfg.get("tmdb_api_key", "")),
+                   plex_servers=cfg.get("plex_servers", []), plex_autodiscover=cfg.get("plex_autodiscover", True))
+
+
+@app.route("/api/wizard/scan", methods=["POST"])
+@login_required
+def api_wizard_scan():
+    d = request.get_json(silent=True) or {}
+    return fm_call(lambda: {"result": fm.scan_paths(d.get("mount", ""), config.get()["categories"])})
+
+
+@app.route("/api/wizard/check", methods=["POST"])
+@login_required
+def api_wizard_check():
+    paths = (request.get_json(silent=True) or {}).get("paths") or []
+    return jsonify(result=wizard.check([str(p) for p in paths][:100]))
+
+
+@app.route("/api/wizard/create", methods=["POST"])
+@login_required
+def api_wizard_create():
+    paths = (request.get_json(silent=True) or {}).get("paths") or []
+    created, problems = wizard.create([str(p) for p in paths][:100])
+    for p in created:
+        actlog.write("CREATE", "folder %s" % p)
+    return jsonify(created=created, problems=problems, result=wizard.check([str(p) for p in paths][:100]))
+
+
+@app.route("/api/wizard/finish", methods=["POST"])
+@login_required
+def api_wizard_finish():
+    data = request.get_json(silent=True) or {}
+    cfg = config.get()
+    seen = {c["id"] for c in cfg["categories"]}
+    try:
+        disks = []
+        for raw in data.get("disks") or []:
+            label = (raw.get("label") or "").strip()[:40]
+            if not label:
+                raise ValueError(_("Every disk must have a name."))
+            mount = _abs_path(raw.get("mount"), label)
+            if not mount:
+                raise ValueError(_("Enter the mount point for disk %s.") % label)
+            paths = {}
+            for cid, val in (raw.get("paths") or {}).items():
+                p = _abs_path(val, "%s – %s" % (label, cid))
+                if cid in seen and p:
+                    paths[cid] = p
+            disks.append({"id": uuid.uuid4().hex[:8], "label": label,
+                          "subtitle": (raw.get("subtitle") or "").strip()[:40], "mount": mount, "paths": paths})
+        if not disks:
+            raise ValueError(_("At least one disk must remain."))
+        servers = []
+        for raw in data.get("plex_servers") or []:
+            host = (raw.get("host") or "").strip()
+            if not host:
+                continue
+            if not re.match(r"^[A-Za-z0-9.\-:]+$", host):
+                raise ValueError(_("Invalid Plex server address: %s") % host)
+            port = int(raw.get("port") or 32400)
+            if not 1 <= port <= 65535:
+                raise ValueError(_("Invalid Plex server port."))
+            servers.append({"id": uuid.uuid4().hex[:6], "name": (raw.get("name") or host).strip()[:40],
+                            "host": host, "port": port})
+    except (TypeError, ValueError) as e:
+        return err(str(e) if str(e) else _("Invalid values."))
+    raw_key = data.get("tmdb_api_key")
+    tmdb_key = cfg.get("tmdb_api_key", "") if raw_key is None else re.sub(r"\s+", "", raw_key)
+    config.update(note="Setup wizard", disks=disks, plex_servers=servers,
+                  plex_autodiscover=bool(data.get("plex_autodiscover", True)), tmdb_api_key=tmdb_key,
+                  require_mount=bool(data.get("require_mount", True)), wizard_done=True)
+    manager.apply_settings()
+    plexservers.monitor.refresh()
+    actlog.write("SETTINGS", "setup wizard finished (%d disk(s))" % len(disks))
     return jsonify(ok=True)
 
 

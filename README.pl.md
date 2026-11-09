@@ -69,6 +69,8 @@ Skrypt wykonuje kolejno:
 
 Na koniec wyświetla adres, np. **http://192.168.1.10:8800**.
 
+**Kreator konfiguracji (1.3, BETA):** po pierwszym logowaniu kreator prowadzi przez język, motyw, miejsce biblioteki (dyski zewnętrzne – zalecane, karta SD – niezalecane albo Plex na innym urządzeniu), dyski i foldery (wyszukiwane automatycznie, brakujące tworzone), serwer Plex i klucz TMDB. Można go uruchomić ponownie w **Ustawienia → Konto → Uruchom kreator**.
+
 ## Aktualizacja
 
 ```bash
@@ -141,6 +143,29 @@ Aplikacja **nie wykrywa dysków automatycznie**. Domyślne ścieżki to konfigur
 Usunięcie dysku z listy nie kasuje żadnych plików, tylko chowa przycisk.
 
 **Biblioteka na karcie SD (niezalecane, np. do testów):** wpisz punkt montowania `/` i foldery w katalogu domowym, np. `/home/pi/Plex/Movies`. Opcja „Pobieraj tylko na zamontowany dysk” może zostać włączona. Pamiętaj o ograniczonej pojemności, zużyciu i prędkości karty.
+
+## Biblioteka na innym komputerze (udział sieciowy)
+
+Plex może działać na innym komputerze (np. drugim Raspberry Pi), a Plex Downloader tutaj. Oba muszą widzieć te same pliki, dlatego folder biblioteki z komputera z Plexem udostępnia się przez SMB i montuje na tym Raspberry Pi. Ustaw obu urządzeniom stały adres IP w routerze.
+
+Uruchom te komendy na Raspberry Pi z Plex Downloaderem (podmień `192.168.1.10`, `SHARE`, `USER` i `PASSWORD`; `pi` to użytkownik, na którym działa usługa):
+
+```bash
+sudo apt install -y cifs-utils                    # narzędzia do udziałów SMB
+sudo mkdir -p /mnt/plex                           # folder na udział
+# hasło do udziału w pliku, który możesz czytać tylko Ty
+printf 'username=USER\npassword=PASSWORD\n' > ~/.smbcredentials && chmod 600 ~/.smbcredentials
+# zamontuj teraz (test)
+sudo mount -t cifs //192.168.1.10/SHARE /mnt/plex -o credentials=/home/pi/.smbcredentials,uid=pi,gid=pi,iocharset=utf8
+```
+
+Żeby udział montował się automatycznie po każdym restarcie, dopisz tę linię do `/etc/fstab` (`sudo nano /etc/fstab`):
+
+```
+//192.168.1.10/SHARE /mnt/plex cifs credentials=/home/pi/.smbcredentials,uid=pi,gid=pi,iocharset=utf8,_netdev,nofail 0 0
+```
+
+Potem uruchom `sudo mount -a` – jeśli nie pokaże błędu, udział zamontuje się też po restarcie. W kreatorze wybierz **Plex na innym urządzeniu** (udział pojawi się na liście) albo wpisz `/mnt/plex` jako punkt montowania w **Ustawienia → Dyski**. Te same komendy kreator pokazuje z przyciskami kopiowania.
 
 ## Przydatne polecenia
 

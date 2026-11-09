@@ -44,6 +44,7 @@ DEFAULTS = {
     "thumbs_mode": "online",     # online | local | off
     "language": "",              # "" = jeszcze nie wybrano (ekran wyboru przy logowaniu)
     "theme": "dark",             # dark | light
+    "wizard_done": False,        # kreator pierwszego uruchomienia zakończony
     "vpn": {"enabled": False, "provider": "tailscale", "listen": "lan"},  # zarezerwowane (wkrótce)
 }
 
@@ -113,6 +114,9 @@ def load():
             data = _read(EXAMPLE_PATH)
         cfg = copy.deepcopy(DEFAULTS)
         cfg.update(data)
+        if "wizard_done" not in data:
+            # istniejąca instalacja sprzed 1.3 jest już skonfigurowana – kreator nie startuje sam
+            cfg["wizard_done"] = os.path.exists(CONFIG_PATH)
         before = json.dumps(data, sort_keys=True)
         normalize(cfg)
         changed = not os.path.exists(CONFIG_PATH)

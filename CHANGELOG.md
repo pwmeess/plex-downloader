@@ -2,6 +2,15 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
+## 1.3.0-beta1 – 2026-11-09 (BETA)
+
+- **Setup wizard:** shown after the first login of a new installation (existing installations are not affected) and available again in Settings → Account → Run setup wizard. Steps: language, theme, where the library is stored, disks and folders, Plex server, TMDB key, summary.
+  - Three installation types: external disks (recommended), library on the SD card (not recommended, folders in the home folder) and Plex on another device (network share).
+  - Mounted disks and network shares are detected; category folders are found automatically; every folder is checked for write permission and free space; missing folders can be created.
+  - Network share: step-by-step commands to mount an SMB share (also after restarts via `/etc/fstab`) with copy buttons.
+  - Nothing is saved until Finish; the previous settings are kept as a restore point.
+- README (EN/PL): new section "Library on another computer (network share)" with the mount commands.
+
 ## 1.2.9-beta – 2026-11-09 (BETA)
 
 - Everything from 1.2.7 (stable), plus the BETA-only VPN preview.
