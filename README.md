@@ -84,15 +84,16 @@ cd ~/plex-downloader
 ./fix.sh
 ```
 
-It asks for the language first, then shows:
+The menu opens in a window like `raspi-config` (arrow keys + Enter). On a very small screen, or with `./fix.sh --text`, it is shown as plain text with the same numbers. It asks for the language first, then shows:
 
 1. **Update (check and install)** – checks GitHub and installs a new stable version,
 2. **Reinstall (keep settings)** – fetches the code again and rebuilds the environment, settings stay,
 3. **Clean reinstall** – deletes settings, backups, logs and the download list, then installs the stable version from scratch (confirm with YES),
 4. **Install / update the latest BETA**,
 5. **Leave BETA** – back to stable, experimental settings removed (no extra questions),
-6. **Uninstall** – removes the service from autostart, optionally also the app folder,
-7. **Cancel**.
+6. **Server** – check status (service, autostart, panel address, last log lines), stop the server (autostart stays on) or start it again without restarting the Pi, restart the server process,
+7. **Uninstall** – removes the service from autostart, optionally also the app folder,
+8. **Cancel**.
 
 Movies and TV shows on the disks are never touched.
 

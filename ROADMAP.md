@@ -75,15 +75,15 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
 - [ ] Home network security (no DMZ, no port forwarding for 8800, strong passwords, Samba with `valid users`).
 
 **Release steps**
-- [ ] `1.3.0-beta1`: first-run wizard + `fix.sh` server submenu.
+- [ ] `1.3.0-beta1`: first-run wizard (the `fix.sh` server submenu already shipped in 1.2.9-beta).
 - [ ] `1.3.0-beta2`: settings export / import, SD-card template.
 - [ ] `1.3.0-beta3`: EN/PL guides (HTML in the app + PDF).
 - [ ] `1.3.0-beta4`: "Install another version" in `fix.sh`.
 - [ ] `1.3.0`: stable release.
 
 **`fix.sh` – server submenu**
-- [ ] New option "Server": 1) check status (service state, autostart, panel address, last log lines), 2) stop the server – does not change autostart / start it again (shown depending on the state), 3) restart the service process, 4) back.
-- [ ] Menu look: numbered text menu, or a `whiptail` window like `raspi-config` with the same numbers and a text fallback (to decide).
+- [x] New option "Server" (in 1.2.9-beta): 1) check status (service state, autostart, panel address, last log lines), 2) stop the server – does not change autostart / start it again (shown depending on the state), 3) restart the service process, 4) back.
+- [x] Menu look: `whiptail` window like `raspi-config` with the same numbers, plain text fallback (`--text`).
 
 **Choosing a version in `fix.sh`**
 - [x] Stable (`main`) and BETA (`beta`) lines; installing and leaving BETA in `fix.sh` (since 1.2.5 / 1.2.6-beta).

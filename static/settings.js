@@ -327,7 +327,7 @@
     const cmds = [
       [t("Connect from your computer (Terminal / PowerShell)"), `ssh ${cfg.system_user || "pi"}@${cfg.ip || "<raspberry-pi-ip>"}`],
       [t("Update Plex Downloader"), `cd ${dir} && ./update.sh`],
-      [t("Repair menu: update, reinstall, factory reset, uninstall"), `cd ${dir} && ./fix.sh`, "fix"],
+      [t("Repair menu: update, reinstall, factory reset, server, uninstall"), `cd ${dir} && ./fix.sh`, "fix"],
       [t("Service status"), "systemctl status plex-downloader"],
       [t("Restart the service"), "sudo systemctl restart plex-downloader"],
       [t("Live service logs"), "journalctl -u plex-downloader -f"],

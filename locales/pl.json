@@ -444,7 +444,6 @@
  "Delete selected backups?": "Usunąć zaznaczone kopie?",
  "{n} restore points will be deleted. The current settings and the newest backup stay.": "Zostanie usuniętych punktów przywracania: {n}. Bieżące ustawienia i najnowsza kopia zostaną.",
  "Backups deleted: {n}": "Usunięto kopie: {n}",
- "Repair menu: update, reinstall, factory reset, uninstall": "Menu naprawy: aktualizacja, reinstalacja, ustawienia fabryczne, odinstalowanie",
  "The backup is damaged.": "Kopia jest uszkodzona.",
  "Update available ({v}) – run {cmd}": "Dostępna aktualizacja ({v}) – uruchom {cmd}",
  "Update available (%s). Run %s on the Raspberry Pi.": "Dostępna aktualizacja (%s). Uruchom %s na Raspberry Pi.",
@@ -456,5 +455,6 @@
  "verifying {a} of {b}": "weryfikacja {a} z {b}",
  "without verification": "bez weryfikacji",
  "copied {b}": "skopiowano {b}",
- "The link opens a web page, not a video file. The site may require logging in, or the link has expired – copy the direct link to the file.": "Link otwiera stronę WWW, a nie plik wideo. Serwis może wymagać zalogowania albo link wygasł – skopiuj bezpośredni link do pliku."
+ "The link opens a web page, not a video file. The site may require logging in, or the link has expired – copy the direct link to the file.": "Link otwiera stronę WWW, a nie plik wideo. Serwis może wymagać zalogowania albo link wygasł – skopiuj bezpośredni link do pliku.",
+ "Repair menu: update, reinstall, factory reset, server, uninstall": "Menu naprawy: aktualizacja, reinstalacja, ustawienia fabryczne, serwer, odinstalowanie"
 }

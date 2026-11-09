@@ -73,15 +73,15 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
 - [ ] Bezpieczeństwo sieci domowej (bez DMZ i przekierowania portu 8800, mocne hasła, Samba z `valid users`).
 
 **Kolejne kroki wydań**
-- [ ] `1.3.0-beta1`: kreator pierwszego uruchomienia + podmenu serwera w `fix.sh`.
+- [ ] `1.3.0-beta1`: kreator pierwszego uruchomienia (podmenu serwera w `fix.sh` weszło już do 1.2.9-beta).
 - [ ] `1.3.0-beta2`: eksport i import ustawień, szablon „Karta SD”.
 - [ ] `1.3.0-beta3`: instrukcje EN/PL (HTML w aplikacji + PDF).
 - [ ] `1.3.0-beta4`: „Zainstaluj inną wersję” w `fix.sh`.
 - [ ] `1.3.0`: wydanie stabilne.
 
 **`fix.sh` – podmenu serwera**
-- [ ] Nowa opcja „Serwer”: 1) sprawdź status (stan usługi, autostart, adres panelu, ostatnie wpisy logu), 2) wstrzymaj serwer – bez wpływu na autostart / uruchom ponownie (zależnie od stanu), 3) restart procesu serwera, 4) powrót.
-- [ ] Wygląd menu: tekstowe z numerami albo okno `whiptail` w stylu `raspi-config` z tymi samymi numerami i zapasowym menu tekstowym (do decyzji).
+- [x] Nowa opcja „Serwer” (w 1.2.9-beta): 1) sprawdź status (stan usługi, autostart, adres panelu, ostatnie wpisy logu), 2) wstrzymaj serwer – bez wpływu na autostart / uruchom ponownie (zależnie od stanu), 3) restart procesu serwera, 4) powrót.
+- [x] Wygląd menu: okno `whiptail` w stylu `raspi-config` z tymi samymi numerami, zapasowe menu tekstowe (`--text`).
 
 **Wybór wersji w `fix.sh` (zmiana sposobu wydawania w repozytorium)**
 - [x] Linie stabilna (`main`) i BETA (`beta`), instalacja i wyjście z BETA w `fix.sh` (od 1.2.5 / 1.2.6-beta).

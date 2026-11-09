@@ -5,6 +5,8 @@ All notable changes to Plex Downloader. Stable versions live on the `main` branc
 ## 1.2.9-beta – 2026-11-09 (BETA)
 
 - Everything from 1.2.7 (stable), plus the BETA-only VPN preview.
+- **`fix.sh` in a window like `raspi-config`** (whiptail, arrow keys + Enter) with the same numbers as before; plain text menu on small screens or with `./fix.sh --text`.
+- **New `fix.sh` option 6 – Server:** check status (service, autostart, panel address, last log lines), stop the server without changing autostart / start it again without restarting the Pi, restart the server process. Uninstall and Cancel moved to 7 and 8.
 
 ## 1.2.7 – 2026-11-09 (stable)
 

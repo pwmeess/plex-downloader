@@ -91,15 +91,16 @@ cd ~/plex-downloader
 ./fix.sh
 ```
 
-Najpierw pyta o język, potem pokazuje menu:
+Menu otwiera się w oknie jak `raspi-config` (strzałki + Enter). Na bardzo małym ekranie albo po `./fix.sh --text` jest wyświetlane jako zwykły tekst z tymi samymi numerami. Najpierw pyta o język, potem pokazuje menu:
 
 1. **Update (check and install)** – sprawdza GitHuba i instaluje nową wersję stabilną,
 2. **Reinstall (keep settings)** – pobiera kod od nowa i odbudowuje środowisko, ustawienia zostają,
 3. **Clean reinstall** – kasuje ustawienia, kopie, dzienniki i listę pobrań, potem instaluje wersję stabilną od zera (potwierdzenie słowem YES/TAK),
 4. **Install / update the latest BETA** – instaluje lub aktualizuje wersję BETA,
 5. **Leave BETA** – powrót do wersji stabilnej z usunięciem ustawień eksperymentalnych (bez dodatkowych pytań),
-6. **Uninstall** – usuwa usługę z autostartu, opcjonalnie także folder aplikacji,
-7. **Cancel**.
+6. **Server** – status (usługa, autostart, adres panelu, ostatnie wpisy logu), wstrzymanie serwera (autostart bez zmian) albo ponowne uruchomienie bez restartu Pi, restart procesu serwera,
+7. **Uninstall** – usuwa usługę z autostartu, opcjonalnie także folder aplikacji,
+8. **Cancel**.
 
 Filmy i seriale na dyskach nigdy nie są ruszane.
 
