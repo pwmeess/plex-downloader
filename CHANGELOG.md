@@ -19,6 +19,8 @@ All notable changes to Plex Downloader. Stable versions live on the `main` branc
     - ✕: the category is not used on this disk (↺ brings it back with a suggested folder); “+ Add category” adds a new one,
     - every such change ticks and highlights “Create missing folders when finishing”; when folders are missing and the box is unticked, it is highlighted too,
     - two categories with the same name or the same folder on one disk are reported before continuing.
+  - **Setup wizard – “I have a settings file – load it”** on the first step (optional, ⓘ explains when it helps): fills in categories, Plex servers, download and poster options, language, theme and the TMDB key (if exported) from a file made with Export settings. Disks from the file are listed in the disks step and matched to this device: folders are found by name and paths are moved onto the local mount point (e.g. `/plex_media_1024/Plex 1T/Movies` → `/mnt/plex_1024/Plex 1T/Movies`); the button name comes from the matching disk. Nothing is saved until Finish; “Do not use the file” starts over.
+  - ⓘ tooltips can have several paragraphs.
 
 ## 1.3.0-beta1 – 2026-11-09 (BETA)
 

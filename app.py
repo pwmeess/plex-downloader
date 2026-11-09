@@ -614,8 +614,44 @@ def api_wizard_state():
 def api_wizard_scan():
     d = request.get_json(silent=True) or {}
     cats = [c for c in (d.get("categories") or config.get()["categories"]) if isinstance(c, dict) and c.get("id")]
-    return fm_call(lambda: {"result": fm.scan_paths(d.get("mount", ""), cats),
-                            "plex_dir": fm.find_plex_dir(d.get("mount", ""))})
+    mount = d.get("mount", "")
+    # disks from an imported settings file: their folder names are searched for, and their paths
+    # are moved onto this mount point (/plex_media_1024/Plex 1T/Movies → /mnt/plex_1024/Plex 1T/Movies)
+    hints = [h for h in d.get("hints") or [] if isinstance(h, dict) and isinstance(h.get("paths"), dict)]
+    for c in cats:
+        c["names"] = [os.path.basename(str(h["paths"].get(c["id"]) or "").rstrip("/")) for h in hints]
+        c["names"] = [n for n in c["names"] if n]
+
+    def run():
+        res = fm.scan_paths(mount, cats)
+        best, best_hits = None, 0
+        for h in hints:
+            hits = 0
+            for c in cats:
+                p = fm._rebase(str(h["paths"].get(c["id"]) or ""), mount) if mount and os.path.isdir(mount) else None
+                if p:
+                    hits += 1
+                    if res.get(c["id"], {}).get("status") != "found":
+                        res[c["id"]] = {"path": p, "status": "found"}
+            if hits > best_hits:
+                best, best_hits = h, hits
+        return {"result": res, "plex_dir": fm.find_plex_dir(mount),
+                "match": str(best.get("label") or "")[:16] if best else ""}
+    return fm_call(run)
+
+
+@app.route("/api/wizard/import", methods=["POST"])
+@login_required
+def api_wizard_import():
+    """Reads a settings file for the wizard – nothing is saved until Finish."""
+    data = (request.get_json(silent=True) or {}).get("data")
+    try:
+        clean = _import_clean(data)
+    except (TypeError, ValueError) as e:
+        return err(str(e) or _("Invalid values."))
+    meta = data.get("_plexdl") or {}
+    return jsonify(data=clean, meta={"version": str(meta.get("version") or "")[:20],
+                                     "exported": str(meta.get("exported") or "")[:20]})
 
 
 @app.route("/api/wizard/check", methods=["POST"])
@@ -687,6 +723,15 @@ def api_wizard_finish():
     raw_key = data.get("tmdb_api_key")
     tmdb_key = cfg.get("tmdb_api_key", "") if raw_key is None else re.sub(r"\s+", "", raw_key)
     extra = {"categories": cats} if cats else {}
+    opts = data.get("options") if isinstance(data.get("options"), dict) else {}
+    if opts:
+        try:
+            o = _import_clean(dict(opts, _plexdl={}))
+        except (TypeError, ValueError):
+            o = {}
+        for k in ("connections_per_file", "max_concurrent", "max_speed_mbps", "thumbs_mode"):
+            if k in o:
+                extra[k] = o[k]
     config.update(note="Setup wizard", disks=disks, plex_servers=servers, **extra,
                   plex_autodiscover=bool(data.get("plex_autodiscover", True)), tmdb_api_key=tmdb_key,
                   require_mount=bool(data.get("require_mount", True)), wizard_done=True)

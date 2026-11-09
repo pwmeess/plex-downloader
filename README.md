@@ -65,7 +65,7 @@ The script:
 
 At the end it prints the address, e.g. **http://192.168.1.10:8800**. `setup.sh` always installs the latest **stable** version.
 
-**Setup wizard (1.3, BETA):** after the first login a wizard guides you through language, theme, where the library is stored (external disks – recommended, SD card – not recommended, or Plex on another device), disks and folders (found automatically, missing ones created), the Plex server and the TMDB key. On the disks step you can rename a category with the gear (e.g. Kids → Concerts), leave it out of a disk with ✕ or add a new one; missing folders are suggested inside the disk's `Plex` folder and created when you finish. You can run it again from **Settings → Account → Run setup wizard**.
+**Setup wizard (1.3, BETA):** after the first login a wizard guides you through language, theme, where the library is stored (external disks – recommended, SD card – not recommended, or Plex on another device), disks and folders (found automatically, missing ones created), the Plex server and the TMDB key. On the disks step you can rename a category with the gear (e.g. Kids → Concerts), leave it out of a disk with ✕ or add a new one; missing folders are suggested inside the disk's `Plex` folder and created when you finish. Setting up a second Raspberry Pi or reinstalling? Click **I have a settings file – load it** on the first step: categories, Plex servers, options and the TMDB key come from a file exported in Settings → Backups, and disk paths are matched to this device. You can run it again from **Settings → Account → Run setup wizard**.
 
 ## Updating
 

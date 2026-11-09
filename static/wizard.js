@@ -102,7 +102,8 @@
 
   async function scanDisk(d, after) {
     try {
-      const r = await api("/api/wizard/scan", { mount: d.mount, categories: cats() });
+      const r = await api("/api/wizard/scan", { mount: d.mount, categories: cats(), hints: W.fileDisks || [] });
+      if (r.match && !d.labelSet) d.label = r.match;   // button name of the matching disk from the settings file
       // missing folders go next to the ones that were found (e.g. „Plex 1T/Kids”), otherwise into „Plex/”
       const found = Object.values(r.result).map((x) => x.path).filter(Boolean);
       // no category folder yet: suggest them inside the disk's „Plex” folder (if there is one)
@@ -285,6 +286,68 @@
     return row;
   }
 
+  // ------------------------------------------------------------------ settings file (optional)
+  function importBox() {
+    const box = el("div", "wz-import");
+    if (W.imported) {
+      const m = W.imported;
+      const ok = el("p", "wz-import-ok");
+      ok.append(icon("check"), document.createTextNode(" " + t("Settings loaded from {name} (version {v}, exported {when}).",
+        { name: m.name, v: m.version || "?", when: m.exported || "?" })));
+      const undo = el("button", "linklike", t("Do not use the file")); undo.type = "button";
+      undo.addEventListener("click", () => { const step = W.step; W = freshW(); W.step = step; saveW(); render(); });
+      box.append(ok, undo);
+      return box;
+    }
+    const row = el("div", "wz-import-row");
+    const b = el("button", "btn-soft small", t("I have a settings file – load it")); b.type = "button";
+    b.prepend(icon("up"));
+    const file = el("input"); file.type = "file"; file.accept = ".json,application/json"; file.hidden = true;
+    b.addEventListener("click", () => { file.value = ""; file.click(); });
+    file.addEventListener("change", () => file.files[0] && loadFile(file.files[0]));
+    row.append(b, info(t("Optional. A settings file is created in Settings → Backups → Export settings – for example on your other Raspberry Pi or before a clean reinstall.\n\nNo file? No problem – the wizard guides you through everything step by step.\n\nWith a file, the wizard fills in your categories (also your own, e.g. Concerts), Plex servers, download and poster options, language, theme and the TMDB key (if it was exported). Disk paths are matched to the disks of this device, so you only check them in the “Disks and folders” step. Nothing is saved until you click Finish.")), file);
+    box.append(row, p(t("Optional – e.g. when you set up a second Raspberry Pi or reinstall."), "muted"));
+    return box;
+  }
+  function fileDisksNote(box) {
+    if (!W.fileDisks || !W.fileDisks.length) return;
+    const n = el("div", "wz-file-disks");
+    n.appendChild(el("p", null, t("Disks in the settings file (paths of the device it was exported from):")));
+    const ul = el("ul", "plan-list");
+    W.fileDisks.forEach((d) => { const li = el("li"); li.append(el("b", null, d.label), " ", el("span", "mono muted", d.mount)); ul.appendChild(li); });
+    n.append(ul, el("p", "muted", t("Tick the matching disks of this device – folders from the file are found and matched automatically.")));
+    box.appendChild(n);
+  }
+  async function loadFile(f) {
+    let data;
+    try { data = JSON.parse(await f.text()); } catch (e) { toast(t("This is not a Plex Downloader settings file."), true); return; }
+    let r;
+    try { r = await api("/api/wizard/import", { data }); } catch (e) { toast(e.message, true); return; }
+    const d = r.data;
+    W.imported = { name: f.name, version: r.meta.version, exported: r.meta.exported };
+    if (d.categories) W.cats = d.categories;
+    if (d.plex_servers) W.servers = d.plex_servers.map((s) => ({ name: s.name, host: s.host, port: s.port }));
+    if ("plex_autodiscover" in d) W.plexAuto = d.plex_autodiscover;
+    if (d.tmdb_api_key) W.tmdbKey = d.tmdb_api_key;
+    W.opts = {};
+    ["connections_per_file", "max_concurrent", "max_speed_mbps", "thumbs_mode"].forEach((k) => { if (k in d) W.opts[k] = d[k]; });
+    W.fileDisks = (d.disks || []).map((x) => ({ label: x.label, mount: x.mount, paths: x.paths }));
+    // a library on the SD card in the file → suggest the same installation type
+    if (W.fileDisks.length && W.fileDisks.every((x) => x.mount === "/")) W.type = "sd";
+    W.disks = {}; W.net = {}; W.sd = null;   // disks are matched again with the file in mind
+    W.step = 2; saveW();
+    toast(t("Settings file loaded – check the next steps."));
+    const iface = {};
+    if (d.language && d.language !== LANG) iface.language = d.language;
+    if (d.theme && d.theme !== (document.documentElement.dataset.theme || "dark")) iface.theme = d.theme;
+    if (Object.keys(iface).length) {
+      try { await api("/api/interface", iface); } catch (e) { /* */ }
+      setTimeout(() => location.reload(), 500);
+      return;
+    }
+    render();
+  }
+
   // ------------------------------------------------------------------ steps
   const VIEWS = {
     language() {
@@ -302,6 +365,7 @@
         pick.appendChild(b);
       });
       box.appendChild(pick);
+      box.appendChild(importBox());
       return box;
     },
     theme() {
@@ -356,6 +420,7 @@
         box.appendChild(slow);
         const nets = (S.mounts || []).filter((m) => m.network);
         if (nets.length) {
+          fileDisksNote(box);
           box.appendChild(p(t("Network shares mounted on this Raspberry Pi:")));
           nets.forEach((m) => {
             // button name: the share name (“//192.168.1.10/Plex Media Share 1024” → “Plex Media Share 1024”)
@@ -396,6 +461,7 @@
           box.appendChild(el("p", "plan-warn", t("No external disk is mounted. Connect the disk, mount it permanently (see the guide), then click “Check again”.")));
           box.appendChild(cmdBlock([[t("Show disks and their mount points"), "lsblk -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT"]]));
         } else {
+          fileDisksNote(box);
           box.appendChild(p(t("Select the disks for the library:")));
           disks.forEach((m) => box.appendChild(diskCard(diskEntry(m), m)));
           box.appendChild(createBox());
@@ -490,6 +556,7 @@
       add(t("Language"), LANG === "pl" ? "Polski" : "English");
       add(t("Theme"), (document.documentElement.dataset.theme || "dark") === "light" ? t("Light") : t("Dark"));
       add(t("Installation"), { disks: t("External disks"), sd: t("Library on the SD card"), network: t("Plex on another device") }[W.type]);
+      if (W.imported) add(t("Settings file"), `${W.imported.name} · ${t("categories, Plex servers and options from the file")}`);
       box.appendChild(dl);
       const disks = chosenDisks();
       if (W.skipDisks) box.appendChild(el("p", "plan-warn", S.wizard_done
@@ -547,7 +614,7 @@
       }
       await api("/api/wizard/finish", {
         disks: disks.map((d) => ({ label: d.label || baseName(d.mount), subtitle: "", mount: d.mount, paths: d.paths })),
-        categories: W.cats || undefined,
+        categories: W.cats || undefined, options: W.opts || undefined,
         plex_servers: W.servers.filter((s) => s.host), plex_autodiscover: W.plexAuto,
         tmdb_api_key: W.tmdbKey ? W.tmdbKey : null, require_mount: true, skip_disks: !!W.skipDisks,
       });

@@ -181,7 +181,9 @@
     head.append(el("b", null, t("Hint")));
     const x = el("button", "icon-btn"); x.type = "button"; x.appendChild(icon("x")); x.addEventListener("click", closeTip);
     head.appendChild(x);
-    tip.append(head, el("p", null, b.dataset.tip || ""));
+    // "\n\n" in a tooltip = new paragraph
+    tip.appendChild(head);
+    (b.dataset.tip || "").split(/\n\s*\n/).forEach((part) => tip.appendChild(el("p", null, part.trim())));
     if (b.dataset.href) {
       const a = el("a", null, t("More information") + " ↗"); a.href = b.dataset.href; a.target = "_blank"; a.rel = "noopener noreferrer";
       tip.appendChild(a);

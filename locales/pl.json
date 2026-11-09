@@ -615,5 +615,15 @@
  "The new name applies to all disks. Folders that do not exist yet get the new folder name.": "Nowa nazwa obowiązuje na wszystkich dyskach. Foldery, których jeszcze nie ma, dostaną nową nazwę folderu.",
  "Use on this disk": "Użyj na tym dysku",
  "A category with this name already exists.": "Kategoria o tej nazwie już istnieje.",
- "Two categories use the same folder on {disk}.": "Dwie kategorie używają tego samego folderu na {disk}."
+ "Two categories use the same folder on {disk}.": "Dwie kategorie używają tego samego folderu na {disk}.",
+ "Disks in the settings file (paths of the device it was exported from):": "Dyski w pliku ustawień (ścieżki z urządzenia, na którym plik powstał):",
+ "Do not use the file": "Nie używaj pliku",
+ "I have a settings file – load it": "Mam plik ustawień – wczytaj",
+ "Optional – e.g. when you set up a second Raspberry Pi or reinstall.": "Opcjonalnie – np. przy drugim Raspberry Pi albo po ponownej instalacji.",
+ "Optional. A settings file is created in Settings → Backups → Export settings – for example on your other Raspberry Pi or before a clean reinstall.\n\nNo file? No problem – the wizard guides you through everything step by step.\n\nWith a file, the wizard fills in your categories (also your own, e.g. Concerts), Plex servers, download and poster options, language, theme and the TMDB key (if it was exported). Disk paths are matched to the disks of this device, so you only check them in the “Disks and folders” step. Nothing is saved until you click Finish.": "Opcjonalnie. Plik ustawień tworzysz w Ustawienia → Kopie zapasowe → Eksportuj ustawienia – np. na drugim Raspberry Pi albo przed czystą reinstalacją.\n\nNie masz pliku? Nic nie szkodzi – kreator przeprowadzi Cię przez wszystko krok po kroku.\n\nZ plikiem kreator sam uzupełni kategorie (także Twoje własne, np. Koncerty), serwery Plex, opcje pobierania i plakatów, język, motyw oraz klucz TMDB (jeśli był wyeksportowany). Ścieżki dysków dopasuje do dysków tego urządzenia – w kroku „Dyski i foldery” tylko je sprawdzasz. Nic nie zostanie zapisane, dopóki nie klikniesz Zakończ.",
+ "Settings file": "Plik ustawień",
+ "Settings file loaded – check the next steps.": "Wczytano plik ustawień – sprawdź kolejne kroki.",
+ "Settings loaded from {name} (version {v}, exported {when}).": "Wczytano ustawienia z {name} (wersja {v}, wyeksportowano {when}).",
+ "Tick the matching disks of this device – folders from the file are found and matched automatically.": "Zaznacz odpowiadające im dyski tego urządzenia – foldery z pliku zostaną odnalezione i dopasowane automatycznie.",
+ "categories, Plex servers and options from the file": "kategorie, serwery Plex i opcje z pliku"
 }
