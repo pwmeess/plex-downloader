@@ -404,6 +404,17 @@
       const first = st.disks.find(usable);
       if (first) st.diskId = first.id;
     }
+    if (!st.disks.length) {
+      // brak dysków (np. „Pomiń” w kreatorze): podpowiedź zamiast kafelków
+      const n = el("div", "panel-note no-disks");
+      n.append(icon("drive"), el("span", null, t("No disk yet – add one to start downloading.")));
+      const a = el("button", "linklike", t("Settings → Disks") + " →"); a.type = "button";
+      a.addEventListener("click", () => window.PD.openSettings && window.PD.openSettings("disks"));
+      const w = el("a", "linklike", t("Run setup wizard") + " →"); w.href = "/setup";
+      n.append(a, w);
+      box.appendChild(n);
+      return;
+    }
     st.disks.forEach((d) => {
       const can = usable(d);
       const b = el("button", "disk" + (d.id === st.diskId && can ? " on" : ""));

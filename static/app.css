@@ -741,3 +741,6 @@ h3.fold-h { display: flex; align-items: center; gap: 8px; }
 .wz-disk .plan-list li .wz-st { margin-left: auto; }
 .wz-top .brand { white-space: nowrap; }
 .wz-top .btn-ghost { margin-left: auto; text-align: right; }
+.wz-skip { display: flex; align-items: center; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.no-disks { grid-column: 1 / -1; }
+.no-disks svg { width: 18px; height: 18px; }

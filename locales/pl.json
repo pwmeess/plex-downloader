@@ -531,5 +531,14 @@
  "not recommended": "niezalecane",
  "recommended": "zalecane",
  "saved key kept": "zostaje zapisany klucz",
- "will be created": "zostanie utworzony"
+ "will be created": "zostanie utworzony",
+ "Disks and folders are set in the setup wizard after the first login.": "Dyski i foldery ustawisz w kreatorze po pierwszym zalogowaniu.",
+ "No disks configured yet – add them in Settings → Disks or run the setup wizard.": "Nie skonfigurowano jeszcze dysków – dodaj je w Ustawienia → Dyski albo uruchom kreator.",
+ "No disk yet – add one to start downloading.": "Nie ma jeszcze dysku – dodaj go, aby zacząć pobierać.",
+ "Settings → Disks": "Ustawienia → Dyski",
+ "No disk yet – add one in Settings → Disks or run the setup wizard again.": "Nie ma jeszcze dysku – dodaj go w Ustawienia → Dyski albo uruchom ponownie kreator.",
+ "Skip – set up disks later": "Pomiń – skonfiguruję dyski później",
+ "You can finish the wizard without a disk and add disks later in Settings → Disks (or run the wizard again from Settings → Account). Downloading starts working once at least one disk is set up.": "Możesz zakończyć kreator bez dysku i dodać dyski później w Ustawienia → Dyski (albo uruchomić kreator ponownie z Ustawienia → Konto). Pobieranie zacznie działać, gdy ustawisz co najmniej jeden dysk.",
+ "Disks: skipped – your current disks stay unchanged.": "Dyski: pominięto – obecne dyski zostają bez zmian.",
+ "Disks: skipped – add them later in Settings → Disks. Downloading needs at least one disk.": "Dyski: pominięto – dodasz je później w Ustawienia → Dyski. Do pobierania potrzebny jest co najmniej jeden dysk."
 }

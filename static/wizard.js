@@ -81,6 +81,7 @@
     return W.disks[m.mount];
   }
   function chosenDisks() {
+    if (W.skipDisks) return [];
     if (W.type === "sd") return W.sd ? [W.sd] : [];
     if (W.type === "network") return Object.values(W.net).filter((d) => d.use);
     return Object.values(W.disks).filter((d) => d.use);
@@ -294,6 +295,12 @@
         again.addEventListener("click", async () => { S = await api("/api/wizard/state"); render(); });
         box.appendChild(el("div", "wz-row")).appendChild(again);
       }
+      // „Skip – set up disks later”
+      const skip = el("div", "wz-skip");
+      const sb = el("button", "btn-ghost small", t("Skip – set up disks later")); sb.type = "button";
+      sb.addEventListener("click", () => { W.skipDisks = true; W.step = STEPS.findIndex((x) => x.id === "plex"); saveW(); render(); });
+      skip.append(sb, info(t("You can finish the wizard without a disk and add disks later in Settings → Disks (or run the wizard again from Settings → Account). Downloading starts working once at least one disk is set up.")));
+      box.appendChild(skip);
       scheduleCheck();
       return box;
     },
@@ -374,7 +381,10 @@
       add(t("Installation"), { disks: t("External disks"), sd: t("Library on the SD card"), network: t("Plex on another device") }[W.type]);
       box.appendChild(dl);
       const disks = chosenDisks();
-      if (!disks.length) box.appendChild(el("p", "plan-warn", t("No disk selected – go back to “Disks and folders”.")));
+      if (W.skipDisks) box.appendChild(el("p", "plan-warn", S.wizard_done
+        ? t("Disks: skipped – your current disks stay unchanged.")
+        : t("Disks: skipped – add them later in Settings → Disks. Downloading needs at least one disk.")));
+      else if (!disks.length) box.appendChild(el("p", "plan-warn", t("No disk selected – go back to “Disks and folders”.")));
       disks.forEach((d) => {
         const card = el("div", "wz-disk on");
         card.appendChild(el("div", "wz-disk-head")).append(el("b", null, d.label || d.mount), el("span", "muted mono", d.mount));
@@ -402,6 +412,7 @@
   // ------------------------------------------------------------------ validation + finish
   function canLeave(stepId) {
     if (stepId !== "disks") return true;
+    W.skipDisks = false;   // „Next” on the disks step = use the selected disks
     const disks = chosenDisks();
     if (!disks.length) { toast(t("Select at least one disk."), true); return false; }
     if (disks.some((d) => !Object.values(d.paths).some(Boolean))) { toast(t("Every selected disk needs at least one category folder."), true); return false; }
@@ -424,7 +435,7 @@
       await api("/api/wizard/finish", {
         disks: disks.map((d) => ({ label: d.label || baseName(d.mount), subtitle: "", mount: d.mount, paths: d.paths })),
         plex_servers: W.servers.filter((s) => s.host), plex_autodiscover: W.plexAuto,
-        tmdb_api_key: W.tmdbKey ? W.tmdbKey : null, require_mount: true,
+        tmdb_api_key: W.tmdbKey ? W.tmdbKey : null, require_mount: true, skip_disks: !!W.skipDisks,
       });
       ss.set("plexdl.wizard", "");
       toast(t("Setup finished."));

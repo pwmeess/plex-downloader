@@ -100,7 +100,8 @@
       this.sel.clear(); this.page = 0;
       if (!this.disk || !this.cat) {
         this.items = []; this.data = null;
-        this.showMsg(t("Choose a disk and category. If a folder is missing, add it in Settings → Disks."));
+        this.showMsg(disks.length ? t("Choose a disk and category. If a folder is missing, add it in Settings → Disks.")
+        : t("No disk yet – add one in Settings → Disks or run the setup wizard again."));
         return;
       }
       this.showMsg(t("Loading…"), true);

@@ -9,6 +9,8 @@ All notable changes to Plex Downloader. Stable versions live on the `main` branc
   - Mounted disks and network shares are detected; category folders are found automatically; every folder is checked for write permission and free space; missing folders can be created.
   - Network share: step-by-step commands to mount an SMB share (also after restarts via `/etc/fstab`) with copy buttons.
   - Nothing is saved until Finish; the previous settings are kept as a restore point.
+  - **“Skip – set up disks later”** in the disks step: the wizard can be finished without a disk (on a new installation the example paths are removed; when the wizard is run again, the current disks stay). The download page and the File manager then show where to add a disk, and Settings can be saved without disks.
+  - `setup.sh` on a new installation no longer lists the example folders as missing – it says that disks are set in the wizard.
   - TMDB step: “Show key” now shows the saved key, and the button switches between “Skip” and “Next” as you type (fixed after the first tests).
 - README (EN/PL): new section "Library on another computer (network share)" with the mount commands.
 

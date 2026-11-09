@@ -378,8 +378,6 @@ def api_settings_post():
             if not re.match(r"^[a-z0-9_-]{1,32}$", d["id"]):
                 d["id"] = uuid.uuid4().hex[:8]
             disks.append(d)
-        if not disks:
-            raise ValueError(_("At least one disk must remain."))
         servers = []
         for raw in data.get("plex_servers") or []:
             host = (raw.get("host") or "").strip()
@@ -471,8 +469,12 @@ def api_wizard_finish():
                     paths[cid] = p
             disks.append({"id": uuid.uuid4().hex[:8], "label": label,
                           "subtitle": (raw.get("subtitle") or "").strip()[:40], "mount": mount, "paths": paths})
-        if not disks:
+        if not disks and not data.get("skip_disks"):
             raise ValueError(_("At least one disk must remain."))
+        if data.get("skip_disks"):
+            # „Pomiń”: przy pierwszym uruchomieniu bez dysków (przykładowe ścieżki znikają),
+            # przy ponownym kreatorze dotychczasowe dyski zostają
+            disks = cfg.get("disks", []) if cfg.get("wizard_done") else []
         servers = []
         for raw in data.get("plex_servers") or []:
             host = (raw.get("host") or "").strip()
@@ -774,6 +776,13 @@ def set_password():
 def check_folders():
     """Raport dla setup.sh: czy foldery kategorii istnieją i można w nich zapisywać."""
     cfg = config.load()
+    if not cfg.get("wizard_done"):
+        # nowa instalacja: przykładowe ścieżki z config.example.json nie mają tu znaczenia
+        print("  \033[36m%s\033[0m" % _("Disks and folders are set in the setup wizard after the first login."))
+        return
+    if not cfg.get("disks"):
+        print("  \033[33m%s\033[0m" % _("No disks configured yet – add them in Settings → Disks or run the setup wizard."))
+        return
     cats = {c["id"]: c["label"] for c in cfg.get("categories", [])}
     for d in cfg.get("disks", []):
         for cid, label in cats.items():
