@@ -744,3 +744,9 @@ h3.fold-h { display: flex; align-items: center; gap: 8px; }
 .wz-skip { display: flex; align-items: center; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); }
 .no-disks { grid-column: 1 / -1; }
 .no-disks svg { width: 18px; height: 18px; }
+.wz-create-row { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+.wz-create-row .wz-create { margin-top: 0; }
+.wz-note { color: var(--warn); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.wz-small { font-size: 13px; margin-top: 10px; }
+/* Settings → Account: „Run setup wizard” is a link styled as a button */
+.log-row a.btn-soft { font-family: inherit; letter-spacing: normal; font-weight: 600; color: var(--text); text-decoration: none; }

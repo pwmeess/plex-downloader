@@ -91,9 +91,12 @@
   async function scanDisk(d, after) {
     try {
       const r = await api("/api/wizard/scan", { mount: d.mount });
+      // missing folders go next to the ones that were found (e.g. „Plex 1T/Kids”), otherwise into „Plex/”
+      const found = Object.values(r.result).map((x) => x.path).filter(Boolean);
+      const root = found.length ? found[0].replace(/\/[^/]+$/, "") : `${d.mount.replace(/\/$/, "")}/Plex`;
       cats().forEach((c) => {
         const x = r.result[c.id] || {};
-        if (!d.paths[c.id]) d.paths[c.id] = x.path || `${d.mount.replace(/\/$/, "")}/Plex/${c.folder || c.label}`;
+        if (!d.paths[c.id]) d.paths[c.id] = x.path || `${root}/${c.folder || c.label}`;
       });
     } catch (e) {
       cats().forEach((c) => { if (!d.paths[c.id]) d.paths[c.id] = `${d.mount.replace(/\/$/, "")}/Plex/${c.folder || c.label}`; });
@@ -175,7 +178,9 @@
     const cb = el("input"); cb.type = "checkbox"; cb.checked = W.create;
     cb.addEventListener("change", () => { W.create = cb.checked; saveW(); paintStatus(); });
     lab.append(cb, document.createTextNode(" " + t("Create missing folders when finishing")));
-    return lab;
+    const row = el("div", "wz-create-row");
+    row.append(lab, info(t("Folders that do not exist yet (status “will be created”) are created when you click Finish, together with their parent folders, e.g. Plex/Movies. Untick it if you prefer to create the folders yourself – the wizard then continues only when all folders exist.")));
+    return row;
   }
 
   // ------------------------------------------------------------------ steps
@@ -224,7 +229,7 @@
           W.type === "sd", (v) => { W.type = v; saveW(); }, { text: t("not recommended"), cls: "warn" }),
         choice("wzType", "network", t("Plex on another device"), t("The library is on another computer (e.g. a second Raspberry Pi with Plex) and shared over the network (SMB or NFS)."),
           t("Plex and Plex Downloader must see the same files: Downloader saves into the network share, Plex reads the same folders on its own computer (the paths there may be different). The share has to be mounted on this Raspberry Pi first – the next step shows the commands. Give both devices a fixed IP address in your router."),
-          W.type === "network", (v) => { W.type = v; saveW(); }));
+          W.type === "network", (v) => { W.type = v; saveW(); }, { text: t("slower downloads"), cls: "warn" }));
       box.appendChild(list);
       return box;
     },
@@ -247,11 +252,16 @@
         box.appendChild(p(t("Share the Plex folder over SMB if you want to copy files from your computer – see the guide."), "muted"));
       } else if (W.type === "network") {
         box.append(h(t("Network share"), t("Plex and Plex Downloader must see the same files: Downloader saves into the network share, Plex reads the same folders on its own computer (the paths there may be different). The share has to be mounted on this Raspberry Pi first – the next step shows the commands. Give both devices a fixed IP address in your router.")));
+        const slow = el("p", "wz-p wz-note");
+        slow.append(document.createTextNode(t("Downloads are slower in this setup than with a disk connected directly.") + " "), info(t('Every downloaded byte travels twice over your home network: from the internet to this Raspberry Pi, then to the computer with the disks. Over Wi-Fi (e.g. a Raspberry Pi Zero 2 W, 2.4 GHz only) expect only a few MB/s. A cable connection on both devices – or running Plex Downloader on the computer that has the disks – is much faster.')));
+        box.appendChild(slow);
         const nets = (S.mounts || []).filter((m) => m.network);
         if (nets.length) {
           box.appendChild(p(t("Network shares mounted on this Raspberry Pi:")));
           nets.forEach((m) => {
-            const d = W.net[m.mount] || (W.net[m.mount] = { use: false, label: baseName(m.mount), mount: m.mount, paths: {}, scanned: false });
+            // button name: the share name (“//192.168.1.10/Plex Media Share 1024” → “Plex Media Share 1024”)
+            const share = (m.device || "").replace(/\/+$/, "").split("/").pop();
+            const d = W.net[m.mount] || (W.net[m.mount] = { use: false, label: (share || baseName(m.mount)).slice(0, 40), mount: m.mount, paths: {}, scanned: false });
             box.appendChild(diskCard(d, m));
           });
         } else {
@@ -295,6 +305,7 @@
         again.addEventListener("click", async () => { S = await api("/api/wizard/state"); render(); });
         box.appendChild(el("div", "wz-row")).appendChild(again);
       }
+      box.appendChild(p(t("Category names and folder names can be changed later in Settings → Categories."), "muted wz-small"));
       // „Skip – set up disks later”
       const skip = el("div", "wz-skip");
       const sb = el("button", "btn-ghost small", t("Skip – set up disks later")); sb.type = "button";
