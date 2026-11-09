@@ -70,7 +70,7 @@ Skrypt wykonuje kolejno:
 
 Na koniec wyświetla adres, np. **http://192.168.1.10:8800**.
 
-**Kreator konfiguracji (1.3, BETA):** po pierwszym logowaniu kreator prowadzi przez język, motyw, miejsce biblioteki (dyski zewnętrzne – zalecane, karta SD – niezalecane albo Plex na innym urządzeniu), dyski i foldery (wyszukiwane automatycznie, brakujące tworzone), serwer Plex i klucz TMDB. Można go uruchomić ponownie w **Ustawienia → Konto → Uruchom kreator**.
+**Kreator konfiguracji (1.3, BETA):** po pierwszym logowaniu kreator prowadzi przez język, motyw, miejsce biblioteki (dyski zewnętrzne – zalecane, karta SD – niezalecane albo Plex na innym urządzeniu), dyski i foldery (wyszukiwane automatycznie, brakujące tworzone), serwer Plex i klucz TMDB. W kroku dysków zębatką zmienisz nazwę kategorii (np. Dla dzieci → Koncerty), ✕ pominie ją na danym dysku, a „+ Dodaj kategorię” doda nową; brakujące foldery kreator proponuje w folderze `Plex` na dysku i tworzy przy zakończeniu. Można go uruchomić ponownie w **Ustawienia → Konto → Uruchom kreator**.
 
 ## Aktualizacja
 

@@ -1,7 +1,7 @@
 /* Plex Downloader – first-run wizard (language, theme, installation type, disks, Plex, TMDB) */
 (() => {
   "use strict";
-  const { $, $$, t, LANG, api, fmtSize, el, icon, toast, copyText } = window.PD;
+  const { $, $$, t, LANG, api, fmtSize, el, icon, toast, copyText, modal } = window.PD;
   const REPO = "https://github.com/pwmeess/plex-downloader";
   const GUIDE = { en: REPO + "#installation", pl: REPO + "/blob/main/README.pl.md#instalacja" };
   const STEPS = [
@@ -25,7 +25,17 @@
     return { step: 0, type: "disks", disks: {}, sd: null, net: {}, manual: "", plexAuto: S.plex_autodiscover !== false,
       servers: (S.plex_servers || []).map((p) => ({ name: p.name, host: p.host, port: p.port })), tmdbKey: null, create: true };
   }
-  const cats = () => S.categories || [];
+  // categories can be renamed / added in the wizard (kept in W until Finish)
+  const cats = () => W.cats || S.categories || [];
+  const KIND = { movie: () => t("movie"), tv: () => t("TV show"), other: () => t("other") };
+  const BUILTIN = ["movies", "tv", "kids"];
+  const slug = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ł/g, "l")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 20) || "cat";
+  function uniqueId(base) {
+    let id = base, n = 2;
+    while (cats().some((c) => c.id === id)) id = base.slice(0, 20) + "-" + n++;
+    return id;
+  }
   const baseName = (p) => (p.replace(/\/+$/, "").split("/").pop() || p);
   // default button name (max. 16 characters; renamed later with the gear on the disk tile)
   const shortName = (p) => baseName(p).replace(/[_]+/g, " ").trim().slice(0, 16);
@@ -92,10 +102,12 @@
 
   async function scanDisk(d, after) {
     try {
-      const r = await api("/api/wizard/scan", { mount: d.mount });
+      const r = await api("/api/wizard/scan", { mount: d.mount, categories: cats() });
       // missing folders go next to the ones that were found (e.g. „Plex 1T/Kids”), otherwise into „Plex/”
       const found = Object.values(r.result).map((x) => x.path).filter(Boolean);
-      const root = found.length ? found[0].replace(/\/[^/]+$/, "") : `${d.mount.replace(/\/$/, "")}/Plex`;
+      // no category folder yet: suggest them inside the disk's „Plex” folder (if there is one)
+      const root = found.length ? found[0].replace(/\/[^/]+$/, "") : (r.plex_dir || `${d.mount.replace(/\/$/, "")}/Plex`);
+      d.root = root;
       cats().forEach((c) => {
         const x = r.result[c.id] || {};
         if (!d.paths[c.id]) d.paths[c.id] = x.path || `${root}/${c.folder || c.label}`;
@@ -134,18 +146,110 @@
       const [cls, msg] = statusText(status[inp.value.trim()]);
       m.className = "wz-st " + cls; m.textContent = msg;
     });
+    // missing folders and the box unticked → draw attention to „Create missing folders”
+    const missing = allPaths().some((x) => status[x] && !status[x].exists);
+    $$(".wz-create-row").forEach((r) => r.classList.toggle("attn", missing && !W.create));
+  }
+  function rootOf(d) {
+    if (d.root) return d.root;
+    const used = Object.values(d.paths).filter(Boolean);
+    return used.length ? used[0].replace(/\/[^/]+$/, "") : `${d.mount.replace(/\/$/, "")}/Plex`;
+  }
+  const suggest = (d, c) => `${rootOf(d)}/${c.folder || c.label}`;
+  // a change in the wizard that needs new folders ticks „Create missing folders” and highlights it
+  function wantCreate() {
+    W.create = true; saveW();
+    setTimeout(() => {
+      $$(".wz-create-row").forEach((r) => {
+        const cb = $("input", r); if (cb) cb.checked = true;
+        r.classList.remove("flash"); void r.offsetWidth; r.classList.add("flash");
+      });
+    }, 50);
+  }
+  function rerender() { render(); scheduleCheck(); }
+  // name, folder and type of a category (rename or new)
+  async function catDialog(c) {
+    const body = el("div", "mkdir-box");
+    body.appendChild(el("p", null, c ? t("The new name applies to all disks. Folders that do not exist yet get the new folder name.")
+      : t("A new category is a new button on the download page and in the File manager, e.g. Concerts.")));
+    const l1 = el("label", "small-label", t("Name")); const name = el("input", "input"); name.maxLength = 40; name.value = c ? c.label : "";
+    const l2 = el("label", "small-label", t("Folder name")); const folder = el("input", "input mono"); folder.maxLength = 60; folder.value = c ? (c.folder || c.label) : "";
+    const l3 = el("label", "small-label", t("Type"));
+    const kind = el("select", "input");
+    Object.keys(KIND).forEach((k) => { const o = el("option", null, KIND[k]()); o.value = k; kind.appendChild(o); });
+    kind.value = c ? c.kind : "movie";
+    let folderTouched = !!c;
+    folder.addEventListener("input", () => { folderTouched = true; });
+    name.addEventListener("input", () => { if (!folderTouched) folder.value = name.value.trim(); });
+    body.append(l1, name, l2, folder, l3, kind);
+    body._onOpen = () => { name.focus(); name.select(); };
+    const ok = await modal({ title: c ? t("Rename category") : t("Add category"), body,
+      buttons: [{ label: t("Cancel"), value: false },
+                { label: c ? t("Save") : t("Add"), cls: "btn-accent", value: () => {
+                  const n = name.value.trim(), f = folder.value.trim();
+                  if (!n || !f || /[/\\]|^\.\.?$/.test(f)) { toast(t("Enter a name and a folder name without /."), true); return undefined; }
+                  if (cats().some((x) => x !== c && x.id !== (c && c.id) && x.label.toLowerCase() === n.toLowerCase())) {
+                    toast(t("A category with this name already exists."), true); return undefined;
+                  }
+                  return { label: n, folder: f, kind: kind.value };
+                } }] });
+    return ok || null;
+  }
+  function allDisks() { return [W.sd, ...Object.values(W.disks), ...Object.values(W.net)].filter(Boolean); }
+  async function renameCat(c) {
+    const v = await catDialog(c);
+    if (!v) return;
+    if (!W.cats) W.cats = JSON.parse(JSON.stringify(S.categories || []));
+    const cat = W.cats.find((x) => x.id === c.id);
+    const oldFolder = cat.folder || cat.label;
+    let id = cat.id;
+    // a renamed built-in category (e.g. Kids → Concerts) becomes a new category, so Kids folders are not matched any more
+    if (BUILTIN.includes(id) && v.label !== c.label) id = uniqueId(slug(v.label));
+    Object.assign(cat, v, { id, tmdb: v.kind !== "other" });
+    allDisks().forEach((d) => {
+      let p = d.paths[c.id];
+      if (id !== c.id) { delete d.paths[c.id]; }
+      if (p && p.split("/").pop() === oldFolder && !(status[p] && status[p].exists)) p = p.replace(/[^/]+$/, v.folder);
+      if (p !== undefined) d.paths[id] = p;
+    });
+    wantCreate(); rerender();
+  }
+  async function addCat(d) {
+    const v = await catDialog(null);
+    if (!v) return;
+    if (!W.cats) W.cats = JSON.parse(JSON.stringify(S.categories || []));
+    const c = Object.assign({ id: uniqueId(slug(v.label)), tmdb: v.kind !== "other" }, v);
+    W.cats.push(c);
+    d.paths[c.id] = suggest(d, c);
+    wantCreate(); rerender();
   }
   function pathRows(d) {
     const box = el("div", "wz-paths");
     cats().forEach((c) => {
       const row = el("div", "wz-path");
-      const lab = el("label", null, c.label);
+      const lab = el("div", "wz-cat");
+      const gear = el("button", "icon-btn wz-cat-gear"); gear.type = "button"; gear.title = t("Rename category"); gear.appendChild(icon("gear"));
+      gear.addEventListener("click", () => renameCat(c));
+      lab.append(gear, el("span", null, c.label));
       const inp = el("input", "input mono"); inp.value = d.paths[c.id] || ""; inp.spellcheck = false;
       inp.placeholder = t("(none – category not available on this disk)");
       inp.addEventListener("input", () => { d.paths[c.id] = inp.value.trim(); saveW(); scheduleCheck(); });
-      row.append(lab, inp, el("span", "wz-st"));
+      const st = el("span", "wz-st");
+      const tool = el("button", "icon-btn wz-cat-x"); tool.type = "button";
+      if (inp.value) {
+        tool.title = t("Not on this disk"); tool.appendChild(icon("x"));
+        tool.addEventListener("click", () => { d.paths[c.id] = ""; saveW(); rerender(); });
+      } else {
+        tool.title = t("Use on this disk"); tool.appendChild(icon("retry"));
+        tool.addEventListener("click", () => { d.paths[c.id] = suggest(d, c); wantCreate(); rerender(); });
+        row.classList.add("off");
+      }
+      row.append(lab, inp, st, tool);
       box.appendChild(row);
     });
+    const add = el("button", "btn-ghost small wz-add-cat", "+ " + t("Add category")); add.type = "button";
+    add.addEventListener("click", () => addCat(d));
+    box.appendChild(add);
     return box;
   }
   function diskCard(d, m, removable) {
@@ -300,7 +404,7 @@
         again.addEventListener("click", async () => { S = await api("/api/wizard/state"); render(); });
         box.appendChild(el("div", "wz-row")).appendChild(again);
       }
-      box.appendChild(p(t("Category names and folder names can be changed later in Settings → Categories."), "muted wz-small"));
+      box.appendChild(p(t("Gear: rename a category · ✕: not on this disk · + Add category, e.g. Concerts. Later: Settings → Categories."), "muted wz-small"));
       box.appendChild(p(t("Disk button names and their order can be changed later with the gear on a disk tile (download page and File manager) or in Settings → Disks."), "muted wz-small"));
       // „Skip – set up disks later”
       const skip = el("div", "wz-skip");
@@ -423,6 +527,8 @@
     const disks = chosenDisks();
     if (!disks.length) { toast(t("Select at least one disk."), true); return false; }
     if (disks.some((d) => !Object.values(d.paths).some(Boolean))) { toast(t("Every selected disk needs at least one category folder."), true); return false; }
+    const dup = disks.find((d) => { const v = Object.values(d.paths).filter(Boolean); return new Set(v).size !== v.length; });
+    if (dup) { toast(t("Two categories use the same folder on {disk}.", { disk: dup.mount }), true); return false; }
     const bad = allPaths().map((x) => status[x]).filter((x) => x && x.problem && (x.exists || x.problem !== t("Folder does not exist")));
     if (bad.length) { toast(bad[0].path + ": " + (bad[0].problem || ""), true); return false; }
     if (!W.create && allPaths().some((x) => status[x] && !status[x].exists)) { toast(t("Some folders do not exist – create them or tick “Create missing folders”."), true); return false; }
@@ -441,6 +547,7 @@
       }
       await api("/api/wizard/finish", {
         disks: disks.map((d) => ({ label: d.label || baseName(d.mount), subtitle: "", mount: d.mount, paths: d.paths })),
+        categories: W.cats || undefined,
         plex_servers: W.servers.filter((s) => s.host), plex_autodiscover: W.plexAuto,
         tmdb_api_key: W.tmdbKey ? W.tmdbKey : null, require_mount: true, skip_disks: !!W.skipDisks,
       });

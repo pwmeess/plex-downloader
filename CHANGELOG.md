@@ -13,6 +13,12 @@ All notable changes to Plex Downloader. Stable versions live on the `main` branc
   - **“Create” next to an empty category folder** in Settings → Disks: a small yellow button opens a helper with the proposed path (next to the other folders of that disk, e.g. `/plex_media/Plex/Red`); the folder name can be changed (e.g. `reddot`), the folder is created and linked to the category – then Save.
   - Import: disks from another device (none of them mounted here) are unticked by default.
   - **Update paths** fixes paths copied from another device: `/plex_media_1024/Plex 1T/Home Video` (path on the Plex Pi) becomes `/mnt/plex_1024/Plex 1T/Home Video` when that folder exists under this mount point. Folder names a category uses on other disks (e.g. `Home Video`, `reddot`) are also searched for.
+  - **Setup wizard – categories on the disk step:**
+    - when a disk has no category folders yet, the folders are suggested inside its `Plex` folder (e.g. `/mnt/disk/Plex/Movies`, `…/TV Shows`) and marked “will be created”,
+    - gear next to a category: rename it and change its folder and type (e.g. Kids → Concerts); folders that do not exist yet get the new name,
+    - ✕: the category is not used on this disk (↺ brings it back with a suggested folder); “+ Add category” adds a new one,
+    - every such change ticks and highlights “Create missing folders when finishing”; when folders are missing and the box is unticked, it is highlighted too,
+    - two categories with the same name or the same folder on one disk are reported before continuing.
 
 ## 1.3.0-beta1 – 2026-11-09 (BETA)
 

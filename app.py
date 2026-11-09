@@ -613,7 +613,9 @@ def api_wizard_state():
 @login_required
 def api_wizard_scan():
     d = request.get_json(silent=True) or {}
-    return fm_call(lambda: {"result": fm.scan_paths(d.get("mount", ""), config.get()["categories"])})
+    cats = [c for c in (d.get("categories") or config.get()["categories"]) if isinstance(c, dict) and c.get("id")]
+    return fm_call(lambda: {"result": fm.scan_paths(d.get("mount", ""), cats),
+                            "plex_dir": fm.find_plex_dir(d.get("mount", ""))})
 
 
 @app.route("/api/wizard/check", methods=["POST"])
@@ -640,6 +642,13 @@ def api_wizard_finish():
     cfg = config.get()
     seen = {c["id"] for c in cfg["categories"]}
     try:
+        cats = None
+        if isinstance(data.get("categories"), list):
+            # kategorie zmienione w kreatorze (nowa nazwa, nowa kategoria, np. Koncerty)
+            cats = _import_clean({"_plexdl": {}, "categories": data["categories"]}).get("categories")
+            if not cats:
+                raise ValueError(_("At least one category must remain."))
+            seen = {c["id"] for c in cats}
         disks = []
         for raw in data.get("disks") or []:
             label = (raw.get("label") or "").strip()[:40]
@@ -677,7 +686,8 @@ def api_wizard_finish():
         return err(str(e) if str(e) else _("Invalid values."))
     raw_key = data.get("tmdb_api_key")
     tmdb_key = cfg.get("tmdb_api_key", "") if raw_key is None else re.sub(r"\s+", "", raw_key)
-    config.update(note="Setup wizard", disks=disks, plex_servers=servers,
+    extra = {"categories": cats} if cats else {}
+    config.update(note="Setup wizard", disks=disks, plex_servers=servers, **extra,
                   plex_autodiscover=bool(data.get("plex_autodiscover", True)), tmdb_api_key=tmdb_key,
                   require_mount=bool(data.get("require_mount", True)), wizard_done=True)
     manager.apply_settings()

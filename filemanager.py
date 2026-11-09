@@ -767,6 +767,17 @@ ALIASES = {
 }
 
 
+def find_plex_dir(mount):
+    """Folder „Plex” (dowolna wielkość liter) bezpośrednio na dysku – tam kreator proponuje foldery kategorii."""
+    try:
+        for e in sorted(os.scandir(mount), key=lambda e: e.name.lower()):
+            if e.is_dir(follow_symlinks=False) and e.name.lower() in ("plex", "plex media", "plex_media", "plexmedia"):
+                return e.path
+    except OSError:
+        pass
+    return None
+
+
 def _rebase(path, mount):
     """Ścieżka z innego urządzenia (np. /plex_media_1024/Plex 1T/Home Video z Pi z Plexem) przeniesiona
     na ten punkt montowania (/mnt/plex_1024/Plex 1T/Home Video) – jeśli taki folder tu istnieje."""

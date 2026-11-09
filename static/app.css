@@ -796,3 +796,19 @@ h3.fold-h { display: flex; align-items: center; gap: 8px; }
 .cat-path .mk-folder[hidden] { display: none; }
 .mkdir-box .input { width: 100%; margin-bottom: 10px; }
 .mkdir-prev { font-family: var(--mono); font-size: 13px; color: var(--accent); overflow-wrap: anywhere; margin: 4px 0 8px; }
+/* kreator: zmiana nazwy / dodanie kategorii, „nie na tym dysku” */
+.wz-paths .wz-path { grid-template-columns: 150px minmax(0, 1fr) 170px 30px; }
+.wz-cat { display: flex; align-items: center; gap: 4px; font-size: 13.5px; color: var(--muted); min-width: 0; }
+.wz-cat span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wz-cat-gear, .wz-cat-x { width: 28px; height: 28px; padding: 0; flex: 0 0 auto; }
+.wz-cat-gear svg, .wz-cat-x svg { width: 15px; height: 15px; }
+.wz-path.off .wz-cat span { text-decoration: line-through; opacity: .6; }
+.wz-add-cat { align-self: flex-start; margin-top: 2px; }
+.wz-create-row.attn .wz-create { color: var(--warn); }
+.wz-create-row.flash, .wz-create-row.attn { border-radius: 8px; animation: flash 1.6s ease-out; }
+.wz-create-row.attn { box-shadow: 0 0 0 1px rgba(232,176,74,.5); padding: 4px 8px; }
+@media (max-width: 640px) {
+  .wz-paths .wz-path { grid-template-columns: minmax(0, 1fr) 30px; }
+  .wz-paths .wz-path .wz-cat { grid-column: 1 / -1; }
+  .wz-paths .wz-path .wz-st { grid-column: 1 / -1; order: 5; }
+}
