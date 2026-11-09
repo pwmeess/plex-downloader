@@ -750,3 +750,31 @@ h3.fold-h { display: flex; align-items: center; gap: 8px; }
 .wz-small { font-size: 13px; margin-top: 10px; }
 /* Settings → Account: „Run setup wizard” is a link styled as a button */
 .log-row a.btn-soft { font-family: inherit; letter-spacing: normal; font-weight: 600; color: var(--text); text-decoration: none; }
+
+/* disk tiles: 3 columns, drag & drop order, gear (1.3.0-beta1) */
+.disks { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.fm-disks { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.disk { position: relative; }
+.disk.off { opacity: .5; cursor: not-allowed; }
+.disk.off .disk-gear { opacity: 1; }
+.disk .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.disk.dragging { opacity: .35; outline: 2px dashed var(--accent); }
+.disk-gear { position: absolute; top: 7px; left: 7px; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: var(--dim); opacity: 0; transition: opacity .15s; cursor: pointer; }
+.disk:hover .disk-gear, .disk:focus-within .disk-gear, .disk-gear:focus { opacity: 1; }
+.disk-gear:hover { color: var(--accent); background: var(--shade); }
+.disk-gear svg { width: 15px; height: 15px; }
+.disk.mini .disk-gear { top: 4px; left: 4px; width: 20px; height: 20px; }
+@media (hover: none) { .disk-gear { opacity: .8; } }
+.small-count { font-size: 12px; margin-left: 6px; }
+@media (max-width: 560px) {
+  .disks { grid-template-columns: 1fr; }
+  .disk .disk-gear { left: auto; right: 8px; top: 8px; }
+}
+.ed-extra { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.ed-extra:empty { display: none; }
+.ed-row { display: flex; gap: 6px; align-items: center; }
+.ed-row .input { flex: 1; }
+.ed-tools { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 13px; }
+.ed-tools .linklike { font-size: 13px; }
+.ed-count { margin-left: auto; font-size: 12px; }
+.ed-count.bad { color: var(--err); }

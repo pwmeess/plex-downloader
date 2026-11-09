@@ -4,6 +4,9 @@ All notable changes to Plex Downloader. Stable versions live on the `main` branc
 
 ## 1.3.0-beta1 – 2026-11-09 (BETA)
 
+- **Disk tiles (download page and File manager):** drag a tile to change the order of the disks (also with the gear: move left / right, handy on phones); the order is the same on both pages and in Settings. The gear in the top-left corner of a tile also renames the disk (max. 16 characters). Tiles are laid out in rows of three.
+- **Edition: up to 3 tags.** “+ Add another tag” adds a second and third edition field (suggestions without the tags already chosen). Plex allows one edition per movie, so the tags are joined into one name, e.g. `{edition-Remastered Blu-ray}` (max. 32 characters, counter shown).
+- The setup wizard no longer asks for disk button names – it uses short default names (the share name or the folder name) that can be changed later with the gear or in Settings → Disks.
 - **Setup wizard:** shown after the first login of a new installation (existing installations are not affected) and available again in Settings → Account → Run setup wizard. Steps: language, theme, where the library is stored, disks and folders, Plex server, TMDB key, summary.
   - Three installation types: external disks (recommended), library on the SD card (not recommended, folders in the home folder) and Plex on another device (network share).
   - Mounted disks and network shares are detected; category folders are found automatically; every folder is checked for write permission and free space; missing folders can be created.

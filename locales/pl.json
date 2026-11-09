@@ -545,5 +545,16 @@
  "Downloads are slower in this setup than with a disk connected directly.": "W tej konfiguracji pobieranie jest wolniejsze niż na dysk podłączony bezpośrednio.",
  "Every downloaded byte travels twice over your home network: from the internet to this Raspberry Pi, then to the computer with the disks. Over Wi-Fi (e.g. a Raspberry Pi Zero 2 W, 2.4 GHz only) expect only a few MB/s. A cable connection on both devices – or running Plex Downloader on the computer that has the disks – is much faster.": "Każdy pobrany bajt przechodzi przez Twoją sieć domową dwa razy: z internetu do tego Raspberry Pi, a potem do komputera z dyskami. Przez Wi-Fi (np. Raspberry Pi Zero 2 W, tylko 2,4 GHz) licz się z zaledwie kilkoma MB/s. Połączenie kablem na obu urządzeniach – albo uruchomienie Plex Downloadera na komputerze, do którego podłączone są dyski – jest dużo szybsze.",
  "slower downloads": "wolniejsze pobieranie",
- "Category names and folder names can be changed later in Settings → Categories.": "Nazwy kategorii i folderów zmienisz później w Ustawienia → Kategorie."
+ "Category names and folder names can be changed later in Settings → Categories.": "Nazwy kategorii i folderów zmienisz później w Ustawienia → Kategorie.",
+ "Add another tag": "Dodaj kolejny tag",
+ "Plex supports one edition per movie, so up to 3 tags are joined into one edition name, e.g. {edition-Remastered Blu-ray} (max. 32 characters).": "Plex obsługuje jedno wydanie na film, dlatego do 3 tagów jest łączonych w jedną nazwę wydania, np. {edition-Remastered Blu-ray} (maks. 32 znaki).",
+ "{n}/32 characters": "{n}/32 znaków",
+ "e.g. Blu-ray": "np. Blu-ray",
+ "Disk name and order": "Nazwa i kolejność dysku",
+ "The order can also be changed by dragging the disk tiles.": "Kolejność możesz też zmienić, przeciągając kafelki dysków.",
+ "Disk: {name}": "Dysk: {name}",
+ "Move left": "W lewo",
+ "Move right": "W prawo",
+ "Disk renamed": "Zmiana nazwy dysku",
+ "Disk button names and their order can be changed later with the gear on a disk tile (download page and File manager) or in Settings → Disks.": "Nazwy przycisków dysków i ich kolejność zmienisz później zębatką na kafelku dysku (strona pobierania i Menedżer plików) albo w Ustawienia → Dyski."
 }

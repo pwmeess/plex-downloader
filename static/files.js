@@ -63,8 +63,8 @@
       box.replaceChildren();
       disks.forEach((d) => {
         const can = d.ok && Object.keys(d.paths || {}).length;
-        const b = el("button", "disk mini" + (d.id === this.disk ? " on" : ""));
-        b.type = "button"; b.disabled = !can;
+        const b = el("button", "disk mini" + (d.id === this.disk ? " on" : "") + (can ? "" : " off"));
+        b.type = "button"; if (!can) b.setAttribute("aria-disabled", "true");
         const ico = el("div", "ico"); ico.appendChild(icon("drive"));
         b.append(ico, el("div", "name", d.label));
         if (d.ok && d.total) {
@@ -73,7 +73,8 @@
           bar.appendChild(f);
           b.append(bar, el("div", "free", t("Free: {free}", { free: fmtSize(d.free) })));
         } else b.append(el("div", "problem", d.problem || t("Unavailable")));
-        b.addEventListener("click", () => { this.disk = d.id; this.pickDefaults(0); this.save(); this.reload(); });
+        b.addEventListener("click", () => { if (!can) return; this.disk = d.id; this.pickDefaults(0); this.save(); this.reload(); });
+        window.PD.diskTile(b, d, box);
         box.appendChild(b);
       });
       const cats = $(".fm-cats", this.root);

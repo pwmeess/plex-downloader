@@ -410,6 +410,39 @@ def api_settings_post():
     return jsonify(ok=True)
 
 
+# ---------------------------------------------------------------- dyski: kolejność i nazwa (strona główna, Menedżer plików)
+DISK_LABEL_MAX = 16
+
+
+@app.route("/api/disks/order", methods=["POST"])
+@login_required
+def api_disks_order():
+    ids = (request.get_json(silent=True) or {}).get("ids") or []
+    disks = config.get().get("disks", [])
+    pos = {i: n for n, i in enumerate(ids)}
+    ordered = sorted(disks, key=lambda d: pos.get(d.get("id"), len(pos)))
+    if [d["id"] for d in ordered] != [d["id"] for d in disks]:
+        config.update(make_backup=False, disks=ordered)   # kolejność – bez punktu przywracania
+    return jsonify(ok=True)
+
+
+@app.route("/api/disks/rename", methods=["POST"])
+@login_required
+def api_disks_rename():
+    d = request.get_json(silent=True) or {}
+    label = re.sub(r"\s+", " ", (d.get("label") or "")).strip()[:DISK_LABEL_MAX]
+    if not label:
+        return err(_("Every disk must have a name."))
+    disks = [dict(x) for x in config.get().get("disks", [])]
+    hit = next((x for x in disks if x.get("id") == d.get("id")), None)
+    if not hit:
+        return err(_("Unknown disk."))
+    old, hit["label"] = hit.get("label"), label
+    config.update(note="Disk renamed", disks=disks)
+    actlog.write("SETTINGS", "disk renamed: %s → %s" % (old, label))
+    return jsonify(ok=True, label=label)
+
+
 # ---------------------------------------------------------------- kreator
 @app.route("/api/wizard/state")
 @login_required

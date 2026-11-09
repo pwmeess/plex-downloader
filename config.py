@@ -138,7 +138,7 @@ def get():
         return _config if _config is not None else load()
 
 
-def save(new=None, note="", note_args=None):
+def save(new=None, note="", note_args=None, make_backup=True):
     global _config
     with _lock:
         if new is not None:
@@ -148,15 +148,16 @@ def save(new=None, note="", note_args=None):
             json.dump(_config, f, indent=2, ensure_ascii=False)
         os.chmod(tmp, 0o600)
         os.replace(tmp, CONFIG_PATH)
-        backup(note, note_args)
+        if make_backup:
+            backup(note, note_args)
 
 
-def update(note="", note_args=None, **changes):
+def update(note="", note_args=None, make_backup=True, **changes):
     with _lock:
         cfg = copy.deepcopy(get())
         cfg.update(changes)
         normalize(cfg)
-        save(cfg, note=note, note_args=note_args)
+        save(cfg, note=note, note_args=note_args, make_backup=make_backup)
         return cfg
 
 

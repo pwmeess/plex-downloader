@@ -27,6 +27,8 @@
   }
   const cats = () => S.categories || [];
   const baseName = (p) => (p.replace(/\/+$/, "").split("/").pop() || p);
+  // default button name (max. 16 characters; renamed later with the gear on the disk tile)
+  const shortName = (p) => baseName(p).replace(/[_]+/g, " ").trim().slice(0, 16);
 
   // ------------------------------------------------------------------ helpers
   function info(tip) { const b = el("button", "info-i", "i"); b.type = "button"; b.dataset.tip = tip; return b; }
@@ -76,7 +78,7 @@
       // running the wizard again: start from the disks that are already configured
       const cur = (S.disks || []).find((x) => (x.mount || "").replace(/\/+$/, "") === m.mount);
       W.disks[m.mount] = cur ? { use: true, label: cur.label, mount: m.mount, paths: Object.assign({}, cur.paths), scanned: true }
-        : { use: false, label: baseName(m.mount), mount: m.mount, paths: {}, scanned: false };
+        : { use: false, label: shortName(m.mount), mount: m.mount, paths: {}, scanned: false };
     }
     return W.disks[m.mount];
   }
@@ -155,15 +157,11 @@
     if (m) head.appendChild(el("span", "muted", `${m.fs} · ${t("Free: {free}", { free: fmtSize(m.free) })} / ${fmtSize(m.total)}`));
     card.appendChild(head);
     const body = el("div", "wz-disk-body"); body.hidden = !d.use;
-    const nm = el("div", "wz-path");
-    const ni = el("input", "input"); ni.value = d.label; ni.maxLength = 40;
-    ni.addEventListener("input", () => { d.label = ni.value; saveW(); });
-    nm.append(el("label", null, t("Button name")), ni, el("span"));
-    body.append(nm, pathRows(d));
+    body.append(pathRows(d));
     card.appendChild(body);
     cb.addEventListener("change", async () => {
       d.use = cb.checked; card.classList.toggle("on", d.use); body.hidden = !d.use; saveW();
-      if (d.use && !d.scanned) await scanDisk(d, () => { body.replaceChildren(nm, pathRows(d)); scheduleCheck(); });
+      if (d.use && !d.scanned) await scanDisk(d, () => { body.replaceChildren(pathRows(d)); scheduleCheck(); });
       else scheduleCheck();
     });
     if (removable) {
@@ -245,10 +243,7 @@
         }
         const root = (S.mounts || []).find((m) => m.root);
         if (root) box.appendChild(p(t("SD card: {free} free of {total}.", { free: fmtSize(root.free), total: fmtSize(root.total) }), "muted"));
-        const nm = el("div", "wz-path");
-        const ni = el("input", "input"); ni.value = W.sd.label; ni.addEventListener("input", () => { W.sd.label = ni.value; saveW(); });
-        nm.append(el("label", null, t("Button name")), ni, el("span"));
-        box.append(nm, pathRows(W.sd), createBox());
+        box.append(pathRows(W.sd), createBox());
         box.appendChild(p(t("Share the Plex folder over SMB if you want to copy files from your computer – see the guide."), "muted"));
       } else if (W.type === "network") {
         box.append(h(t("Network share"), t("Plex and Plex Downloader must see the same files: Downloader saves into the network share, Plex reads the same folders on its own computer (the paths there may be different). The share has to be mounted on this Raspberry Pi first – the next step shows the commands. Give both devices a fixed IP address in your router.")));
@@ -261,7 +256,7 @@
           nets.forEach((m) => {
             // button name: the share name (“//192.168.1.10/Plex Media Share 1024” → “Plex Media Share 1024”)
             const share = (m.device || "").replace(/\/+$/, "").split("/").pop();
-            const d = W.net[m.mount] || (W.net[m.mount] = { use: false, label: (share || baseName(m.mount)).slice(0, 40), mount: m.mount, paths: {}, scanned: false });
+            const d = W.net[m.mount] || (W.net[m.mount] = { use: false, label: share && share.length <= 16 ? share : shortName(m.mount), mount: m.mount, paths: {}, scanned: false });
             box.appendChild(diskCard(d, m));
           });
         } else {
@@ -284,7 +279,7 @@
         add.addEventListener("click", async () => {
           const m = (W.manual || "").replace(/\/+$/, "");
           if (!m.startsWith("/")) { toast(t("The path “%s” must be absolute (start with /).").replace("%s", m || "?"), true); return; }
-          W.net[m] = { use: true, manual: true, label: baseName(m), mount: m, paths: {}, scanned: false };
+          W.net[m] = { use: true, manual: true, label: shortName(m), mount: m, paths: {}, scanned: false };
           await scanDisk(W.net[m]); render();
         });
         row.append(again, mi, add);
@@ -306,6 +301,7 @@
         box.appendChild(el("div", "wz-row")).appendChild(again);
       }
       box.appendChild(p(t("Category names and folder names can be changed later in Settings → Categories."), "muted wz-small"));
+      box.appendChild(p(t("Disk button names and their order can be changed later with the gear on a disk tile (download page and File manager) or in Settings → Disks."), "muted wz-small"));
       // „Skip – set up disks later”
       const skip = el("div", "wz-skip");
       const sb = el("button", "btn-ghost small", t("Skip – set up disks later")); sb.type = "button";

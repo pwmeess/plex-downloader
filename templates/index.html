@@ -59,6 +59,10 @@
                 <button type="button" class="info-i" data-tip="{{ _("Movie edition, e.g. Director's Cut, Extended Edition, Remastered 1997, VHS. Plex shows it as a separate edition of the same movie. Added to the folder and file name (Plex recommendation), max. 32 characters. Requires Plex Pass on the server admin account.") }}" data-href="https://support.plex.tv/articles/multiple-editions/">i</button></label>
               <input class="input" id="advEdition" list="editionList" maxlength="32" placeholder="{{ _("e.g. Director's Cut") }}">
               <datalist id="editionList"></datalist>
+              <div id="edExtra" class="ed-extra"></div>
+              <div class="ed-tools"><button type="button" class="linklike" id="edAdd">+ {{ _("Add another tag") }}</button>
+                <button type="button" class="info-i" data-tip="{{ _('Plex supports one edition per movie, so up to 3 tags are joined into one edition name, e.g. {edition-Remastered Blu-ray} (max. 32 characters).') }}">i</button>
+                <span class="ed-count muted" id="edCount"></span></div>
             </div>
             <div id="advVersionBox">
               <label class="small-label" for="advVersion">{{ _("File version") }} <span class="muted">“ - 1080p”</span>
