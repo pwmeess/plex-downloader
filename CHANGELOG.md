@@ -4,6 +4,10 @@ All notable changes to Plex Downloader. Stable versions live on the `main` branc
 
 ## 1.2.9-beta – 2026-11-09 (BETA)
 
+- Everything from 1.2.7 (stable), plus the BETA-only VPN preview.
+
+## 1.2.7 – 2026-11-09 (stable)
+
 - **Better title recognition from pasted links:**
   - file names sent by the server with encoded characters (e.g. `%20` instead of spaces) are decoded,
   - a website address at the start of the name (`SITE.COM - Title…`) is removed,

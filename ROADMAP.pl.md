@@ -2,7 +2,7 @@
 
 🇬🇧 [English](ROADMAP.md) · 🇵🇱 **Polski** · Historia zmian: [CHANGELOG.md](CHANGELOG.md)
 
-Ostatnia aktualizacja: 9 listopada 2026 · stabilna: **1.2.6** · BETA: **1.2.9-beta**
+Ostatnia aktualizacja: 9 listopada 2026 · stabilna: **1.2.7** · BETA: **1.2.9-beta**
 
 ## Stałe zasady (sprawdzać przy każdej wersji)
 
@@ -14,6 +14,7 @@ Ostatnia aktualizacja: 9 listopada 2026 · stabilna: **1.2.6** · BETA: **1.2.9-
   1. **Zalecany:** Plex i Downloader na jednym Pi, biblioteka na dyskach zewnętrznych (SSD, pendrive).
   2. **Testowy (niezalecany):** jedno Pi bez dysków, biblioteka na karcie SD, opcjonalnie udostępniona przez SMB.
   3. **Dwa urządzenia:** Plex na jednym komputerze, Downloader z Menedżerem plików na drugim, oba ze stałym IP. Biblioteka jest dostępna dla obu, np. jako udział sieciowy SMB lub NFS zamontowany na stałe.
+- **Numeracja w 1.3:** kroki BETA to `1.3.0-beta1`, `-beta2`… aż do stabilnej 1.3.0; potem wraca zwykła reguła (BETA dwa oczka przed stabilną).
 - **Dwie linie wydań:** stabilna w gałęzi `main` (setup.sh, update.sh, panel ogłasza tylko ją) i BETA w gałęzi `beta` (tylko przez `fix.sh`). Nowe funkcje trafiają najpierw do BETA, po sprawdzeniu do stabilnej. Każde wydanie dostaje tag `vX.Y.Z` (BETA: `vX.Y.Z-beta`). Numeracja: BETA jest o dwa oczka przed stabilną (np. stabilna 1.2.6 → BETA 1.2.8-beta).
 - **Przed wydaniem:** testy automatyczne, zrzuty ekranu w wersjach EN/PL i w motywie ciemnym/jasnym, aktualizacja README i tego pliku.
 
@@ -30,7 +31,8 @@ Ostatnia aktualizacja: 9 listopada 2026 · stabilna: **1.2.6** · BETA: **1.2.9-
 | 1.2.6-beta | 1.2.2 z zapowiedziami VPN i tym samym podziałem wersji |
 | 1.2.6 (stabilna) | Postęp przenoszenia w dwóch etapach, „Pomiń weryfikację SHA-256”, ukryty klucz TMDB, poprawki wyglądu (telefon, ⓘ), neutralny adres w komendzie `ssh`, test tłumaczeń, dokumentacja po angielsku |
 | 1.2.8-beta | 1.2.6 + zapowiedzi VPN; baza do prac nad 1.3 |
-| 1.2.9-beta | Optymalizacja rozpoznawania tytułów na podstawie wklejonego linka (trafi do następnej stabilnej) |
+| 1.2.7 (stabilna) | Optymalizacja rozpoznawania tytułów na podstawie wklejonego linka; ostrzeżenie, gdy link otwiera stronę WWW zamiast pliku |
+| 1.2.9-beta | 1.2.7 + zapowiedzi VPN; baza do 1.3.0-beta1 |
 
 ## Do poprawy
 
@@ -69,6 +71,17 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
 - [ ] Konfiguracja na dwóch urządzeniach: stałe IP, udział SMB/NFS montowany w fstab, ręczne dodanie serwera Plex w Ustawieniach.
 - [ ] Obsługa: Menedżer plików, kopie ustawień, dziennik, `update.sh`, `fix.sh`, przywracanie ustawień fabrycznych.
 - [ ] Bezpieczeństwo sieci domowej (bez DMZ i przekierowania portu 8800, mocne hasła, Samba z `valid users`).
+
+**Kolejne kroki wydań**
+- [ ] `1.3.0-beta1`: kreator pierwszego uruchomienia + podmenu serwera w `fix.sh`.
+- [ ] `1.3.0-beta2`: eksport i import ustawień, szablon „Karta SD”.
+- [ ] `1.3.0-beta3`: instrukcje EN/PL (HTML w aplikacji + PDF).
+- [ ] `1.3.0-beta4`: „Zainstaluj inną wersję” w `fix.sh`.
+- [ ] `1.3.0`: wydanie stabilne.
+
+**`fix.sh` – podmenu serwera**
+- [ ] Nowa opcja „Serwer”: 1) sprawdź status (stan usługi, autostart, adres panelu, ostatnie wpisy logu), 2) wstrzymaj serwer – bez wpływu na autostart / uruchom ponownie (zależnie od stanu), 3) restart procesu serwera, 4) powrót.
+- [ ] Wygląd menu: tekstowe z numerami albo okno `whiptail` w stylu `raspi-config` z tymi samymi numerami i zapasowym menu tekstowym (do decyzji).
 
 **Wybór wersji w `fix.sh` (zmiana sposobu wydawania w repozytorium)**
 - [x] Linie stabilna (`main`) i BETA (`beta`), instalacja i wyjście z BETA w `fix.sh` (od 1.2.5 / 1.2.6-beta).

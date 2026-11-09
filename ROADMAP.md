@@ -2,7 +2,7 @@
 
 🇬🇧 **English** · 🇵🇱 [Polski](ROADMAP.pl.md) · Changelog: [CHANGELOG.md](CHANGELOG.md)
 
-Last updated: 9 November 2026 · stable: **1.2.6** · BETA: **1.2.9-beta**
+Last updated: 9 November 2026 · stable: **1.2.7** · BETA: **1.2.9-beta**
 
 ## Ground rules (checked for every release)
 
@@ -14,6 +14,7 @@ Last updated: 9 November 2026 · stable: **1.2.6** · BETA: **1.2.9-beta**
   1. **Recommended:** Plex and Downloader on one Pi, library on external disks (SSD, USB stick).
   2. **Testing (not recommended):** one Pi without disks, library on the SD card, optionally shared over SMB.
   3. **Two devices:** Plex on one computer, Downloader with the File manager on another, both with fixed IPs; the library is reachable by both, e.g. a permanently mounted SMB or NFS share.
+- **Numbering for 1.3:** the BETA steps are `1.3.0-beta1`, `-beta2`… until stable 1.3.0; after that the usual rule (BETA two steps ahead) applies again.
 - **Two release lines:** stable on `main` (setup.sh, update.sh; the panel only announces stable) and BETA on `beta` (only via `fix.sh`). New features land in BETA first, then in stable. Every release gets a `vX.Y.Z` tag (BETA: `vX.Y.Z-beta`). Numbering: BETA is two steps ahead of stable (e.g. stable 1.2.6 → BETA 1.2.8-beta).
 - **Before a release:** automated tests, screenshots in EN/PL and dark/light, README, CHANGELOG and this file updated.
 
@@ -32,7 +33,8 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 | 1.2.6-beta | 1.2.2 with the VPN preview, first BETA |
 | 1.2.6 (stable) | Two-stage move progress, "Skip SHA-256 verification", hidden TMDB key, phone and ⓘ layout fixes, neutral `ssh` address, translation test, English documentation |
 | 1.2.8-beta | 1.2.6 + VPN preview; base for 1.3 |
-| 1.2.9-beta | Better title recognition from pasted links (to be included in the next stable release) |
+| 1.2.7 (stable) | Better title recognition from pasted links; links that open a web page instead of a file are reported |
+| 1.2.9-beta | 1.2.7 + VPN preview; base for 1.3.0-beta1 |
 
 ## To fix
 
@@ -71,6 +73,17 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
 - [ ] Two-device setup: fixed IPs, SMB/NFS share in fstab, adding the Plex server manually.
 - [ ] Everyday use: File manager, settings backups, activity log, `update.sh`, `fix.sh`, factory reset.
 - [ ] Home network security (no DMZ, no port forwarding for 8800, strong passwords, Samba with `valid users`).
+
+**Release steps**
+- [ ] `1.3.0-beta1`: first-run wizard + `fix.sh` server submenu.
+- [ ] `1.3.0-beta2`: settings export / import, SD-card template.
+- [ ] `1.3.0-beta3`: EN/PL guides (HTML in the app + PDF).
+- [ ] `1.3.0-beta4`: "Install another version" in `fix.sh`.
+- [ ] `1.3.0`: stable release.
+
+**`fix.sh` – server submenu**
+- [ ] New option "Server": 1) check status (service state, autostart, panel address, last log lines), 2) stop the server – does not change autostart / start it again (shown depending on the state), 3) restart the service process, 4) back.
+- [ ] Menu look: numbered text menu, or a `whiptail` window like `raspi-config` with the same numbers and a text fallback (to decide).
 
 **Choosing a version in `fix.sh`**
 - [x] Stable (`main`) and BETA (`beta`) lines; installing and leaving BETA in `fix.sh` (since 1.2.5 / 1.2.6-beta).
