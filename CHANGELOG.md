@@ -2,6 +2,14 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
+## 1.2.9-beta – 2026-11-09 (BETA)
+
+- **Better title recognition from pasted links:**
+  - file names sent by the server with encoded characters (e.g. `%20` instead of spaces) are decoded,
+  - a website address at the start of the name (`SITE.COM - Title…`) is removed,
+  - a resolution in brackets such as `(720)` and subtitle notes such as `Subtitles English` are treated like other quality tags,
+  - "Episode 2", "Ep 02", "Odcinek 2" (optionally with "Season 1" / "Sezon 1") are recognised as a TV episode; a title with a year after the episode number stays a movie (e.g. *Star Wars Episode 1 … 1999*).
+
 ## 1.2.8-beta – 2026-11-08 (BETA)
 
 - Everything from 1.2.6 (stable).

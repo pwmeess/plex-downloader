@@ -2,7 +2,7 @@
 
 🇬🇧 [English](ROADMAP.md) · 🇵🇱 **Polski** · Historia zmian: [CHANGELOG.md](CHANGELOG.md)
 
-Ostatnia aktualizacja: 8 listopada 2026 · stabilna: **1.2.6** · BETA: **1.2.8-beta**
+Ostatnia aktualizacja: 9 listopada 2026 · stabilna: **1.2.6** · BETA: **1.2.9-beta**
 
 ## Stałe zasady (sprawdzać przy każdej wersji)
 
@@ -30,6 +30,7 @@ Ostatnia aktualizacja: 8 listopada 2026 · stabilna: **1.2.6** · BETA: **1.2.8-
 | 1.2.6-beta | 1.2.2 z zapowiedziami VPN i tym samym podziałem wersji |
 | 1.2.6 (stabilna) | Postęp przenoszenia w dwóch etapach, „Pomiń weryfikację SHA-256”, ukryty klucz TMDB, poprawki wyglądu (telefon, ⓘ), neutralny adres w komendzie `ssh`, test tłumaczeń, dokumentacja po angielsku |
 | 1.2.8-beta | 1.2.6 + zapowiedzi VPN; baza do prac nad 1.3 |
+| 1.2.9-beta | Optymalizacja rozpoznawania tytułów na podstawie wklejonego linka (trafi do następnej stabilnej) |
 
 ## Do poprawy
 

@@ -15,8 +15,18 @@ _JUNK = re.compile(
     r"(?i)\b(480p|576p|720p|1080p|1080i|2160p|4k|uhd|hdr|hdr10|dv|bluray|blu-ray|brrip|bdrip|"
     r"bdremux|remux|web[ -]?dl|webrip|web|hdtv|hdrip|dvdrip|dvdscr|dvd|cam|ts|x264|x265|h264|"
     r"h265|hevc|avc|xvid|divx|ac3|eac3|dts|dd5|ddp5|aac|mp3|atmos|truehd|pl|plsub|dubbing|dub|"
-    r"lektor|napisy|subbed|multi|proper|repack|extended|unrated|limited|internal|remastered|imax)\b"
+    r"lektor|napisy|subbed|subtitles?|softsub|hardsub|engsub|vostfr|multi|proper|repack|extended|"
+    r"unrated|limited|internal|remastered|imax)\b"
 )
+# „(720)”, „[1080]” – rozdzielczość bez litery p, traktowana jak znacznik jakości
+_RES_BRACKET = re.compile(r"(?i)[(\[]\s*(480|576|720|1080|2160)\s*[pi]?\s*[)\]]")
+# Adres strony doklejony na początku nazwy: „SITE.COM - Tytuł…”, „www.site.net_Tytuł…”
+_SITE_PREFIX = re.compile(
+    r"(?i)^\s*(?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:com|net|org|to|tv|cc|io|me|info|biz|ws|xyz|"
+    r"pl|eu|se|ru|co|site|online|top|club|link|lol|li|is|nu|ag|sx|vip)\s*[-_\u2013]\s*")
+# „Episode 2”, „Ep 02”, „Odcinek 2”, opcjonalnie „Season 1” / „Sezon 1”
+_EPISODE = re.compile(r"(?i)\b(?:episode|ep|odcinek|odc)[ ._-]*(\d{1,3})\b")
+_SEASON = re.compile(r"(?i)\b(?:season|sezon|series)[ ._-]*(\d{1,2})\b")
 _YEAR = re.compile(r"\b(19\d{2}|20\d{2})\b")
 _TV = re.compile(r"(?i)\bS(\d{1,2})[ ._-]?E(\d{1,3})(?:[ ._-]?E\d{1,3})?\b|\b(\d{1,2})x(\d{2,3})\b")
 _FORBIDDEN = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
@@ -70,7 +80,13 @@ def filename_from_content_disposition(value):
         except LookupError:
             return unquote(m.group(2).strip().strip('"'))
     m = re.search(r'filename\s*=\s*"([^"]+)"', value, re.I) or re.search(r"filename\s*=\s*([^;]+)", value, re.I)
-    return m.group(1).strip() if m else ""
+    if not m:
+        return ""
+    name = m.group(1).strip()
+    # część serwerów koduje nazwę procentowo także w zwykłym filename= („Tytul%20Filmu.mp4”)
+    if re.search(r"%[0-9A-Fa-f]{2}", name):
+        name = unquote(name)
+    return name
 
 
 def split_ext(filename):
@@ -133,6 +149,8 @@ def guess(filename):
     Zwraca dict: kind, title, year, name (film: "Tytuł (YYYY)"), show, season, episode.
     """
     stem, ext = split_ext(filename)
+    stem = _SITE_PREFIX.sub("", stem) or stem
+    stem = _RES_BRACKET.sub(r" \1p ", stem)
     plain = re.sub(r"[._]+", " ", stem)
     result = {"kind": "movie", "title": "", "year": None, "name": "", "show": "",
               "season": None, "episode": None, "ext": ext, "edition": detect_edition(stem)}
@@ -147,6 +165,20 @@ def guess(filename):
             show = "%s (%s)" % (_clean(show[: y.start()]), y.group(1))
         if show:
             result.update(kind="tv", show=sanitize(show), season=season, episode=episode)
+            return result
+
+    ep = _EPISODE.search(plain)
+    # „Star Wars Episode 1 The Phantom Menace 1999” to film: rok po słowie Episode → nie serial
+    if ep and not _YEAR.search(plain[ep.end():]):
+        se = _SEASON.search(plain)
+        cut = min(ep.start(), se.start()) if se else ep.start()
+        show = _clean(plain[:cut])
+        y = _YEAR.search(show)
+        if y and y.start() > 0:
+            show = "%s (%s)" % (_clean(show[: y.start()]), y.group(1))
+        if show:
+            result.update(kind="tv", show=sanitize(show), season=int(se.group(1)) if se else 1,
+                          episode=int(ep.group(1)))
             return result
 
     junk = _JUNK.search(plain)

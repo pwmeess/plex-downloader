@@ -2,7 +2,7 @@
 
 🇬🇧 **English** · 🇵🇱 [Polski](ROADMAP.pl.md) · Changelog: [CHANGELOG.md](CHANGELOG.md)
 
-Last updated: 8 November 2026 · stable: **1.2.6** · BETA: **1.2.8-beta**
+Last updated: 9 November 2026 · stable: **1.2.6** · BETA: **1.2.9-beta**
 
 ## Ground rules (checked for every release)
 
@@ -32,6 +32,7 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 | 1.2.6-beta | 1.2.2 with the VPN preview, first BETA |
 | 1.2.6 (stable) | Two-stage move progress, "Skip SHA-256 verification", hidden TMDB key, phone and ⓘ layout fixes, neutral `ssh` address, translation test, English documentation |
 | 1.2.8-beta | 1.2.6 + VPN preview; base for 1.3 |
+| 1.2.9-beta | Better title recognition from pasted links (to be included in the next stable release) |
 
 ## To fix
 
