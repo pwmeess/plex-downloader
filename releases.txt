@@ -1,7 +1,7 @@
 # Stable versions offered by fix.sh → "Install another version" (newest first).
 # version|commit|description (EN)|opis (PL)
-1.3.0|5036350|Setup wizard, edit names and posters, guides, fix.sh modules|Kreator konfiguracji, edycja nazw i plakatów, instrukcje, moduły w fix.sh
 1.3.1|6d1754d|Fix: moving TV shows without season folders|Poprawka: przenoszenie seriali bez folderów sezonów
+1.3.0|5036350|Setup wizard, edit names and posters, guides, fix.sh modules|Kreator konfiguracji, edycja nazw i plakatów, instrukcje, moduły w fix.sh
 1.2.7|d6a4fbd|Better title recognition from pasted links|Lepsze rozpoznawanie tytułów z wklejonych linków
 1.2.6|7af4e3f|Two-stage move progress, skip SHA-256 verification, hidden TMDB key|Dwuetapowy postęp przenoszenia, pomijanie weryfikacji SHA-256, ukryty klucz TMDB
 1.2.5|8595183|Stable and BETA channels, new fix.sh menu|Kanały stabilny i BETA, nowe menu fix.sh
