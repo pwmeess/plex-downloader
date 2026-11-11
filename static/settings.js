@@ -845,7 +845,20 @@
       add(t("VPN address"), v.ip, true);
       add(t("Name in the VPN"), v.magic_dns ? v.dns_name : "", true);
       add(t("Account"), v.account);
-      add(t("Tailscale version"), v.version);
+      if (v.version) {
+        const dd = el("dd"); dd.append(document.createTextNode(v.version + " "));
+        if (v.outdated === false) dd.append(el("span", "tag ok", t("up to date")));
+        else if (v.outdated) {
+          dd.append(el("span", "tag " + (v.urgent ? "bad" : "warn"), v.urgent ? t("security update") : t("out of date")),
+            document.createTextNode(" " + t("current: {v}", { v: v.latest })));
+        }
+        kv.append(el("dt", null, t("Tailscale version")), dd);
+        if (v.outdated) {
+          const upd = el("dd", "vpn-upd");
+          upd.append(document.createTextNode(t("Update on the Raspberry Pi: fix.sh → Additional modules → Tailscale → Update, or:") + " "), el("code", null, "sudo apt-get update && sudo apt-get install --only-upgrade tailscale"));
+          kv.append(el("dt"), upd);
+        }
+      }
       out.push(kv);
       out.push(httpsBox(v));
 

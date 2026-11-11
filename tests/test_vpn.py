@@ -61,6 +61,16 @@ class TestParse(unittest.TestCase):
         self.assertTrue(v["magic_dns"])
         self.assertEqual([p["name"] for p in v["peers"]], ["iphone", "laptop"])   # online first
         self.assertEqual(v["peers"][0]["ip"], "100.80.1.2")
+        self.assertEqual(v["latest"], "")
+
+    def test_outdated(self):
+        v = vpn._parse(dict(RUNNING, ClientVersion={"RunningLatest": False, "LatestVersion": "1.80.2"}))
+        self.assertEqual(v["latest"], "1.80.2")
+        self.assertTrue(vpn._outdated(v["version"], v["latest"], v["running_latest"]))
+        self.assertFalse(vpn._outdated("1.104.6", "1.104.6", None))
+        self.assertFalse(vpn._outdated("1.104.10", "1.104.9", None))
+        self.assertTrue(vpn._outdated("1.104.6", "", False))
+        self.assertIsNone(vpn._outdated("1.104.6", "", None))
 
     def test_needs_login(self):
         v = vpn._parse({"BackendState": "NeedsLogin", "AuthURL": "https://login.tailscale.com/a/x"})

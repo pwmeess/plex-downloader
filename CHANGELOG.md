@@ -8,6 +8,7 @@ All notable changes to Plex Downloader. Stable versions live on the `main` branc
 - The panel never turns on Tailscale Funnel (public internet); if Funnel is on for the panel's address, the VPN tab shows a red warning with the command to switch it off.
 - **Where the panel is available:** “Home network + VPN” (default) or “Home network only” – then requests that come through the VPN (also the HTTPS address) are refused, while Tailscale stays available for other things (SSH, files, Plex). Switching to “home network only” while using the panel over VPN asks first.
 - **Log out / change account:** logs this Raspberry Pi out of Tailscale (with a warning when you are connected over VPN); log in again with the Log in button.
+- **Tailscale version check:** next to the version a tag “up to date” or “out of date” (“security update” when Tailscale marks it urgent) with the current version and how to update.
 - **WireGuard status** in the VPN tab (interfaces and addresses, when WireGuard is installed).
 - `fix.sh` → Additional modules: **Autostart on / off** for modules with a service (Plex, Samba, Tailscale, WireGuard) – stays after a restart; the module list shows “no autostart”.
 - `fix.sh`: when a broken Raspbian mirror stops an installation (404, “unexpected size”), it offers to download from the main Raspbian archive instead (with a copy of the source list) and tries again.

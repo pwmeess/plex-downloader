@@ -780,5 +780,10 @@
  "WireGuard is installed, but no WireGuard connection is active. Connections are set up by hand in /etc/wireguard (Tailscale does this for you).": "WireGuard jest zainstalowany, ale żadne połączenie WireGuard nie jest aktywne. Połączenia ustawia się ręcznie w /etc/wireguard (Tailscale robi to za Ciebie).",
  "You are using the panel over VPN right now – the panel will close for you at once and can be switched back only from the home network.": "Właśnie korzystasz z panelu przez VPN – panel od razu się dla Ciebie zamknie, a przełączyć z powrotem można tylko z sieci domowej.",
  "You are using the panel over VPN right now – you will lose the connection and can log in again only from the home network.": "Właśnie korzystasz z panelu przez VPN – stracisz połączenie, a ponownie zalogujesz Raspberry Pi tylko z sieci domowej.",
- "starts with the system": "startuje z systemem"
+ "starts with the system": "startuje z systemem",
+ "up to date": "aktualna",
+ "out of date": "nieaktualna",
+ "security update": "pilna aktualizacja",
+ "current: {v}": "aktualna to: {v}",
+ "Update on the Raspberry Pi: fix.sh → Additional modules → Tailscale → Update, or:": "Zaktualizuj na Raspberry Pi: fix.sh → Moduły dodatkowe → Tailscale → Zaktualizuj, albo:"
 }

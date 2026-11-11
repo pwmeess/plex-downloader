@@ -62,6 +62,10 @@ def _parse(raw):
     return {
         "state": raw.get("BackendState") or "NoState",
         "version": (raw.get("Version") or "").split("-")[0],
+        # newest version, as told by the Tailscale servers (only when logged in)
+        "latest": ((raw.get("ClientVersion") or {}).get("LatestVersion") or "").split("-")[0],
+        "running_latest": (raw.get("ClientVersion") or {}).get("RunningLatest"),
+        "urgent": bool((raw.get("ClientVersion") or {}).get("UrgentSecurityUpdate")),
         "ip": next((x for x in ips if ":" not in x), ""),
         "ip6": next((x for x in ips if ":" in x), ""),
         # the name given in the Tailscale console (e.g. raspi400), not the system hostname (raspberrypi)
@@ -109,7 +113,40 @@ def _status():
     if not raw:
         return dict(base, state="daemon_down", detail=(p.stderr or "").strip()[:300])
     base.update(_parse(raw))
+    if not base.get("latest"):
+        base["latest"] = upstream_version()
+    base["outdated"] = _outdated(base.get("version"), base.get("latest"), base.get("running_latest"))
     return base
+
+
+def _vt(v):
+    return tuple(int(x) for x in re.findall(r"\d+", v or "")[:3])
+
+
+def _outdated(cur, latest, running_latest):
+    """True / False, or None when it is not known."""
+    if cur and latest:
+        return _vt(cur) < _vt(latest)
+    if running_latest is not None:
+        return not running_latest
+    return None
+
+
+_upstream = {"t": 0.0, "v": ""}
+
+
+def upstream_version():
+    """Newest Tailscale version from pkgs.tailscale.com (`tailscale version --upstream`), checked at most
+    every 6 hours – used when the status has no ClientVersion (e.g. not logged in)."""
+    if time.time() - _upstream["t"] < 6 * 3600:
+        return _upstream["v"]
+    _upstream["t"] = time.time()
+    try:
+        p = _cli("version", "--upstream", "--json", timeout=15)
+        _upstream["v"] = (json.loads(p.stdout or "{}").get("upstream") or "").split("-")[0]
+    except (OSError, subprocess.SubprocessError, ValueError):
+        _upstream["v"] = ""
+    return _upstream["v"]
 
 
 def _reader(proc):
