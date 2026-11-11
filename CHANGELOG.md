@@ -32,6 +32,8 @@ All notable changes to Plex Downloader. Stable versions live on the `main` branc
   - “Create missing folders when finishing” is always unticked by default (changes such as a new category only highlight it); its ⓘ is shorter,
   - **new folder scanner** (wizard and “Update paths”): reads only folder names (two levels, never the contents – a large music folder no longer slows the Pi down), recognises spelling and plural variants (`Home Video` = `Home Videos`, `TV-Shows`, `Filmy`, `Cinema`, `Kino`, `Bajki`…), skips music, photo, book and backup folders, and offers other video-like folders next to the library (e.g. `Movies02`) as **“+ new category”** buttons,
   - a category whose folder is not on a disk stays empty there (“not on this disk”, ↺ adds it); an empty disk gets suggestions for all categories,
+  - **running the wizard again starts from scratch:** “Run setup wizard” in Settings drops unfinished answers from an earlier attempt, disks are scanned again (the saved disk paths are no longer copied in – they hid folders such as `Home Videos` on another disk) and Plex servers start empty (found automatically); the categories and the saved TMDB key stay,
+  - **“Close without saving”** is a yellow button and also forgets the answers given so far (the saved settings stay unchanged),
   - **Next** needs only one usable Movies or TV Shows folder on any disk; folders that do not exist and will not be created are shown as “does not exist – left out” and are not saved; “Skip” is for the case without any library folder,
   - “Skip – set up disks later” is a small grey button on the right, above “Next”,
   - the two help lines under the disks are one short line: ⚙ rename a category · ✕ not on this disk · + add a category,

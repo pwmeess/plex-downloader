@@ -22,8 +22,10 @@
 
   function saveW() { ss.set("plexdl.wizard", JSON.stringify(W)); }
   function freshW() {
-    return { step: 0, type: "disks", disks: {}, sd: null, net: {}, manual: "", plexAuto: S.plex_autodiscover !== false,
-      servers: (S.plex_servers || []).map((p) => ({ name: p.name, host: p.host, port: p.port })), tmdbKey: null, create: false };
+    // a fresh start: disks are scanned again and Plex servers start empty (found automatically);
+    // only the categories and the saved TMDB key are taken from the current settings
+    return { step: 0, type: "disks", disks: {}, sd: null, net: {}, manual: "", plexAuto: true,
+      servers: [], tmdbKey: null, create: false };
   }
   // categories can be renamed / added in the wizard (kept in W until Finish)
   const cats = () => W.cats || S.categories || [];
@@ -85,10 +87,7 @@
   // ------------------------------------------------------------------ disk model
   function diskEntry(m) {
     if (!W.disks[m.mount]) {
-      // running the wizard again: start from the disks that are already configured
-      const cur = (S.disks || []).find((x) => (x.mount || "").replace(/\/+$/, "") === m.mount);
-      W.disks[m.mount] = cur ? { use: true, label: cur.label, mount: m.mount, paths: Object.assign({}, cur.paths), scanned: true }
-        : { use: false, label: shortName(m.mount), mount: m.mount, paths: {}, scanned: false };
+      W.disks[m.mount] = { use: false, label: shortName(m.mount), mount: m.mount, paths: {}, scanned: false };
     }
     return W.disks[m.mount];
   }
@@ -725,9 +724,16 @@
 
   async function init() {
     try { S = await api("/api/wizard/state"); } catch (e) { toast(e.message, true); return; }
+    // „Run setup wizard” in Settings opens /setup?fresh=1: earlier, unfinished answers are dropped
+    if (new URLSearchParams(location.search).get("fresh") === "1") {
+      ss.set("plexdl.wizard", "");
+      history.replaceState(null, "", "/setup");
+    }
     try { W = JSON.parse(ss.get("plexdl.wizard") || "null"); } catch (e) { W = null; }
     if (!W || typeof W.step !== "number") W = freshW();
     if (S.wizard_done) { $("#wzRedo").hidden = false; $("#wzExit").hidden = false; }
+    // „Close without saving”: the answers given so far are forgotten (the saved settings stay as they are)
+    $("#wzExit").addEventListener("click", () => { ss.set("plexdl.wizard", ""); });
     render();
   }
   init();
