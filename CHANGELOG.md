@@ -15,7 +15,10 @@ All notable changes to Plex Downloader. Stable versions live on the `main` branc
 - **Posters from video frames (ffmpeg):**
   - Edit window → **Frame from the video**: 6 frames to choose from (the clearest first, “Generate others” takes new random ones); the frame is placed on a blurred copy of itself, so a 16:9 picture fits the 2:3 poster without cutting anything,
   - **Pick a time:** opens a field under the buttons for a time in the video (h:mm:ss) and **Check**, which shows 6 frames around it (10 s and 5 s before, the time itself, 5, 10 and 15 s after); at 0:00:00 it starts at the beginning, after the end of the video it shows the last frames; typing mistakes are corrected (0:95:99 → 0:59:59, max. 5:59:59); Check stays grey until the time is changed; a read error is shown in red,
-  - **Settings → Preview & posters** and the setup wizard (TMDB step): “Generate posters myself from video frames (needs ffmpeg)”, off by default – for home videos, categories without TMDB and titles TMDB does not know; several frames are checked and the clearest one is used (black screens and fades are skipped),
+  - the time fills in as you type digits: 1 → 1:00:00, 123 → 1:23:00, 1234 → 1:23:40, 00000 → 0:00:00,
+  - **+10 s** appears after Check and repeats the search 10 seconds later,
+  - while frames are being read, three dots fill in turn and the seconds are counted, so the window never looks frozen (about 10–15 s on a Pi 400),
+  - **Settings → Preview & posters** and the setup wizard (TMDB step): “Generate posters myself from video frames (needs ffmpeg)”, off by default and not recommended right away (ⓘ: about 10–15 s per movie on a Pi 4 / Pi 400, so the first opening of a large category is slow – a frame for a single movie can always be made in the Edit window) – for home videos, categories without TMDB and titles TMDB does not know; several frames are checked and the clearest one is used (black screens and fades are skipped),
   - posters chosen by hand (own image or frame) are kept by “Download again (overwrite)”,
   - `setup.sh` installs ffmpeg quietly (it never stops the installation).
 - `fix.sh` window: one fixed colour set and UTF-8 frame lines, so the menu looks the same in macOS Terminal / iTerm over SSH (two shades of grey and broken lines before).

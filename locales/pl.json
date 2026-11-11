@@ -663,7 +663,6 @@
  "no change": "bez zmian",
  "no poster": "brak plakatu",
  "Choose a frame from the video as the poster (needs ffmpeg).": "Wybierz kadr z filmu jako plakat (wymaga ffmpeg).",
- "For home videos and titles without a TMDB match (or without a TMDB key) the File manager makes a poster from a frame of the video: several frames are checked and the clearest one is used. Needs ffmpeg – installed by setup.sh, or with fix.sh → Additional modules. On a Pi Zero it takes a few seconds per movie (done once).": "Dla domowych nagrań i tytułów, których nie ma w TMDB (albo bez klucza TMDB), Menedżer plików zrobi plakat z kadru filmu: sprawdza kilka kadrów i wybiera najwyraźniejszy. Wymaga ffmpeg – instaluje go setup.sh albo fix.sh → Moduły dodatkowe. Na Pi Zero to kilka sekund na film (tylko raz).",
  "Frame from the video": "Kadr z filmu",
  "Generate posters myself from video frames (needs ffmpeg)": "Samodzielnie generuj miniatury z kadrów filmu (wymaga ffmpeg)",
  "No frame could be read from this file.": "Nie udało się odczytać kadru z tego pliku.",
@@ -681,5 +680,8 @@
  "Check": "Sprawdź",
  "Time in the video (h:mm:ss)": "Czas w filmie (h:mm:ss)",
  "Shows 6 frames: 10 s before, 5 s before, the time itself and 5, 10 and 15 s after.": "Pokazuje 6 kadrów: 10 s i 5 s przed, sam wskazany czas oraz 5, 10 i 15 s po nim.",
- "Error – check the time you entered or try again.": "Błąd – sprawdź wpisany czas lub spróbuj ponownie."
+ "Error – check the time you entered or try again.": "Błąd – sprawdź wpisany czas lub spróbuj ponownie.",
+ "For home videos and titles without a TMDB match (or without a TMDB key) the File manager makes a poster from a frame of the video: several frames are checked and the clearest one is used. Needs ffmpeg – installed by setup.sh, or with fix.sh → Additional modules.\n\nNot recommended to switch on right away: it takes about 10–15 s per movie on a Pi 4 / Pi 400 (longer on a Pi Zero), so the first opening of a large category is slow.\n\nYou can always make a poster from a frame for a single movie: File manager → pen icon (Edit) → Frame from the video.": "Dla domowych nagrań i tytułów, których nie ma w TMDB (albo bez klucza TMDB), Menedżer plików zrobi plakat z kadru filmu: sprawdza kilka kadrów i wybiera najwyraźniejszy. Wymaga ffmpeg – instaluje go setup.sh albo fix.sh → Moduły dodatkowe.\n\nNie zalecamy włączania od razu: na Pi 4 / Pi 400 trwa to ok. 10–15 s na film (na Pi Zero dłużej), więc pierwsze otwarcie dużej kategorii będzie wolne.\n\nPlakat z kadru możesz zawsze zrobić dla pojedynczego filmu: Menedżer plików → ikona długopisu (Edytuj) → Kadr z filmu.",
+ "+10 s": "+10 s",
+ "The same search 10 seconds later": "To samo wyszukiwanie 10 sekund później"
 }

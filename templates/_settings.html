@@ -76,7 +76,7 @@
       </div>
       <div class="frames-opt">
         <label class="check"><input type="checkbox" id="sFrames"> {{ _("Generate posters myself from video frames (needs ffmpeg)") }}</label>
-        <button type="button" class="info-i" data-tip="{{ _('For home videos and titles without a TMDB match (or without a TMDB key) the File manager makes a poster from a frame of the video: several frames are checked and the clearest one is used. Needs ffmpeg – installed by setup.sh, or with fix.sh → Additional modules. On a Pi Zero it takes a few seconds per movie (done once).') }}">i</button>
+        <button type="button" class="info-i" data-tip="{{ _('For home videos and titles without a TMDB match (or without a TMDB key) the File manager makes a poster from a frame of the video: several frames are checked and the clearest one is used. Needs ffmpeg – installed by setup.sh, or with fix.sh → Additional modules.\n\nNot recommended to switch on right away: it takes about 10–15 s per movie on a Pi 4 / Pi 400 (longer on a Pi Zero), so the first opening of a large category is slow.\n\nYou can always make a poster from a frame for a single movie: File manager → pen icon (Edit) → Frame from the video.') }}">i</button>
         <span class="muted small" id="ffmpegState"></span>
       </div>
       <p class="hint">{{ _("The poster is saved in the movie folder as") }} <code>Title (Year).thumb.jpg</code>. {{ _("Plex does not use it – it has its own posters.") }}</p>

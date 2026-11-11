@@ -426,7 +426,18 @@
       const box = el("div", "fe-frames");
       const grid = el("div", "fe-frame-grid");
       const WAIT = t("Reading frames from the video… (on a Pi Zero this can take a minute)");
-      const msg = el("p", "muted", WAIT);
+      // working indicator: 3 dots filling in turn (1-0-0, 1-1-0, 1-1-1, 0-1-1, 0-0-1, 0-0-0) + seconds
+      const msg = el("div", "fe-wait");
+      const dots = el("span", "fe-dots"); dots.append(el("i"), el("i"), el("i"));
+      const waitText = el("span", null, WAIT), secs = el("span", "fe-secs");
+      let tick = null;
+      const busy = (on) => {
+        clearInterval(tick);
+        if (!on) return;
+        const t0 = Date.now(); secs.textContent = "0 s";
+        tick = setInterval(() => { secs.textContent = Math.round((Date.now() - t0) / 1000) + " s"; }, 1000);
+        msg.hidden = false; msg.className = "fe-wait"; msg.replaceChildren(dots, waitText, secs);
+      };
       box.append(msg, grid);
       let chosen = null, dlg = null;
       const fmt = (sec) => {
@@ -434,7 +445,7 @@
         return h ? `${h}:${String(m).padStart(2, "0")}:${String(x).padStart(2, "0")}` : `${m}:${String(x).padStart(2, "0")}`;
       };
       const show = (frames) => {
-        msg.hidden = true;
+        busy(false); msg.hidden = true;
         frames.forEach((fr) => {
           const b = el("button", "fe-frame"); b.type = "button";
           const im = document.createElement("img"); im.src = fr.data; im.alt = "";
@@ -443,20 +454,27 @@
           grid.appendChild(b);
         });
       };
-      const fail = (text) => { msg.hidden = false; msg.className = "fe-err"; msg.textContent = text; };
+      const fail = (text) => { busy(false); msg.hidden = false; msg.className = "fe-err"; msg.textContent = text; };
+      let loading = false;
       const load = async (params) => {
-        msg.hidden = false; msg.className = "muted"; msg.textContent = WAIT; grid.replaceChildren();
+        if (loading) return false;
+        loading = true; busy(true); grid.replaceChildren(); plus10.hidden = true;
         try {
           const q = new URLSearchParams(Object.assign({ disk: pane.disk, cat: pane.cat, name: item.name, n: "6" }, params));
           show((await api("/api/fm/frames?" + q.toString())).frames);
+          plus10.hidden = params.at === undefined;     // „+10 s” only after frames for a typed time
           return true;
         } catch (e) { fail(params.at !== undefined ? t("Error – check the time you entered or try again.") : e.message); return false; }
+        finally { loading = false; }
       };
       // „Pick a time”: h:mm:ss under the buttons → 6 frames around it (-10 s … +15 s)
       const timeBox = el("div", "fe-time"); timeBox.hidden = true;
       const tIn = el("input", "input mono"); tIn.placeholder = "0:00:00"; tIn.maxLength = 8; tIn.inputMode = "numeric";
       const check = el("button", "btn-soft small", t("Check")); check.type = "button";
-      timeBox.append(el("label", "small-label", t("Time in the video (h:mm:ss)")), tIn, check,
+      const plus10 = el("button", "btn-soft small", t("+10 s")); plus10.type = "button"; plus10.hidden = true;
+      plus10.title = t("The same search 10 seconds later");
+      const btns = el("div", "fe-time-btns"); btns.append(check, plus10);
+      timeBox.append(el("label", "small-label", t("Time in the video (h:mm:ss)")), tIn, btns,
         el("p", "hint", t("Shows 6 frames: 10 s before, 5 s before, the time itself and 5, 10 and 15 s after.")));
       // 0:95:99 → 0:59:59, max. 5:59:59; also accepts m:ss and seconds
       const normalize = () => {
@@ -469,7 +487,17 @@
         tIn.value = `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
         return h * 3600 + m * 60 + sec;
       };
-      tIn.addEventListener("input", () => { check.disabled = false; });
+      // typing digits fills h:mm:ss: 1 → 1:00:00, 123 → 1:23:00, 1234 → 1:23:40, 00000 → 0:00:00
+      const POS = [0, 1, 3, 4, 6, 7];     // caret after n typed digits
+      tIn.addEventListener("input", () => {
+        check.disabled = false;
+        const caret = tIn.selectionStart == null ? tIn.value.length : tIn.selectionStart;
+        const typed = tIn.value.slice(0, caret).replace(/\D/g, "").slice(0, 5);
+        if (!typed) { tIn.value = ""; return; }
+        const d = (typed + "00000").slice(0, 5);
+        tIn.value = `${d[0]}:${d.slice(1, 3)}:${d.slice(3, 5)}`;
+        try { tIn.setSelectionRange(POS[typed.length], POS[typed.length]); } catch (e) { /* */ }
+      });
       tIn.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); if (!check.disabled) check.click(); } });
       check.addEventListener("click", async () => {
         const sec = normalize();
@@ -477,7 +505,16 @@
         check.disabled = true;           // active again after the next change of the time
         await load({ at: String(sec) });
       });
-      box._onOpen = (d) => { dlg = d; d.appendChild(timeBox); load({ shuffle: "0" }); };
+      plus10.addEventListener("click", async () => {
+        const sec = normalize();
+        if (sec === null) return;
+        const next = Math.min(5 * 3600 + 59 * 60 + 59, sec + 10);
+        const h = Math.floor(next / 3600), m = Math.floor((next % 3600) / 60), x = next % 60;
+        tIn.value = `${h}:${String(m).padStart(2, "0")}:${String(x).padStart(2, "0")}`;
+        check.disabled = true;
+        await load({ at: String(next) });
+      });
+      box._onOpen = (d) => { dlg = d; d.appendChild(timeBox); d.addEventListener("close", () => busy(false)); load({ shuffle: "0" }); };
       const pick = await modal({ title: t("Frame from the video"), body: box, wide: true,
         buttons: [{ label: t("Cancel"), value: false },
                   { label: t("Generate others"), value: () => { load({ shuffle: "1" }); return undefined; } },
