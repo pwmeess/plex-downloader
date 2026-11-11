@@ -41,9 +41,17 @@ echo
 c_info "$(L "Installing system packages (aria2, python3-venv, git)…" "Instaluję pakiety systemowe (aria2, python3-venv, git)…")"
 sudo apt-get update -qq
 sudo apt-get install -y -qq aria2 python3 python3-venv python3-pip git >/dev/null
-# ffmpeg: posters from video frames (optional; often already there with Plex) – quietly, never stops the setup
-sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1 || true
 c_ok "aria2c $(aria2c --version | head -1 | awk '{print $3}')"
+# ffmpeg: posters from video frames (optional). Nothing is shown when it is already there; installing it
+# never stops the setup. On a Pi Zero it takes several minutes, so say so instead of looking frozen.
+if ! command -v ffmpeg >/dev/null 2>&1; then
+  c_info "$(L "Installing ffmpeg (posters from video frames) – on a Pi Zero this can take 5–15 minutes, please wait…" "Instaluję ffmpeg (plakaty z kadrów filmu) – na Pi Zero może to potrwać 5–15 minut, proszę czekać…")"
+  if sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1; then
+    c_ok "ffmpeg"
+  else
+    c_warn "$(L "ffmpeg was not installed – you can add it later with fix.sh → Additional modules." "Nie zainstalowano ffmpeg – możesz go dodać później w fix.sh → Moduły dodatkowe.")"
+  fi
+fi
 
 c_info "$(L "Creating the Python environment (venv)…" "Tworzę środowisko Pythona (venv)…")"
 if [ ! -x "$APP_DIR/venv/bin/python" ]; then
