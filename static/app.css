@@ -994,3 +994,7 @@ dialog.window.modal .win-foot { flex-wrap: wrap; }
   .guide-top .brand { font-size: 15px; gap: 8px; }
   .guide-top .guide-pdf, .guide-top .btn-soft { padding: 6px 10px; font-size: 13px; }
 }
+/* move window: “Skip SHA-256 verification” strikes the verification step through */
+.plan-how .sha-alt { display: none; }
+.plan-how.skip .sha { text-decoration: line-through; opacity: .55; }
+.plan-how.skip .sha-alt { display: inline; color: var(--warn); }
