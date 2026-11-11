@@ -23,7 +23,7 @@
   function saveW() { ss.set("plexdl.wizard", JSON.stringify(W)); }
   function freshW() {
     return { step: 0, type: "disks", disks: {}, sd: null, net: {}, manual: "", plexAuto: S.plex_autodiscover !== false,
-      servers: (S.plex_servers || []).map((p) => ({ name: p.name, host: p.host, port: p.port })), tmdbKey: null, create: true };
+      servers: (S.plex_servers || []).map((p) => ({ name: p.name, host: p.host, port: p.port })), tmdbKey: null, create: false, createTouched: false };
   }
   // categories can be renamed / added in the wizard (kept in W until Finish)
   const cats = () => W.cats || S.categories || [];
@@ -105,7 +105,8 @@
       const r = await api("/api/wizard/scan", { mount: d.mount, categories: cats(), hints: W.fileDisks || [] });
       if (r.match && !d.labelSet) d.label = r.match;   // button name of the matching disk from the settings file
       // missing folders go next to the ones that were found (e.g. „Plex 1T/Kids”), otherwise into „Plex/”
-      const found = Object.values(r.result).map((x) => x.path).filter(Boolean);
+      const found = Object.values(r.result).filter((x) => x.status === "found").map((x) => x.path);
+      d.foundCount = found.length;
       // no category folder yet: suggest them inside the disk's „Plex” folder (if there is one)
       const root = found.length ? found[0].replace(/\/[^/]+$/, "") : (r.plex_dir || `${d.mount.replace(/\/$/, "")}/Plex`);
       d.root = root;
@@ -141,6 +142,12 @@
     return ["ok", "✓ " + t("OK") + (x.free != null ? " · " + t("Free: {free}", { free: fmtSize(x.free) }) : "")];
   }
   function paintStatus() {
+    // „Create missing folders”: ticked by itself only when something is missing (until the user decides)
+    const missingNow = allPaths().some((x) => status[x] && !status[x].exists);
+    if (!W.createTouched && W.create !== missingNow) {
+      W.create = missingNow; saveW();
+      $$(".wz-create-row input").forEach((cb) => { cb.checked = W.create; });
+    }
     $$(".wz-path").forEach((row) => {
       const inp = $("input", row), m = $(".wz-st", row);
       if (!inp || !m) return;   // disk name row has no status
@@ -168,6 +175,27 @@
     }, 50);
   }
   function rerender() { render(); scheduleCheck(); }
+  // disks step: every mounted disk / share is checked once; the ones with library folders are ticked
+  let probing = false;
+  async function autoProbe() {
+    if (probing) return;
+    await null;   // the step is in the page now
+    const list = (W.type === "network" ? Object.values(W.net) : W.type === "disks" ? Object.values(W.disks) : [])
+      .filter((d) => !d.probed && !d.manual);
+    if (!list.length) return;
+    probing = true;
+    const note = $(".wz-probe");
+    if (note) note.hidden = false;
+    let changed = false;
+    for (const d of list) {
+      if (!d.scanned) await scanDisk(d);
+      d.probed = true;
+      if (!d.use && d.foundCount > 0) { d.use = true; changed = true; }
+    }
+    saveW(); probing = false;
+    if (STEPS[W.step] && STEPS[W.step].id === "disks") { render(); scheduleCheck(); }
+    else if (changed) saveW();
+  }
   // name, folder and type of a category (rename or new)
   async function catDialog(c) {
     const body = el("div", "mkdir-box");
@@ -279,10 +307,10 @@
   function createBox() {
     const lab = el("label", "check wz-create");
     const cb = el("input"); cb.type = "checkbox"; cb.checked = W.create;
-    cb.addEventListener("change", () => { W.create = cb.checked; saveW(); paintStatus(); });
+    cb.addEventListener("change", () => { W.create = cb.checked; W.createTouched = true; saveW(); paintStatus(); });
     lab.append(cb, document.createTextNode(" " + t("Create missing folders when finishing")));
     const row = el("div", "wz-create-row");
-    row.append(lab, info(t("Folders that do not exist yet (status “will be created”) are created when you click Finish, together with their parent folders, e.g. Plex/Movies. Untick it if you prefer to create the folders yourself – the wizard then continues only when all folders exist.")));
+    row.append(lab, info(t("Missing folders (status “will be created”) are created when you click Finish. Untick it if you prefer to create them yourself.")));
     return row;
   }
 
@@ -422,6 +450,7 @@
         if (nets.length) {
           fileDisksNote(box);
           box.appendChild(p(t("Network shares mounted on this Raspberry Pi:")));
+          const pr = el("p", "muted wz-probe", t("Looking for library folders…")); pr.hidden = true; box.appendChild(pr);
           nets.forEach((m) => {
             // button name: the share name (“//192.168.1.10/Plex Media Share 1024” → “Plex Media Share 1024”)
             const share = (m.device || "").replace(/\/+$/, "").split("/").pop();
@@ -463,6 +492,7 @@
         } else {
           fileDisksNote(box);
           box.appendChild(p(t("Select the disks for the library:")));
+          const pr = el("p", "muted wz-probe", t("Looking for library folders…")); pr.hidden = true; box.appendChild(pr);
           disks.forEach((m) => box.appendChild(diskCard(diskEntry(m), m)));
           box.appendChild(createBox());
         }
@@ -470,14 +500,14 @@
         again.addEventListener("click", async () => { S = await api("/api/wizard/state"); render(); });
         box.appendChild(el("div", "wz-row")).appendChild(again);
       }
-      box.appendChild(p(t("Gear: rename a category · ✕: not on this disk · + Add category, e.g. Concerts. Later: Settings → Categories."), "muted wz-small"));
-      box.appendChild(p(t("Disk button names and their order can be changed later with the gear on a disk tile (download page and File manager) or in Settings → Disks."), "muted wz-small"));
-      // „Skip – set up disks later”
+      box.appendChild(p(t("⚙ rename a category · ✕ not on this disk · + add a category. Disk names and their order can be changed later in Settings."), "muted wz-small"));
+      // „Skip – set up disks later”: small grey button on the right, just above „Next”
       const skip = el("div", "wz-skip");
-      const sb = el("button", "btn-ghost small", t("Skip – set up disks later")); sb.type = "button";
+      const sb = el("button", "btn-soft small", t("Skip – set up disks later")); sb.type = "button";
       sb.addEventListener("click", () => { W.skipDisks = true; W.step = STEPS.findIndex((x) => x.id === "plex"); saveW(); render(); });
-      skip.append(sb, info(t("You can finish the wizard without a disk and add disks later in Settings → Disks (or run the wizard again from Settings → Account). Downloading starts working once at least one disk is set up.")));
+      skip.append(info(t("Finish the wizard without a disk and add disks later in Settings → Disks. Downloading works once at least one disk is set up.")), sb);
       box.appendChild(skip);
+      autoProbe();
       scheduleCheck();
       return box;
     },
@@ -545,7 +575,10 @@
         inp.type = scb.checked ? "text" : "password";
       });
       show.append(scb, document.createTextNode(" " + t("Show key")));
-      box.append(inp, show);
+      const st = el("span", "key-st");
+      const check = window.PD.tmdbChecker(inp, st);
+      box.append(inp, st, show);
+      if (inp.value) check(false); else if (S.tmdb_key_set) check(true);   // the saved key is checked too
       // posters from video frames (ffmpeg) – for home videos and when there is no TMDB key / no match
       const fr = el("div", "wz-frames");
       const fl = el("label", "check"); const fcb = el("input"); fcb.type = "checkbox";

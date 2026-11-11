@@ -321,6 +321,17 @@ def _mask_key(key):
     return ("•" * 10 + key[-3:]) if len(key) > 6 else ("•" * len(key))
 
 
+@app.route("/api/tmdb/check", methods=["POST"])
+@login_required
+def api_tmdb_check():
+    """Checks a typed TMDB key (or the saved one when none is given) – nothing is saved."""
+    key = (request.get_json(silent=True) or {}).get("key")
+    if not key:
+        key = config.get().get("tmdb_api_key", "")
+    ok, msg = movieinfo.check_key(key)
+    return jsonify(ok=ok, message=msg)
+
+
 @app.route("/api/settings/tmdb-key")
 @login_required
 def api_tmdb_key():

@@ -15,7 +15,7 @@
   <ol class="wz-steps" id="wzSteps"></ol>
   <section class="card wz-card">
     <div id="wzRedo" class="panel-note" hidden><svg class="i"><use href="#i-retry"/></svg><span>{{ _("Finishing the wizard replaces your disks, Plex servers and TMDB key (and categories, if you change them). Your current settings are kept as a restore point (Settings → Backups).") }}</span></div>
-    <div id="wzBody"></div>
+    <div id="wzBody"><p class="wz-loading"><span class="fe-dots"><i></i><i></i><i></i></span> {{ _("Loading the setup wizard…") }}</p></div>
     <div class="wz-nav">
       <button class="btn-soft" type="button" id="wzBack">{{ _("Back") }}</button>
       <a class="wz-guide" id="wzGuide" target="_blank" rel="noopener"></a>

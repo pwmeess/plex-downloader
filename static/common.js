@@ -114,6 +114,27 @@
     win.style.left = "50%"; win.style.top = "50%"; win.style.transform = "translate(-50%, -50%)";
   }
 
+  // ------------------------------------------------------------------ TMDB key check (wizard + Settings)
+  function tmdbChecker(input, out) {
+    let timer = null, seq = 0;
+    const set = (cls, text) => { out.className = "key-st " + cls; out.textContent = text; };
+    const run = async (useSaved) => {
+      const key = input.value.trim();
+      if (!key && !useSaved) { set("", ""); return; }
+      const my = ++seq;
+      set("muted", t("Checking the key…"));
+      try {
+        const r = await api("/api/tmdb/check", { key });
+        if (my !== seq) return;
+        if (r.ok === true) set("ok", "✓ " + r.message);
+        else if (r.ok === false) set("bad", "✗ " + r.message);
+        else set("warn", "! " + r.message);
+      } catch (e) { if (my === seq) set("warn", "! " + e.message); }
+    };
+    input.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(() => run(false), 700); });
+    return run;
+  }
+
   // ------------------------------------------------------------------ okno potwierdzenia
   function modal({ title, body, buttons, danger, wide }) {
     return new Promise((resolve) => {
@@ -324,5 +345,5 @@
   }
 
   window.PD = { $, $$, store, t, LANG, LOCALE, api, fmtSize, fmtSpeed, fmtEta, el, icon, catIcon, modal, toast,
-    copyText, makeDraggable, centerWindow, refreshStatus, diskTile, openSettings: null, status: null };
+    copyText, makeDraggable, centerWindow, refreshStatus, diskTile, tmdbChecker, openSettings: null, status: null };
 })();

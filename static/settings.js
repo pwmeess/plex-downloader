@@ -437,6 +437,7 @@
   });
 
   $("#sTmdb").addEventListener("input", (e) => { e.target.dataset.dirty = "1"; });
+  window.PD.tmdbChecker($("#sTmdb"), $("#sTmdbSt"));
   $("#sTmdbShow").addEventListener("change", async (e) => {
     const tk = $("#sTmdb");
     if (e.target.checked) {

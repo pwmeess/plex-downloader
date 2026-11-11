@@ -907,3 +907,11 @@ dialog.window.modal .win-foot { flex-wrap: wrap; }
 .fe-file { grid-template-columns: minmax(0, 1fr) 150px 150px; }
 .fe-new.muted { color: var(--muted); font-family: inherit; }
 @media (max-width: 640px) { .fe-file { grid-template-columns: 1fr 1fr; } .fe-file span { grid-column: 1 / -1; } }
+/* kreator – poprawki po pierwszym teście na Pi Zero */
+.wz-loading { display: flex; align-items: center; gap: 12px; color: var(--muted); margin: 6px 0 4px; }
+.wz-skip { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.wz-probe { display: flex; align-items: center; gap: 8px; }
+.key-st { display: block; font-size: 13px; margin: 6px 0 2px; min-height: 1em; }
+.key-st:empty { display: none; }
+.key-st.ok { color: var(--ok); } .key-st.bad { color: var(--err); } .key-st.warn { color: var(--warn); }
+.wz-card:has(.wz-loading) .wz-nav, .wz-card:has(.wz-loading) #wzRedo { visibility: hidden; }
