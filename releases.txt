@@ -1,5 +1,6 @@
 # Stable versions offered by fix.sh → "Install another version" (newest first).
 # version|commit|description (EN)|opis (PL)
+1.4.0|d0f64cd|Remote access over VPN (Tailscale), HTTPS in the VPN, VPN guide|Dostęp zdalny przez VPN (Tailscale), HTTPS w VPN, poradnik VPN
 1.3.1|6d1754d|Fix: moving TV shows without season folders|Poprawka: przenoszenie seriali bez folderów sezonów
 1.3.0|5036350|Setup wizard, edit names and posters, guides, fix.sh modules|Kreator konfiguracji, edycja nazw i plakatów, instrukcje, moduły w fix.sh
 1.2.7|d6a4fbd|Better title recognition from pasted links|Lepsze rozpoznawanie tytułów z wklejonych linków
