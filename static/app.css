@@ -915,3 +915,4 @@ dialog.window.modal .win-foot { flex-wrap: wrap; }
 .key-st:empty { display: none; }
 .key-st.ok { color: var(--ok); } .key-st.bad { color: var(--err); } .key-st.warn { color: var(--warn); }
 .wz-card:has(.wz-loading) .wz-nav, .wz-card:has(.wz-loading) #wzRedo { visibility: hidden; }
+.wz-extras { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 4px 0 2px; font-size: 13px; }

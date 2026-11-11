@@ -1059,11 +1059,118 @@ def delete_thumbs(disk_id):
 
 
 # ------------------------------------------------------------------ „Aktualizuj ścieżki”
+# Folder names are compared after _norm(): lower case, no accents, letters and digits only, no plural “s”
+# („Home Videos” = „Home Video”, „TV-Shows” = „TV Shows”). Only names are read – never the contents.
 ALIASES = {
-    "movies": ["movies", "movie", "filmy", "film", "films"],
-    "tv": ["tv shows", "tv", "tvshows", "tv series", "series", "shows", "seriale", "serial"],
-    "kids": ["kids", "children", "dla dzieci", "bajki", "kids movies", "family"],
+    "movies": ["movies", "movie", "films", "film", "filmy", "cinema", "kino", "filmyhd"],
+    "tv": ["tv shows", "tv show", "tv", "tv series", "series", "shows", "seriale", "serial", "seriale tv"],
+    "kids": ["kids", "children", "dla dzieci", "dzieci", "bajki", "kids movies", "family", "cartoons", "kreskowki"],
 }
+WEAK_ALIASES = {"movies": ["videos", "video", "wideo"]}   # used only when nothing else matches
+NOT_VIDEO = {"music", "muzyka", "muza", "audio", "mp3", "flac", "photo", "photos", "zdjecia", "zdjecie", "foto",
+             "fotografie", "pictures", "picture", "images", "obrazy", "book", "books", "ksiazki", "ebooks",
+             "audiobooks", "audiobooki", "documents", "dokumenty", "backup", "backups", "kopie", "download",
+             "downloads", "pobrane", "torrent", "torrents", "software", "programy", "games", "gry", "system",
+             "temp", "tmp", "trash", "recycle", "lostfound", "timemachine", "podcast", "podcasts"}
+CONTAINER = re.compile(r"plex|media|library|biblioteka|multimedia|video|wideo|share|udzial|nas", re.I)
+SCAN_LIMIT = 3000       # folder names listed per disk at most
+
+
+def _norm(name):
+    import unicodedata
+    n = unicodedata.normalize("NFKD", (name or "").lower().replace("ł", "l"))
+    n = re.sub(r"[^a-z0-9]", "", "".join(ch for ch in n if not unicodedata.combining(ch)))
+    return n[:-1] if len(n) > 3 and n.endswith("s") else n
+
+
+def _cat_names(c):
+    names = {c.get("folder") or "", c.get("label") or ""} | set(ALIASES.get(c.get("id"), []))
+    names |= {n for n in c.get("names") or [] if isinstance(n, str)}
+    return {_norm(n) for n in names if _norm(n)}
+
+
+def _list_dirs(path, budget):
+    try:
+        with os.scandir(path) as it:
+            out = []
+            for e in it:
+                if budget[0] <= 0:
+                    break
+                budget[0] -= 1
+                if e.name.startswith(".") or e.name in SKIP or e.name == TMP_DIRNAME:
+                    continue
+                try:
+                    if e.is_dir(follow_symlinks=False):
+                        out.append(e)
+                except OSError:
+                    continue
+            return sorted(out, key=lambda e: e.name.lower())
+    except OSError:
+        return []
+
+
+def scan_disk(mount, categories, current=None):
+    """Library folders on a disk, recognised by their names (2 levels, names only).
+    Returns ({category id: {path, status}}, [other video folders as suggestions])."""
+    current = current or {}
+    if not mount or not os.path.isdir(mount):
+        raise FMError(_("Mount point not found"))
+    wanted = {c["id"]: _cat_names(c) for c in categories}
+    budget = [SCAN_LIMIT]
+    level0 = _list_dirs(mount, budget)
+    candidates = list(level0)        # (folders checked by name)
+    containers = [e for e in level0 if CONTAINER.search(e.name) and _norm(e.name) not in NOT_VIDEO]
+    if not any(_norm(e.name) in n for e in level0 for n in wanted.values()) and not containers:
+        containers = [e for e in level0 if _norm(e.name) not in NOT_VIDEO]   # e.g. /mnt/disk/Data/Movies
+    for c in containers:
+        sub = _list_dirs(c.path, budget)
+        candidates += sub
+        for e in sub:                # one more level only inside „Plex”-like folders (/Media/Plex/Movies)
+            if CONTAINER.search(e.name) and not any(_norm(e.name) in n for n in wanted.values()):
+                candidates += _list_dirs(e.path, budget)
+    hits = {}                        # category → [paths]
+    used = set()
+    for e in candidates:
+        n = _norm(e.name)
+        for cid, names in wanted.items():
+            if n in names:
+                hits.setdefault(cid, []).append(e.path)
+                used.add(e.path)
+    for cid, weak in WEAK_ALIASES.items():
+        if cid in wanted and cid not in hits:
+            for e in candidates:
+                if e.path not in used and _norm(e.name) in {_norm(w) for w in weak}:
+                    hits.setdefault(cid, []).append(e.path)
+                    used.add(e.path)
+    # several matches → the one next to the other category folders (e.g. all in „Plex 1T/”)
+    parents = {}
+    for paths in hits.values():
+        for p in paths:
+            parents[os.path.dirname(p)] = parents.get(os.path.dirname(p), 0) + 1
+    out = {}
+    for c in categories:
+        cid = c["id"]
+        cur = current.get(cid)
+        if cur and os.path.isdir(cur):
+            out[cid] = {"path": cur, "status": "ok"}
+            used.add(cur)
+            continue
+        options = sorted(hits.get(cid, []), key=lambda p: -parents.get(os.path.dirname(p), 0))
+        hit = options[0] if options else _rebase(cur, mount)
+        out[cid] = {"path": hit or cur or "", "status": "found" if hit else "missing"}
+    # other folders that look like video next to the library folders (e.g. „Movies02”, „Videos.4K”)
+    lib_parents = {os.path.dirname(v["path"]) for v in out.values() if v["status"] in ("ok", "found")}
+    extras = []
+    for e in candidates:
+        if e.path in used or _norm(e.name) in NOT_VIDEO or os.path.dirname(e.path) not in lib_parents:
+            continue
+        if CONTAINER.search(e.name) and os.path.dirname(e.path) == mount:
+            continue
+        guess = next((cid for cid, names in wanted.items() if any(_norm(e.name).startswith(n) for n in names if len(n) >= 4)), "")
+        extras.append({"name": e.name, "path": e.path, "guess": guess})
+        if len(extras) >= 8:
+            break
+    return out, extras
 
 
 def find_plex_dir(mount):
@@ -1088,59 +1195,9 @@ def _rebase(path, mount):
     return None
 
 
-def scan_paths(mount, categories, current=None, max_depth=3, max_dirs=4000):
-    """Szuka na dysku folderów pasujących do kategorii. Zwraca {id: {path, status}}:
-    status = ok (obecna ścieżka istnieje), found (znaleziono), missing (nie znaleziono)."""
-    current = current or {}
-    if not mount or not os.path.isdir(mount):
-        raise FMError(_("Mount point not found"))
-    wanted = {}
-    for c in categories:
-        names = {(c.get("folder") or "").strip().lower(), (c.get("label") or "").strip().lower()}
-        names |= set(ALIASES.get(c.get("id"), []))
-        names |= {n.strip().lower() for n in c.get("names") or [] if isinstance(n, str)}
-        wanted[c["id"]] = {n for n in names if n}
-    found, visited = {}, 0
-    queue = [(mount, 0)]
-    while queue and visited < max_dirs:
-        path, depth = queue.pop(0)
-        try:
-            entries = sorted(os.scandir(path), key=lambda e: e.name.lower())
-        except OSError:
-            continue
-        for e in entries:
-            if e.name.startswith(".") or e.name in SKIP or not e.is_dir(follow_symlinks=False):
-                continue
-            visited += 1
-            low = e.name.lower()
-            for cid, names in wanted.items():
-                if low in names and cid not in found:
-                    found[cid] = e.path
-            if depth + 1 < max_depth:
-                queue.append((e.path, depth + 1))
-    # preferujemy foldery leżące obok już znalezionych (np. wszystkie w „Plex 1T/”)
-    roots = [os.path.dirname(p) for p in list(current.values()) + list(found.values()) if p and os.path.isdir(p)]
-    out = {}
-    for c in categories:
-        cid = c["id"]
-        cur = current.get(cid)
-        if cur and os.path.isdir(cur):
-            out[cid] = {"path": cur, "status": "ok"}
-            continue
-        hit = None
-        for r in roots:
-            for n in wanted[cid]:
-                for entry in (os.listdir(r) if os.path.isdir(r) else []):
-                    if entry.lower() == n and os.path.isdir(os.path.join(r, entry)):
-                        hit = os.path.join(r, entry)
-                        break
-                if hit:
-                    break
-            if hit:
-                break
-        hit = hit or found.get(cid) or _rebase(cur, mount)
-        out[cid] = {"path": hit or cur or "", "status": "found" if hit else "missing"}
-    return out
+def scan_paths(mount, categories, current=None):
+    """„Update paths” in Settings: {category id: {path, status}} (see scan_disk)."""
+    return scan_disk(mount, categories, current)[0]
 
 
 def cleanup_tmp():

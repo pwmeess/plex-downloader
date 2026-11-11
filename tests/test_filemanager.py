@@ -123,6 +123,22 @@ class FMTests(unittest.TestCase):
         self.assertEqual(r["tv"]["status"], "found")
         self.assertEqual(r["kids"]["status"], "missing")
 
+    def test_scan_disk_names(self):
+        """Folder names only: plural / spelling variants, non-video folders skipped, odd names suggested."""
+        m = os.path.join(self.tmp, "scan3")
+        for d in ("Plex 512/Movies", "Plex 512/TV-Shows", "Plex 512/Home Videos", "Plex 512/Movies02",
+                  "Plex 512/Music/Artist/Album", "Zdjęcia/2020", "Muzyka"):
+            os.makedirs(os.path.join(m, d))
+        cats = [{"id": "movies", "label": "Filmy", "folder": "Movies"}, {"id": "tv", "label": "Seriale", "folder": "TV Shows"},
+                {"id": "kids", "label": "Dla dzieci", "folder": "Kids"},
+                {"id": "home", "label": "Domowe wideo", "folder": "Home Video"}]
+        res, extras = self.fm.scan_disk(m, cats)
+        self.assertEqual(res["movies"]["path"], os.path.join(m, "Plex 512", "Movies"))
+        self.assertEqual(res["tv"]["path"], os.path.join(m, "Plex 512", "TV-Shows"))
+        self.assertEqual(res["home"]["path"], os.path.join(m, "Plex 512", "Home Videos"))
+        self.assertEqual(res["kids"]["status"], "missing")
+        self.assertEqual([(x["name"], x["guess"]) for x in extras], [("Movies02", "movies")])
+
     def test_scan_paths_other_device(self):
         """A path copied from another Pi is moved onto this mount point; folder names from other disks count."""
         m = os.path.join(self.tmp, "scan2")

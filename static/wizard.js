@@ -23,7 +23,7 @@
   function saveW() { ss.set("plexdl.wizard", JSON.stringify(W)); }
   function freshW() {
     return { step: 0, type: "disks", disks: {}, sd: null, net: {}, manual: "", plexAuto: S.plex_autodiscover !== false,
-      servers: (S.plex_servers || []).map((p) => ({ name: p.name, host: p.host, port: p.port })), tmdbKey: null, create: false, createTouched: false };
+      servers: (S.plex_servers || []).map((p) => ({ name: p.name, host: p.host, port: p.port })), tmdbKey: null, create: false };
   }
   // categories can be renamed / added in the wizard (kept in W until Finish)
   const cats = () => W.cats || S.categories || [];
@@ -110,10 +110,13 @@
       // no category folder yet: suggest them inside the disk's „Plex” folder (if there is one)
       const root = found.length ? found[0].replace(/\/[^/]+$/, "") : (r.plex_dir || `${d.mount.replace(/\/$/, "")}/Plex`);
       d.root = root;
+      // folders found on the disk are used; when the disk has library folders, a category that is not
+      // there stays empty („not on this disk”, ↺ adds it); an empty disk gets suggestions for all categories
       cats().forEach((c) => {
         const x = r.result[c.id] || {};
-        if (!d.paths[c.id]) d.paths[c.id] = x.path || `${root}/${c.folder || c.label}`;
+        if (!d.paths[c.id]) d.paths[c.id] = x.status === "found" || x.status === "ok" ? x.path : found.length ? "" : `${root}/${c.folder || c.label}`;
       });
+      d.extras = r.extras || [];
     } catch (e) {
       cats().forEach((c) => { if (!d.paths[c.id]) d.paths[c.id] = `${d.mount.replace(/\/$/, "")}/Plex/${c.folder || c.label}`; });
     }
@@ -138,16 +141,10 @@
     if (!x) return ["", ""];
     if (x.problem && x.exists) return ["bad", t("no write permission – fix: sudo chown -R {user}: \"{path}\"", { user: S.system_user || "pi", path: x.path })];
     if (x.problem && !x.exists && x.problem !== t("Folder does not exist")) return ["bad", x.problem];
-    if (!x.exists) return [W.create ? "warn" : "bad", W.create ? t("will be created") : t("Folder does not exist")];
+    if (!x.exists) return ["warn", W.create ? t("will be created") : t("does not exist – left out")];
     return ["ok", "✓ " + t("OK") + (x.free != null ? " · " + t("Free: {free}", { free: fmtSize(x.free) }) : "")];
   }
   function paintStatus() {
-    // „Create missing folders”: ticked by itself only when something is missing (until the user decides)
-    const missingNow = allPaths().some((x) => status[x] && !status[x].exists);
-    if (!W.createTouched && W.create !== missingNow) {
-      W.create = missingNow; saveW();
-      $$(".wz-create-row input").forEach((cb) => { cb.checked = W.create; });
-    }
     $$(".wz-path").forEach((row) => {
       const inp = $("input", row), m = $(".wz-st", row);
       if (!inp || !m) return;   // disk name row has no status
@@ -165,13 +162,10 @@
   }
   const suggest = (d, c) => `${rootOf(d)}/${c.folder || c.label}`;
   // a change in the wizard that needs new folders ticks „Create missing folders” and highlights it
+  // a change that needs new folders only highlights „Create missing folders” – it is never ticked by itself
   function wantCreate() {
-    W.create = true; saveW();
     setTimeout(() => {
-      $$(".wz-create-row").forEach((r) => {
-        const cb = $("input", r); if (cb) cb.checked = true;
-        r.classList.remove("flash"); void r.offsetWidth; r.classList.add("flash");
-      });
+      $$(".wz-create-row").forEach((r) => { r.classList.remove("flash"); void r.offsetWidth; r.classList.add("flash"); });
     }, 50);
   }
   function rerender() { render(); scheduleCheck(); }
@@ -197,17 +191,18 @@
     else if (changed) saveW();
   }
   // name, folder and type of a category (rename or new)
-  async function catDialog(c) {
+  async function catDialog(c, preset) {
     const body = el("div", "mkdir-box");
     body.appendChild(el("p", null, c ? t("The new name applies to all disks. Folders that do not exist yet get the new folder name.")
       : t("A new category is a new button on the download page and in the File manager, e.g. Concerts.")));
-    const l1 = el("label", "small-label", t("Name")); const name = el("input", "input"); name.maxLength = 40; name.value = c ? c.label : "";
-    const l2 = el("label", "small-label", t("Folder name")); const folder = el("input", "input mono"); folder.maxLength = 60; folder.value = c ? (c.folder || c.label) : "";
+    const l1 = el("label", "small-label", t("Name")); const name = el("input", "input"); name.maxLength = 40; name.value = c ? c.label : preset ? preset.name : "";
+    const l2 = el("label", "small-label", t("Folder name")); const folder = el("input", "input mono"); folder.maxLength = 60; folder.value = c ? (c.folder || c.label) : preset ? preset.name : "";
+    if (preset) folder.disabled = true;   // an existing folder is used as it is
     const l3 = el("label", "small-label", t("Type"));
     const kind = el("select", "input");
     Object.keys(KIND).forEach((k) => { const o = el("option", null, KIND[k]()); o.value = k; kind.appendChild(o); });
-    kind.value = c ? c.kind : "movie";
-    let folderTouched = !!c;
+    kind.value = c ? c.kind : preset && preset.kind ? preset.kind : "movie";
+    let folderTouched = !!c || !!preset;
     folder.addEventListener("input", () => { folderTouched = true; });
     name.addEventListener("input", () => { if (!folderTouched) folder.value = name.value.trim(); });
     body.append(l1, name, l2, folder, l3, kind);
@@ -243,14 +238,17 @@
     });
     wantCreate(); rerender();
   }
-  async function addCat(d) {
-    const v = await catDialog(null);
+  async function addCat(d, preset) {
+    const v = await catDialog(null, preset);
     if (!v) return;
     if (!W.cats) W.cats = JSON.parse(JSON.stringify(S.categories || []));
     const c = Object.assign({ id: uniqueId(slug(v.label)), tmdb: v.kind !== "other" }, v);
     W.cats.push(c);
-    d.paths[c.id] = suggest(d, c);
-    wantCreate(); rerender();
+    if (preset && preset.path) {
+      d.paths[c.id] = preset.path;
+      d.extras = (d.extras || []).filter((x) => x.path !== preset.path);
+    } else { d.paths[c.id] = suggest(d, c); wantCreate(); }
+    saveW(); rerender();
   }
   function pathRows(d) {
     const box = el("div", "wz-paths");
@@ -279,6 +277,20 @@
     const add = el("button", "btn-ghost small wz-add-cat", "+ " + t("Add category")); add.type = "button";
     add.addEventListener("click", () => addCat(d));
     box.appendChild(add);
+    // other folders that look like video (e.g. „Movies02”) – offered as a new category, never added by itself
+    if ((d.extras || []).length) {
+      const ex = el("div", "wz-extras");
+      ex.appendChild(el("span", "muted", t("Other folders on this disk:")));
+      d.extras.forEach((x) => {
+        const b = el("button", "btn-soft small"); b.type = "button"; b.title = x.path;
+        b.textContent = "+ " + x.name;
+        const kind = x.guess ? (cats().find((c) => c.id === x.guess) || {}).kind : "";
+        b.addEventListener("click", () => addCat(d, { name: x.name, path: x.path, kind }));
+        ex.appendChild(b);
+      });
+      ex.appendChild(info(t("Folders found next to your library folders that do not match a category. Click one to add it as a new category with this folder (e.g. Movies02 as “Movies 2”). Music and photo folders are skipped.")));
+      box.appendChild(ex);
+    }
     return box;
   }
   function diskCard(d, m, removable) {
@@ -307,7 +319,7 @@
   function createBox() {
     const lab = el("label", "check wz-create");
     const cb = el("input"); cb.type = "checkbox"; cb.checked = W.create;
-    cb.addEventListener("change", () => { W.create = cb.checked; W.createTouched = true; saveW(); paintStatus(); });
+    cb.addEventListener("change", () => { W.create = cb.checked; saveW(); paintStatus(); });
     lab.append(cb, document.createTextNode(" " + t("Create missing folders when finishing")));
     const row = el("div", "wz-create-row");
     row.append(lab, info(t("Missing folders (status “will be created”) are created when you click Finish. Untick it if you prefer to create them yourself.")));
@@ -637,12 +649,19 @@
     W.skipDisks = false;   // „Next” on the disks step = use the selected disks
     const disks = chosenDisks();
     if (!disks.length) { toast(t("Select at least one disk."), true); return false; }
-    if (disks.some((d) => !Object.values(d.paths).some(Boolean))) { toast(t("Every selected disk needs at least one category folder."), true); return false; }
     const dup = disks.find((d) => { const v = Object.values(d.paths).filter(Boolean); return new Set(v).size !== v.length; });
     if (dup) { toast(t("Two categories use the same folder on {disk}.", { disk: dup.mount }), true); return false; }
-    const bad = allPaths().map((x) => status[x]).filter((x) => x && x.problem && (x.exists || x.problem !== t("Folder does not exist")));
-    if (bad.length) { toast(bad[0].path + ": " + (bad[0].problem || ""), true); return false; }
-    if (!W.create && allPaths().some((x) => status[x] && !status[x].exists)) { toast(t("Some folders do not exist – create them or tick “Create missing folders”."), true); return false; }
+    // enough to continue: one usable Movies or TV Shows folder on any disk (or one that will be created);
+    // folders that do not exist and will not be created are simply left out
+    const main = cats().filter((c) => c.kind === "movie" || c.kind === "tv").map((c) => c.id);
+    const usable = disks.some((d) => main.some((id) => {
+      const x = status[d.paths[id]];
+      return d.paths[id] && x && ((x.exists && !x.problem) || (!x.exists && W.create));
+    }));
+    if (!usable) {
+      toast(t("No Movies or TV Shows folder was found. Tick “Create missing folders”, enter a folder by hand – or use “Skip – set up disks later”."), true);
+      return false;
+    }
     return true;
   }
   async function finish(btn) {
@@ -656,8 +675,12 @@
           if (r.problems.length) { toast(r.problems[0], true); btn.disabled = false; return; }
         }
       }
+      // only folders that exist (or were just created) are saved; the others mean „not on this disk”
+      const okPath = (x) => x && (W.create || (status[x] && status[x].exists && !status[x].problem));
+      const clean = (paths) => Object.fromEntries(Object.entries(paths).filter(([, x]) => okPath(x)));
       await api("/api/wizard/finish", {
-        disks: disks.map((d) => ({ label: d.label || baseName(d.mount), subtitle: "", mount: d.mount, paths: d.paths })),
+        disks: disks.map((d) => ({ label: d.label || baseName(d.mount), subtitle: "", mount: d.mount, paths: clean(d.paths) }))
+          .filter((d) => Object.keys(d.paths).length),
         categories: W.cats || undefined, options: W.opts || undefined,
         plex_servers: W.servers.filter((s) => s.host), plex_autodiscover: W.plexAuto,
         tmdb_api_key: W.tmdbKey ? W.tmdbKey : null, require_mount: true, skip_disks: !!W.skipDisks,

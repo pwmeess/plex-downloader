@@ -642,7 +642,7 @@ def api_wizard_scan():
         c["names"] = [n for n in c["names"] if n]
 
     def run():
-        res = fm.scan_paths(mount, cats)
+        res, extras = fm.scan_disk(mount, cats)
         best, best_hits = None, 0
         for h in hints:
             hits = 0
@@ -654,7 +654,7 @@ def api_wizard_scan():
                         res[c["id"]] = {"path": p, "status": "found"}
             if hits > best_hits:
                 best, best_hits = h, hits
-        return {"result": res, "plex_dir": fm.find_plex_dir(mount),
+        return {"result": res, "extras": extras, "plex_dir": fm.find_plex_dir(mount),
                 "match": str(best.get("label") or "")[:16] if best else ""}
     return fm_call(run)
 

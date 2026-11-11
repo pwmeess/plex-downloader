@@ -473,7 +473,6 @@
  "Create missing folders when finishing": "Utwórz brakujące foldery przy zakończeniu",
  "Disks and folders": "Dyski i foldery",
  "Every disk needs a folder for each category (Movies, TV Shows…). Existing folders are found automatically; missing ones can be created. Leave a field empty if a category should not be on that disk.": "Każdy dysk potrzebuje folderu dla każdej kategorii (Filmy, Seriale…). Istniejące foldery są wyszukiwane automatycznie, brakujące można utworzyć. Zostaw pole puste, jeśli kategoria ma nie być na tym dysku.",
- "Every selected disk needs at least one category folder.": "Każdy wybrany dysk potrzebuje folderu co najmniej dla jednej kategorii.",
  "External disks": "Dyski zewnętrzne",
  "Finish": "Zakończ",
  "Finishing the wizard replaces your disks, Plex servers and TMDB key (and categories, if you change them). Your current settings are kept as a restore point (Settings → Backups).": "Zakończenie kreatora zastąpi dyski, serwery Plex i klucz TMDB (oraz kategorie, jeśli je zmienisz). Obecne ustawienia zostaną zachowane jako punkt przywracania (Ustawienia → Kopie zapasowe).",
@@ -511,7 +510,6 @@
  "Share the Plex folder over SMB if you want to copy files from your computer – see the guide.": "Udostępnij folder Plex przez SMB, jeśli chcesz kopiować pliki z komputera – zobacz instrukcję.",
  "Show disks and their mount points": "Pokaż dyski i ich punkty montowania",
  "Skip": "Pomiń",
- "Some folders do not exist – create them or tick “Create missing folders”.": "Niektóre foldery nie istnieją – utwórz je albo zaznacz „Utwórz brakujące foldery”.",
  "Summary": "Podsumowanie",
  "TMDB key": "Klucz TMDB",
  "TMDB key (optional)": "Klucz TMDB (opcjonalnie)",
@@ -697,5 +695,9 @@
  "Loading the setup wizard…": "Wczytuję kreator konfiguracji…",
  "Looking for library folders…": "Szukam folderów biblioteki…",
  "Missing folders (status “will be created”) are created when you click Finish. Untick it if you prefer to create them yourself.": "Brakujące foldery (status „zostanie utworzony”) powstaną po kliknięciu Zakończ. Odznacz, jeśli wolisz założyć je sam.",
- "⚙ rename a category · ✕ not on this disk · + add a category. Disk names and their order can be changed later in Settings.": "⚙ zmiana nazwy kategorii · ✕ nie na tym dysku · + dodaj kategorię. Nazwy dysków i ich kolejność zmienisz później w Ustawieniach."
+ "⚙ rename a category · ✕ not on this disk · + add a category. Disk names and their order can be changed later in Settings.": "⚙ zmiana nazwy kategorii · ✕ nie na tym dysku · + dodaj kategorię. Nazwy dysków i ich kolejność zmienisz później w Ustawieniach.",
+ "Folders found next to your library folders that do not match a category. Click one to add it as a new category with this folder (e.g. Movies02 as “Movies 2”). Music and photo folders are skipped.": "Foldery obok folderów biblioteki, które nie pasują do żadnej kategorii. Kliknij, aby dodać nową kategorię z tym folderem (np. Movies02 jako „Filmy 2”). Foldery z muzyką i zdjęciami są pomijane.",
+ "No Movies or TV Shows folder was found. Tick “Create missing folders”, enter a folder by hand – or use “Skip – set up disks later”.": "Nie znaleziono folderu Filmy ani Seriale. Zaznacz „Utwórz brakujące foldery”, wpisz folder ręcznie albo użyj „Pomiń – skonfiguruję dyski później”.",
+ "Other folders on this disk:": "Inne foldery na tym dysku:",
+ "does not exist – left out": "nie istnieje – zostanie pominięty"
 }
