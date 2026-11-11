@@ -43,7 +43,7 @@ Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.3.0** · BETA: **1.4.0
 ## Do poprawy
 
 Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegóły w [CHANGELOG.md](CHANGELOG.md)). Zostało:
-- [ ] **Tagi wersji na GitHubie:** `v1.2.5`, `v1.2.6`, `v1.2.6-beta` i `v1.2.8-beta` istnieją tylko lokalnie (wysłanie tagów jest blokowane w środowisku Claude). Dodać ręcznie w GitHub → Releases (Draft a new release → tag → gałąź `main` albo `beta`).
+- [x] **Tagi wersji na GitHubie:** tagi `v1.2.5` … `v1.4.0-beta0` są na GitHubie; wydania opublikowane dla 1.3.0 (stabilna) i 1.4.0-beta0 (pre-release).
 
 ## Strona demo (Netlify)
 
@@ -95,7 +95,7 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
 
 **Wybór wersji w `fix.sh` (zmiana sposobu wydawania w repozytorium)**
 - [x] Linie stabilna (`main`) i BETA (`beta`), instalacja i wyjście z BETA w `fix.sh` (od 1.2.5 / 1.2.6-beta).
-- [ ] Każde wydanie od **1.2.5** ma tag git `vX.Y.Z` i wydanie na GitHubie z listą zmian.
+- [x] Każde wydanie od **1.2.5** ma tag git `vX.Y.Z`; od 1.3.0 każde dostaje też wydanie na GitHubie z listą zmian.
 - [x] Plik `CHANGELOG.md` z historią wersji (od 1.2.6).
 - [x] Nowa opcja 8 w `fix.sh`: „Zainstaluj inną wersję” – lista stabilnych wersji od 1.2.5 z krótkim opisem (`releases.txt`, działa bez tagów); kopia `config.json` i kopii zapasowych do `.version-snapshots`, przełączenie kodu, odbudowa środowiska i restart usługi.
 - [x] Panel i `update.sh` wiedzą, że zainstalowana jest wersja przypięta (starsza). Dostępny jest powrót do najnowszej. (nagłówek `fix.sh` pokazuje „starsza wersja”, panel informuje o najnowszej stabilnej, `update.sh` / opcja 1 wracają).

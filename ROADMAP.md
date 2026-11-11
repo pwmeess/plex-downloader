@@ -45,7 +45,7 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 ## To fix
 
 All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
-- [ ] **Version tags on GitHub:** `v1.2.5`, `v1.2.6`, `v1.2.6-beta` and `v1.2.8-beta` exist only locally (pushing tags is blocked in Claude's environment). Add them by hand in GitHub → Releases (Draft a new release → tag → branch `main` or `beta`).
+- [x] **Version tags on GitHub:** tags `v1.2.5` … `v1.4.0-beta0` are on GitHub; releases published for 1.3.0 (stable) and 1.4.0-beta0 (pre-release).
 
 ## Demo website (Netlify)
 
@@ -98,7 +98,7 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
 **Choosing a version in `fix.sh`**
 - [x] Stable (`main`) and BETA (`beta`) lines; installing and leaving BETA in `fix.sh` (since 1.2.5 / 1.2.6-beta).
 - [x] `CHANGELOG.md` (since 1.2.6).
-- [ ] Every release since **1.2.5** has a git tag `vX.Y.Z` and a GitHub release with notes.
+- [x] Every release since **1.2.5** has a git tag `vX.Y.Z`; from 1.3.0 on each one also gets a GitHub release with notes.
 - [x] New `fix.sh` option 8 "Install another version": list of stable versions since 1.2.5 with a short description (`releases.txt`, so it works without tags); copies `config.json` and the backups to `.version-snapshots`, switches the code, rebuilds the environment and restarts the service.
 - [x] Panel and `update.sh` know when an older (pinned) version is installed; one step back to the latest. (the `fix.sh` header shows “older version”, the panel announces the newest stable, `update.sh` / option 1 go back).
 - [x] Settings compatibility: newer versions migrate `config.json` automatically, older versions keep unknown keys; going back keeps the current settings, a copy from before the switch is in `.version-snapshots`.
