@@ -24,6 +24,25 @@ if [ "$(id -u)" -eq 0 ]; then
   exit 1
 fi
 
+# the newest fix.sh / update.sh of this channel are used with every version (also older ones)
+tools_refresh() {
+  [ -n "${PLEXDL_TOOLS_FRESH:-}" ] && return 0
+  command -v git >/dev/null 2>&1 || return 0
+  local br f changed=0
+  br="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"; [ "$br" = "beta" ] || br="main"
+  timeout 20 git fetch -q origin "+refs/heads/$br:refs/remotes/origin/$br" >/dev/null 2>&1 || return 0
+  for f in fix.sh update.sh; do
+    git cat-file -e "origin/$br:$f" 2>/dev/null || continue
+    if ! git show "origin/$br:$f" 2>/dev/null | cmp -s - "$APP_DIR/$f"; then
+      git show "origin/$br:$f" > "$APP_DIR/$f.new" 2>/dev/null && chmod +x "$APP_DIR/$f.new" \
+        && mv -f "$APP_DIR/$f.new" "$APP_DIR/$f" && changed=1
+    fi
+  done
+  [ $changed -eq 1 ] && PLEXDL_TOOLS_FRESH=1 exec "$APP_DIR/fix.sh" "$@"
+  return 0
+}
+tools_refresh "$@"
+
 # ---------------------------------------------------------------- menu: whiptail window or plain text
 # Same numbers in both, so "fix.sh → option 4" in the guides is always right.
 UI="text"
@@ -36,7 +55,7 @@ TITLE="Plex Downloader"
 # frame lines): one explicit colour set, and UTF-8 line drawing instead of the terminal's ACS characters.
 if [ "$UI" = "whiptail" ]; then
   export NCURSES_NO_UTF8_ACS=1
-  : "${NEWT_COLORS:=root=white,blue roottext=white,blue helpline=white,blue window=black,lightgray border=black,lightgray shadow=black,black title=red,lightgray textbox=black,lightgray listbox=black,lightgray sellistbox=black,lightgray actlistbox=white,red actsellistbox=white,red button=black,lightgray actbutton=white,red compactbutton=black,lightgray entry=black,lightgray disentry=gray,lightgray checkbox=black,lightgray actcheckbox=white,red emptyscale=,gray fullscale=,red}"
+  : "${NEWT_COLORS:=root=white,blue roottext=white,blue helpline=white,blue window=black,lightgray border=black,lightgray shadow=black,black title=red,lightgray textbox=black,lightgray listbox=black,lightgray sellistbox=black,lightgray actlistbox=white,red actsellistbox=white,red button=white,red actbutton=white,red compactbutton=black,lightgray entry=black,lightgray disentry=gray,lightgray checkbox=black,lightgray actcheckbox=white,red emptyscale=,gray fullscale=,red}"
   export NEWT_COLORS
 fi
 
@@ -94,6 +113,7 @@ fetch_all() {
 
 # switch_code <branch> – code only; config.json, backups/, logs/ are not tracked by git
 switch_code() {
+  git checkout -q -- fix.sh update.sh 2>/dev/null || true
   git checkout -q -B "$1" "origin/$1" && git branch -q --set-upstream-to="origin/$1" "$1" 2>/dev/null
   git reset -q --hard "origin/$1"
 }
@@ -414,16 +434,19 @@ version_menu() {
   [ $ON_BETA -eq 1 ] && note=$'\n'"$(L "This also leaves BETA – your current settings are kept." "To także wyjście z BETA – obecne ustawienia zostają.")"
   ask_yes_no "$(L "Install Plex Downloader" "Zainstalować Plex Downloader") $target ($(L "now" "teraz") $CUR)?"$'\n'"$(L "Your settings are kept and copied to .version-snapshots first. Movies are not touched. Back to the latest version: option 1 or ./update.sh." "Ustawienia zostają, a ich kopia trafia najpierw do .version-snapshots. Filmy nie są ruszane. Powrót do najnowszej wersji: opcja 1 albo ./update.sh.")$note" \
     || { echo "  $(L "Cancelled – nothing was changed." "Anulowano – nic nie zostało zmienione.")"; return 0; }
+  local tools; tools="$(mktemp -d)"; cp -p "$APP_DIR/fix.sh" "$APP_DIR/update.sh" "$tools/" 2>/dev/null
   local snap="$VSNAP/$(date +%Y%m%d-%H%M)-$CUR"
   mkdir -p "$snap"
   [ -f config.json ] && cp -p config.json "$snap/"
   [ -d backups ] && cp -rp backups "$snap/"
   c_ok "$(L "Settings copied to" "Kopia ustawień:") $snap"
   stop_service
+  git checkout -q -- fix.sh update.sh 2>/dev/null || true
   git checkout -q -B main "$ref" && git branch -q --set-upstream-to=origin/main main 2>/dev/null
   git reset -q --hard "$ref" || { c_warn "$(L "Switching failed." "Przełączenie nie powiodło się.")"; return 1; }
+  cp -p "$tools/fix.sh" "$tools/update.sh" "$APP_DIR/" 2>/dev/null; rm -rf "$tools"
   # newest stable (the code may differ only in releases.txt) → not an „older version”
-  if git diff --quiet HEAD origin/main -- . ':(exclude)releases.txt' 2>/dev/null; then rm -f "$PIN"; else echo "$target" > "$PIN"; fi
+  if git diff --quiet HEAD origin/main -- . ':(exclude)releases.txt' ':(exclude)fix.sh' ':(exclude)update.sh' 2>/dev/null; then rm -f "$PIN"; else echo "$target" > "$PIN"; fi
   "$APP_DIR/venv/bin/pip" install -q -r requirements.txt
   sudo systemctl restart "$SERVICE" && sleep 2
   c_ok "$(L "Installed" "Zainstalowano"): $CUR → $(cat VERSION)  ·  $(panel_url)"
