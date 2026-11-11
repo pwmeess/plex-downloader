@@ -382,9 +382,57 @@ modules_menu() {
   done
 }
 
+# ---------------------------------------------------------------- install another (older) stable version
+PIN="$APP_DIR/.pinned-version"
+VSNAP="$APP_DIR/.version-snapshots"
+
+version_menu() {
+  fetch_all || return 1
+  local list
+  list="$(git show origin/main:releases.txt 2>/dev/null || git show origin/beta:releases.txt 2>/dev/null)" || true
+  list="$(printf '%s\n' "$list" | grep -v '^#' | grep '|' || true)"
+  if [ -z "$list" ]; then
+    c_warn "$(L "The list of versions is not available right now." "Lista wersji jest teraz niedostępna.")"
+    return 1
+  fi
+  local args=() vers=() commits=() i=1 ver commit en pl desc
+  while IFS='|' read -r ver commit en pl; do
+    desc="$(L "$en" "$pl")"
+    [ "$ver" = "$CUR" ] && desc="$desc ($(L "installed" "zainstalowana"))"
+    args+=("$i" "$ver – $desc"); vers+=("$ver"); commits+=("$commit"); i=$((i + 1))
+  done <<< "$list"
+  args+=("$i" "$(L "Back" "Powrót")")
+  local c; c="$(menu "$(L "Install another stable version" "Zainstaluj inną wersję stabilną") · $(L "now" "teraz"): $CUR" "${args[@]}")"
+  { [ -z "$c" ] || ! [[ "$c" =~ ^[0-9]+$ ]] || [ "$c" -ge "$i" ] || [ "$c" -lt 1 ]; } && return 1
+  local target="${vers[$((c - 1))]}" ref="${commits[$((c - 1))]}"
+  [ "$UI" = "whiptail" ] && { clear 2>/dev/null || true; }
+  if ! git cat-file -e "$ref^{commit}" 2>/dev/null; then
+    c_warn "$(L "Version $target was not found on GitHub." "Nie znaleziono wersji $target na GitHubie.")"
+    return 0
+  fi
+  local note=""
+  [ $ON_BETA -eq 1 ] && note=$'\n'"$(L "This also leaves BETA – your current settings are kept." "To także wyjście z BETA – obecne ustawienia zostają.")"
+  ask_yes_no "$(L "Install Plex Downloader" "Zainstalować Plex Downloader") $target ($(L "now" "teraz") $CUR)?"$'\n'"$(L "Your settings are kept and copied to .version-snapshots first. Movies are not touched. Back to the latest version: option 1 or ./update.sh." "Ustawienia zostają, a ich kopia trafia najpierw do .version-snapshots. Filmy nie są ruszane. Powrót do najnowszej wersji: opcja 1 albo ./update.sh.")$note" \
+    || { echo "  $(L "Cancelled – nothing was changed." "Anulowano – nic nie zostało zmienione.")"; return 0; }
+  local snap="$VSNAP/$(date +%Y%m%d-%H%M)-$CUR"
+  mkdir -p "$snap"
+  [ -f config.json ] && cp -p config.json "$snap/"
+  [ -d backups ] && cp -rp backups "$snap/"
+  c_ok "$(L "Settings copied to" "Kopia ustawień:") $snap"
+  stop_service
+  git checkout -q -B main "$ref" && git branch -q --set-upstream-to=origin/main main 2>/dev/null
+  git reset -q --hard "$ref" || { c_warn "$(L "Switching failed." "Przełączenie nie powiodło się.")"; return 1; }
+  if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ]; then rm -f "$PIN"; else echo "$target" > "$PIN"; fi
+  "$APP_DIR/venv/bin/pip" install -q -r requirements.txt
+  sudo systemctl restart "$SERVICE" && sleep 2
+  c_ok "$(L "Installed" "Zainstalowano"): $CUR → $(cat VERSION)  ·  $(panel_url)"
+  return 0
+}
+
 # ---------------------------------------------------------------- main menu
 HEAD_TEXT="$(L "Repair menu" "Menu naprawy") · $CUR"
 [ $ON_BETA -eq 1 ] && HEAD_TEXT="$HEAD_TEXT · $(L "BETA version" "wersja BETA")"
+[ -f "$APP_DIR/.pinned-version" ] && [ "$(cat "$APP_DIR/.pinned-version")" = "$CUR" ] && HEAD_TEXT="$HEAD_TEXT · $(L "older version (newest: option 1)" "starsza wersja (najnowsza: opcja 1)")"
 HEAD_TEXT="$HEAD_TEXT"$'\n'"$(L "Your movies and TV shows are never touched." "Twoje filmy i seriale nie są nigdy ruszane.")"
 
 while true; do
@@ -396,14 +444,19 @@ while true; do
     5 "$(L "Leave BETA (back to stable)" "Wyjście z BETA (powrót do stabilnej)")" \
     6 "$(L "Server: status, stop / start, restart" "Serwer: status, wstrzymaj / uruchom, restart")" \
     7 "$(L "Additional modules: Plex, SMB, ffmpeg, VPN" "Moduły dodatkowe: Plex, SMB, ffmpeg, VPN")" \
-    8 "$(L "Uninstall" "Odinstaluj")" \
-    9 "$(L "Cancel" "Anuluj")")"
+    8 "$(L "Install another version" "Zainstaluj inną wersję")" \
+    9 "$(L "Uninstall" "Odinstaluj")" \
+    10 "$(L "Cancel" "Anuluj")")"
   if [ "$opt" = "6" ]; then
     server_menu && exit 0
     continue
   fi
   if [ "$opt" = "7" ]; then
     modules_menu && exit 0
+    continue
+  fi
+  if [ "$opt" = "8" ]; then
+    version_menu && exit 0
     continue
   fi
   break
@@ -425,7 +478,7 @@ case "$opt" in
       exit 0
     fi
     echo "  $(L "Available:" "Dostępna:") $NEW"
-    "$APP_DIR/update.sh"
+    "$APP_DIR/update.sh" && rm -f "$APP_DIR/.pinned-version"
     ;;
   2)
     fetch_all || exit 1
@@ -491,7 +544,7 @@ case "$opt" in
     rm -rf "$SNAP" "$APP_DIR/venv"
     run_setup
     ;;
-  8)
+  9)
     confirm "$(L "The service will be stopped and removed from autostart. Uninstall Plex Downloader?" "Usługa zostanie zatrzymana i usunięta z autostartu. Odinstalować Plex Downloader?")" || { echo "  $(L "Cancelled." "Anulowano.")"; exit 0; }
     sudo systemctl disable --now "$SERVICE" 2>/dev/null || true
     sudo rm -f "$UNIT"

@@ -15,6 +15,7 @@ fi
 OLD="$(cat VERSION 2>/dev/null || echo '?')"
 echo "Downloading the latest stable version from GitHub…"
 git pull --ff-only origin main
+rm -f "$APP_DIR/.pinned-version"   # an older version chosen in fix.sh → back to the newest
 "$APP_DIR/venv/bin/pip" install -q -r requirements.txt
 sudo systemctl restart plex-downloader
 echo "Updated: $OLD → $(cat VERSION)"

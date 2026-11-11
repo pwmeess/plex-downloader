@@ -116,8 +116,15 @@ def load():
         cfg = copy.deepcopy(DEFAULTS)
         cfg.update(data)
         if "wizard_done" not in data:
-            # istniejąca instalacja sprzed 1.3 jest już skonfigurowana – kreator nie startuje sam
-            cfg["wizard_done"] = os.path.exists(CONFIG_PATH)
+            # an installation from before 1.3 counts as set up only when at least one of its library
+            # folders exists here; a fresh stable install switched to BETA (example paths) gets the wizard
+            def _has_library():
+                for d in cfg.get("disks") or []:
+                    for p in (d.get("paths") or {}).values():
+                        if p and os.path.isdir(p):
+                            return True
+                return False
+            cfg["wizard_done"] = os.path.exists(CONFIG_PATH) and _has_library()
         before = json.dumps(data, sort_keys=True)
         normalize(cfg)
         changed = not os.path.exists(CONFIG_PATH)
