@@ -651,7 +651,7 @@
   });
 
   // ------------------------------------------------------------------ VPN (Tailscale)
-  let vpnPoll = null, vpnUrl = null;
+  let vpnPoll = null, vpnUrl = null, vpnHttpsWas = false, httpsNote = null;
   function stopVpnPoll() { clearTimeout(vpnPoll); vpnPoll = null; }
   dlg.addEventListener("close", stopVpnPoll);
   $("#vpnRefresh").addEventListener("click", () => loadVpn(true));
@@ -697,6 +697,56 @@
     catch (e) { toast(e.message, true); btn.disabled = false; }
   }
 
+  async function setHttps(on, btn) {
+    btn.disabled = true; btn.textContent = on ? t("Switching on…") : t("Switching off…");
+    let r;
+    try { r = await api("/api/vpn/https", { on }); }
+    catch (e) { toast(e.message, true); btn.disabled = false; return; }
+    httpsNote = r.ok ? null : r;
+    if (r.ok && on) toast(t("HTTPS is on. The first opening can take a few seconds while Tailscale gets the certificate."));
+    if (r.ok && !on) toast(t("HTTPS in the VPN is off."));
+    await loadVpn(true);
+  }
+
+  function httpsBox(v) {
+    const h = v.https || {};
+    const box = el("div", "vpn-https");
+    const head = el("h3", null, t("Secure connection (HTTPS) in the VPN") + " ");
+    const tip = el("button", "info-i", "i"); tip.type = "button";
+    tip.dataset.tip = t("Tailscale issues a real certificate for the panel's name in your VPN, so the browser shows a padlock instead of “Not secure”. Only your devices in Tailscale can open this address – nothing is opened on the internet.\n\nThe connection over VPN is encrypted by Tailscale either way; HTTPS removes the browser warning and lets the browser remember the password safely.\n\nIn the home network the panel stays at its usual http address.");
+    head.append(tip);
+    box.append(head);
+    const acts = el("div", "vpn-actions");
+    if (h.on) {
+      box.append(stateBox("", t("HTTPS is on"), h.url));
+      const off = el("button", "btn-soft small", t("Switch HTTPS off")); off.type = "button";
+      off.addEventListener("click", () => setHttps(false, off));
+      acts.append(off);
+    } else if (h.other) {
+      box.append(el("div", "vpn-warn", t("Port 443 in Tailscale on this Raspberry Pi is already used for something else (tailscale serve). The panel does not change it.")));
+      return box;
+    } else {
+      box.append(el("p", null, t("The panel over VPN now uses http. Switch HTTPS on to get an address with a padlock:") + " "),
+        el("p", "vpn-mono", "https://" + (v.dns_name || "…")));
+      const on = el("button", "btn-accent", t("Switch HTTPS on")); on.type = "button";
+      on.addEventListener("click", () => setHttps(true, on));
+      acts.append(on);
+    }
+    box.append(acts);
+    const n = httpsNote;
+    if (n && n.enable_url) {
+      box.append(el("p", null, t("First, allow HTTPS certificates in your Tailscale account (once, takes a moment). Open the link, confirm, then click “Switch HTTPS on” again.")));
+      const a = el("a", "btn-soft small", t("Allow HTTPS in Tailscale")); a.href = n.enable_url; a.target = "_blank"; a.rel = "noopener";
+      box.append(a);
+    } else if (n && n.denied) {
+      box.append(el("p", null, t("The panel is not allowed to change Tailscale settings yet. Run this once on the Raspberry Pi, then try again:")));
+      box.append(cmdBox(`sudo tailscale set --operator=${v.system_user || "pi"}`));
+    } else if (n && n.error) {
+      box.append(el("div", "vpn-warn", n.error));
+    }
+    return box;
+  }
+
   function renderVpn(v) {
     const body = $("#vpnBody");
     const out = [];
@@ -728,17 +778,20 @@
       add(t("Account"), v.account);
       add(t("Tailscale version"), v.version);
       out.push(kv);
+      out.push(httpsBox(v));
 
       if (v.urls && v.urls.length) {
         out.push(el("h3", null, t("Open the panel over VPN")));
-        if (!vpnUrl || !v.urls.some((u) => u.url === vpnUrl)) vpnUrl = v.urls[0].url;
+        const hasHttps = v.urls.some((u) => u.kind === "https");
+        if (!vpnUrl || !v.urls.some((u) => u.url === vpnUrl) || (hasHttps && !vpnHttpsWas)) vpnUrl = v.urls[0].url;
+        vpnHttpsWas = hasHttps;
         const wrap = el("div", "vpn-open");
         const left = el("div", "vpn-urls");
         const qrBox = el("div", "vpn-qrbox");
         const showQr = () => qrBox.replaceChildren(qrImg(vpnUrl, t("QR code")), el("div", "vpn-qr-cap", t("Scan with your phone (Tailscale app switched on)")));
         v.urls.forEach((u) => {
           const row = el("button", "vpn-url" + (u.url === vpnUrl ? " on" : "")); row.type = "button";
-          row.append(el("code", null, u.url), el("span", "k", u.kind === "ip" ? t("by address") : t("by name")));
+          row.append(el("code", null, u.url), el("span", "k", u.kind === "https" ? t("secure (HTTPS)") : u.kind === "ip" ? t("by address") : t("by name")));
           const cp = el("span", "icon-btn copy"); cp.title = t("Copy"); cp.appendChild(icon("copy"));
           cp.addEventListener("click", async (e) => {
             e.stopPropagation();

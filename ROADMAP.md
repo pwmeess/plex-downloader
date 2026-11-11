@@ -112,7 +112,8 @@ The VPN preview (Settings tab and header badge) is visible only in BETA; it retu
 
 - [x] Installing Tailscale with the sign-in link (and WireGuard): `fix.sh` → Additional modules (1.3.0-beta3, instead of a separate `setup-vpn.sh`).
 - [x] VPN tab: Tailscale status and address, QR code for phones, login from the panel, devices in the VPN, header badge (1.4.0-beta1).
-- [ ] "Home network only" or "home network + VPN", panel port; WireGuard status (1.4.0-beta2).
+- [x] HTTPS in the VPN with Tailscale's own certificate (1.4.0-beta2).
+- [ ] "Home network only" or "home network + VPN", panel port; WireGuard status; `fix.sh`: Tailscale autostart on / off, main Raspbian archive when mirrors fail; log out / change account (1.4.0-beta2).
 - [ ] No open ports on the router.
 - [ ] EN/PL guide (Tailscale on the Pi, phone and computer).
 

@@ -742,5 +742,22 @@
  "online": "online",
  "you are connected over VPN right now": "właśnie łączysz się przez VPN",
  "Every downloaded byte travels twice over your home network: from the internet to this Raspberry Pi, then to the computer with the disks. Over Wi-Fi (e.g. a Raspberry Pi Zero 2 W, 2.4 GHz only) expect only a few MB/s. A cable connection on both devices – or running Plex Downloader on the computer that has the disks – is much faster.": "Każdy pobrany bajt przechodzi przez Twoją sieć domową dwa razy: z internetu do tego Raspberry Pi, a potem do komputera z dyskami. Przez Wi-Fi (np. Raspberry Pi Zero 2 W, tylko 2,4 GHz) licz się z zaledwie kilkoma MB/s. Połączenie kablem na obu urządzeniach – albo uruchomienie Plex Downloadera na komputerze, do którego podłączone są dyski – jest dużo szybsze.",
- "Try again": "Spróbuj ponownie"
+ "Try again": "Spróbuj ponownie",
+ "Allow HTTPS in Tailscale": "Zezwól na HTTPS w Tailscale",
+ "First, allow HTTPS certificates in your Tailscale account (once, takes a moment). Open the link, confirm, then click “Switch HTTPS on” again.": "Najpierw zezwól na certyfikaty HTTPS na swoim koncie Tailscale (jednorazowo, chwila). Otwórz link, potwierdź, a potem kliknij ponownie „Włącz HTTPS”.",
+ "HTTPS in the VPN is off.": "HTTPS w VPN wyłączone.",
+ "HTTPS in the VPN switched off": "Wyłączono HTTPS w VPN",
+ "HTTPS in the VPN switched on: %s": "Włączono HTTPS w VPN: %s",
+ "HTTPS is on": "HTTPS włączone",
+ "HTTPS is on. The first opening can take a few seconds while Tailscale gets the certificate.": "HTTPS włączone. Pierwsze otwarcie może potrwać kilka sekund, bo Tailscale pobiera certyfikat.",
+ "Port 443 in Tailscale on this Raspberry Pi is already used for something else (tailscale serve). The panel does not change it.": "Port 443 w Tailscale na tym Raspberry Pi jest już używany do czegoś innego (tailscale serve). Panel tego nie zmienia.",
+ "Secure connection (HTTPS) in the VPN": "Bezpieczne połączenie (HTTPS) w VPN",
+ "Switch HTTPS off": "Wyłącz HTTPS",
+ "Switch HTTPS on": "Włącz HTTPS",
+ "Switching off…": "Wyłączam…",
+ "Switching on…": "Włączam…",
+ "Tailscale issues a real certificate for the panel's name in your VPN, so the browser shows a padlock instead of “Not secure”. Only your devices in Tailscale can open this address – nothing is opened on the internet.\n\nThe connection over VPN is encrypted by Tailscale either way; HTTPS removes the browser warning and lets the browser remember the password safely.\n\nIn the home network the panel stays at its usual http address.": "Tailscale wystawia prawdziwy certyfikat dla nazwy panelu w Twoim VPN, więc przeglądarka pokazuje kłódkę zamiast „Niezabezpieczona”. Ten adres otworzą tylko Twoje urządzenia w Tailscale – nic nie jest otwierane w internecie.\n\nPołączenie przez VPN i tak jest szyfrowane przez Tailscale; HTTPS usuwa ostrzeżenie przeglądarki i pozwala jej bezpiecznie zapamiętać hasło.\n\nW sieci domowej panel zostaje pod zwykłym adresem http.",
+ "The panel is not allowed to change Tailscale settings yet. Run this once on the Raspberry Pi, then try again:": "Panel nie ma jeszcze uprawnień do zmiany ustawień Tailscale. Uruchom raz to polecenie na Raspberry Pi i spróbuj ponownie:",
+ "The panel over VPN now uses http. Switch HTTPS on to get an address with a padlock:": "Panel przez VPN działa teraz na http. Włącz HTTPS, aby dostać adres z kłódką:",
+ "secure (HTTPS)": "bezpiecznie (HTTPS)"
 }

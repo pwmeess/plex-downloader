@@ -29,6 +29,19 @@ RUNNING = {
 
 FAKE = """#!/bin/sh
 if [ "$1" = "status" ]; then cat "$TS_FAKE_JSON"; exit 0; fi
+if [ "$1" = "serve" ]; then
+  case "$2" in
+    status) cat "$TS_FAKE_SERVE" 2>/dev/null || echo '{}'; exit 0 ;;
+    --bg)
+      if [ -n "$TS_FAKE_NOHTTPS" ]; then
+        echo "Serve is not enabled on your tailnet."; echo "To enable, visit:"; echo
+        echo "         https://login.tailscale.com/f/serve?node=n123"; sleep 30; exit 1
+      fi
+      echo '{"TCP":{"443":{"HTTPS":true}},"Web":{"plexpi.tail1234.ts.net:443":{"Handlers":{"/":{"Proxy":"http://127.0.0.1:8800"}}}}}' > "$TS_FAKE_SERVE"
+      echo "Available within your tailnet:"; exit 0 ;;
+    --https=443) echo '{}' > "$TS_FAKE_SERVE"; exit 0 ;;
+  esac
+fi
 if [ "$1" = "up" ]; then
   if [ -n "$TS_FAKE_DENY" ]; then echo "Access denied: prefs write access denied"; exit 1; fi
   echo ""; echo "To authenticate, visit:"; echo ""; echo "	https://login.tailscale.com/a/abc123"; sleep 30; exit 0
@@ -81,7 +94,9 @@ class TestCli(unittest.TestCase):
         self.env = dict(os.environ)
         os.environ["PATH"] = d + os.pathsep + os.environ.get("PATH", "")
         os.environ["TS_FAKE_JSON"] = self.json
-        os.environ.pop("TS_FAKE_DENY", None)
+        os.environ["TS_FAKE_SERVE"] = os.path.join(d, "serve.json")
+        for k in ("TS_FAKE_DENY", "TS_FAKE_NOHTTPS"):
+            os.environ.pop(k, None)
         vpn._cache.update(t=0, data=None)
         vpn._login.update(proc=None, url="", error="", denied=False)
 
@@ -129,6 +144,32 @@ class TestCli(unittest.TestCase):
         v = vpn.login()
         self.assertTrue(v["need_operator"])
         self.assertEqual(v["login_url"], "")
+
+    def test_https_on_off(self):
+        self.assertFalse(vpn.https_status(8800)["on"])
+        r = vpn.set_https(True, 8800)
+        self.assertTrue(r["ok"])
+        self.assertTrue(r["on"])
+        self.assertEqual(r["url"], "https://plexpi.tail1234.ts.net")
+        self.assertFalse(vpn.https_status(9999)["on"])          # another port = something else
+        self.assertTrue(vpn.https_status(9999)["other"])
+        r = vpn.set_https(False, 8800)
+        self.assertTrue(r["ok"])
+        self.assertFalse(r["on"])
+
+    def test_https_needs_enabling(self):
+        os.environ["TS_FAKE_NOHTTPS"] = "1"
+        t0 = time.time()
+        r = vpn.set_https(True, 8800)
+        self.assertLess(time.time() - t0, 10)
+        self.assertFalse(r["ok"])
+        self.assertEqual(r["enable_url"], "https://login.tailscale.com/f/serve?node=n123")
+
+    def test_proxy_detection(self):
+        self.assertTrue(vpn.via_tailscale_proxy("127.0.0.1", {"Host": "plexpi.tail1234.ts.net"}))
+        self.assertTrue(vpn.via_tailscale_proxy("127.0.0.1", {"Host": "127.0.0.1:8800", "Tailscale-User-Login": "u@x"}))
+        self.assertFalse(vpn.via_tailscale_proxy("127.0.0.1", {"Host": "127.0.0.1:8800"}))
+        self.assertFalse(vpn.via_tailscale_proxy("192.168.1.20", {"Host": "x.ts.net"}))
 
 
 if __name__ == "__main__":

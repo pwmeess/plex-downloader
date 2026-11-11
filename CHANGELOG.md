@@ -2,6 +2,11 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
+## 1.4.0-beta2 – in progress (BETA)
+
+- **HTTPS in the VPN (SSL):** Settings → VPN → “Switch HTTPS on”. Tailscale issues a real certificate for the panel's name in your VPN (`https://<name>.<tailnet>.ts.net`, no port number), so the browser shows a padlock instead of “Not secure”. Only your devices in Tailscale can open it; nothing is opened on the internet. If HTTPS certificates are not allowed in the Tailscale account yet, the panel shows the link to allow them. The HTTPS address is first in the list and in the QR code. In the home network the panel stays at its usual http address.
+- VPN tab: “This device” shows the machine name from the Tailscale console.
+
 ## 1.4.0-beta1 – 2026-11-11 (BETA)
 
 - **Settings → VPN works (Tailscale):** status of this Raspberry Pi in the VPN (connected / not logged in / switched off / not installed), VPN address and name, account, Tailscale version, the other devices in your VPN (online / offline) and the panel address over VPN with a **QR code for the phone**.

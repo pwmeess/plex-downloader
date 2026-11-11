@@ -110,7 +110,8 @@ Zapowiedzi VPN (zakładka i przycisk w nagłówku) są widoczne tylko w BETA; w 
 
 - [x] Instalacja Tailscale z linkiem do logowania (oraz WireGuard): `fix.sh` → Moduły dodatkowe (1.3.0-beta3, zamiast osobnego `setup-vpn.sh`).
 - [x] Zakładka VPN: status i adres Tailscale, kod QR dla telefonu, logowanie z panelu, urządzenia w VPN, plakietka w nagłówku (1.4.0-beta1).
-- [ ] Wybór „tylko sieć domowa” lub „sieć domowa + VPN”, port panelu; status WireGuard (1.4.0-beta2).
+- [x] HTTPS w VPN z certyfikatem Tailscale (1.4.0-beta2).
+- [ ] Wybór „tylko sieć domowa” lub „sieć domowa + VPN”, port panelu; status WireGuard; `fix.sh`: autostart Tailscale wł./wył., główne archiwum Raspbiana przy awarii serwerów lustrzanych; wylogowanie / zmiana konta (1.4.0-beta2).
 - [ ] Panel bez otwartych portów na routerze.
 - [ ] Instrukcja EN/PL (Tailscale na Pi, telefonie i komputerze).
 

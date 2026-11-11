@@ -170,3 +170,91 @@ def qr_svg(text, border=3):
     return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {s} {s}" shape-rendering="crispEdges">'
             '<rect width="100%" height="100%" fill="#fff"/><path d="{d}" fill="#000"/></svg>'
             ).format(s=size, d="".join(parts))
+
+
+# ---------------------------------------------------------------- HTTPS inside the VPN (tailscale serve)
+# Tailscale issues a real certificate for <name>.<tailnet>.ts.net and proxies HTTPS (port 443) to the
+# panel on this Raspberry Pi. Only devices in your Tailscale network can reach it (serve, not funnel).
+ENABLE_RE = re.compile(r"https://login\.tailscale\.com/f/\S+")
+
+
+def https_status(port):
+    """{"on": bool, "url": "https://…", "other": bool} – other = serve is used for something else on 443."""
+    out = {"on": False, "url": "", "other": False}
+    if not installed():
+        return out
+    try:
+        p = _cli("serve", "status", "--json", timeout=10)
+        cfg = json.loads(p.stdout or "{}") or {}
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return out
+    for host, web in (cfg.get("Web") or {}).items():
+        if not host.endswith(":443"):
+            continue
+        h = ((web or {}).get("Handlers") or {}).get("/") or {}
+        target = h.get("Proxy") or ""
+        if re.search(r"(127\.0\.0\.1|localhost):%d/?$" % int(port), target):
+            out.update(on=True, url="https://" + host[:-4])
+        else:
+            out["other"] = True
+    return out
+
+
+def _watch(args, timeout=20):
+    """Runs a tailscale command that may stop to wait for a confirmation link.
+    Returns (exit code or None if still waiting, output, link)."""
+    try:
+        proc = subprocess.Popen(["tailscale"] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                stdin=subprocess.DEVNULL, text=True, start_new_session=True)
+    except OSError as e:
+        return 1, str(e), ""
+    lines, link = [], [""]
+
+    def read():
+        for line in proc.stdout:
+            lines.append(line.rstrip())
+            m = ENABLE_RE.search(line)
+            if m:
+                link[0] = m.group(0)
+    t = threading.Thread(target=read, daemon=True)
+    t.start()
+    deadline = time.time() + timeout
+    while time.time() < deadline and proc.poll() is None and not link[0]:
+        time.sleep(0.2)
+    code = proc.poll()
+    if code is None:          # waiting for HTTPS to be enabled in the console – ask the user, try again later
+        time.sleep(0.5)
+        proc.kill()
+        proc.wait()
+    t.join(1)
+    return code, "\n".join(x for x in lines if x.strip())[:600], link[0]
+
+
+def set_https(on, port):
+    """Switches HTTPS in the VPN on or off. Returns {"ok", "enable_url", "denied", "error"} plus the status."""
+    res = {"ok": False, "enable_url": "", "denied": False, "error": ""}
+    if on:
+        code, out, link = _watch(["serve", "--bg", "--https=443", "http://127.0.0.1:%d" % int(port)])
+    else:
+        code, out, link = _watch(["serve", "--https=443", "off"], timeout=15)
+    if link:
+        res["enable_url"] = link
+    elif code == 0:
+        res["ok"] = True
+    elif DENIED_RE.search(out):
+        res["denied"] = True
+    else:
+        res["error"] = out or "tailscale serve: exit %s" % code
+    res.update(https_status(port))
+    with _lock:
+        _cache["t"] = 0
+    return res
+
+
+def via_tailscale_proxy(remote_addr, headers):
+    """A request that came through `tailscale serve` (HTTPS in the VPN): it arrives from localhost and
+    Tailscale adds the user's login and the .ts.net host."""
+    if remote_addr not in ("127.0.0.1", "::1", "::ffff:127.0.0.1"):
+        return False
+    host = (headers.get("X-Forwarded-Host") or headers.get("Host") or "").split(":")[0]
+    return bool(headers.get("Tailscale-User-Login")) or host.endswith(".ts.net")
