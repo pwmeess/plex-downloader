@@ -13,7 +13,6 @@
     <button type="button" role="tab" data-tab="preview"><svg class="i"><use href="#i-image"/></svg>{{ _("Preview & posters") }}</button>
     <button type="button" role="tab" data-tab="backups"><svg class="i"><use href="#i-history"/></svg>{{ _("Backups") }}</button>
     <button type="button" role="tab" data-tab="account"><svg class="i"><use href="#i-user"/></svg>{{ _("Account") }}</button>
-    <button type="button" role="tab" data-tab="vpn" class="tab-soon"><svg class="i"><use href="#i-shield"/></svg>VPN<span class="soon">{{ _("soon") }}</span></button>
   </nav>
 
   <div class="win-body">
@@ -147,23 +146,6 @@
 
       <h3 class="fold-h"><button type="button" class="fold" id="cmdToggle" aria-expanded="false"><svg class="i"><use href="#i-chev-r"/></svg>{{ _("Terminal commands (SSH)") }}</button> <button type="button" class="info-i" data-tip="{{ _('Log in to the Raspberry Pi over SSH (Terminal on Mac, PowerShell on Windows), then copy a command with the button on the right and paste it into the terminal.') }}">i</button></h3>
       <div id="cmdList" class="cmd-list" hidden></div>
-    </section>
-
-    <!-- VPN (wkrótce) -->
-    <section class="tab-panel vpn-panel" data-panel="vpn" hidden>
-      <div class="soon-banner"><svg class="i"><use href="#i-shield"/></svg>
-        <div><b>{{ _("Remote access over VPN – in preparation") }}</b><br>{{ _("The panel will stay invisible on the internet. Instead of opening ports on the router, you will connect through a private VPN network.") }}</div></div>
-      <div class="ph-grid">
-        <div class="ph"><label>{{ _("Provider") }}</label><select class="input" disabled><option>{{ _("Tailscale (recommended, no open ports)") }}</option><option>WireGuard</option></select></div>
-        <div class="ph"><label>{{ _("Panel available via") }}</label><select class="input" disabled><option>{{ _("Home network only") }}</option><option>{{ _("Home network + VPN") }}</option></select></div>
-        <div class="ph"><label>{{ _("Panel port") }}</label><input class="input" disabled value="8800"></div>
-        <div class="ph"><label>{{ _("VPN status") }}</label><div class="ph-box">{{ _("Not installed · VPN address: 100.x.x.x:8800 · QR code for your phone") }}</div></div>
-      </div>
-      <ul class="ph-list">
-        <li>{{ _("A setup-vpn.sh script on GitHub: installs Tailscale and shows a login link.") }}</li>
-        <li>{{ _("You always log in to the VPN account on the provider's website. The panel does not store those credentials.") }}</li>
-        <li>{{ _("Step-by-step guides in English and Polish.") }}</li>
-      </ul>
     </section>
   </div>
 

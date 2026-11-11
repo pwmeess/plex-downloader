@@ -422,7 +422,8 @@ version_menu() {
   stop_service
   git checkout -q -B main "$ref" && git branch -q --set-upstream-to=origin/main main 2>/dev/null
   git reset -q --hard "$ref" || { c_warn "$(L "Switching failed." "Przełączenie nie powiodło się.")"; return 1; }
-  if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ]; then rm -f "$PIN"; else echo "$target" > "$PIN"; fi
+  # newest stable (the code may differ only in releases.txt) → not an „older version”
+  if git diff --quiet HEAD origin/main -- . ':(exclude)releases.txt' 2>/dev/null; then rm -f "$PIN"; else echo "$target" > "$PIN"; fi
   "$APP_DIR/venv/bin/pip" install -q -r requirements.txt
   sudo systemctl restart "$SERVICE" && sleep 2
   c_ok "$(L "Installed" "Zainstalowano"): $CUR → $(cat VERSION)  ·  $(panel_url)"
