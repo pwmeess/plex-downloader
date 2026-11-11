@@ -941,7 +941,9 @@ def api_fm_thumb_upload():
 def api_fm_frames():
     a = request.args
     n = int(a.get("n", "6")) if a.get("n", "6").isdigit() else 6
-    return fm_call(fm.frame_candidates, a.get("disk", ""), a.get("cat", ""), a.get("name", ""), n, a.get("shuffle") == "1")
+    at = int(a["at"]) if a.get("at", "").isdigit() else None   # seconds typed in „Pick a time”
+    return fm_call(fm.frame_candidates, a.get("disk", ""), a.get("cat", ""), a.get("name", ""), n,
+                   a.get("shuffle") == "1", at)
 
 
 @app.route("/api/fm/thumb/tmdb", methods=["POST"])

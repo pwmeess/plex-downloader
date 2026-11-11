@@ -42,6 +42,13 @@ class FrameTests(unittest.TestCase):
             f.write(b"0" * 10_000_000)
         self.assertEqual(thumbgen.first_video(root, lambda n: n.endswith(".mp4")), self.video)
 
+    def test_frames_at_time(self):
+        self.assertEqual(thumbgen.times_around(60, 600), [50, 55, 60, 65, 70, 75])
+        self.assertEqual(thumbgen.times_around(0, 600), [0, 5, 10, 15, 20, 25])
+        self.assertEqual(thumbgen.times_around(21599, 600), [574.5, 579.5, 584.5, 589.5, 594.5, 599.5])
+        frames = thumbgen.frames_at(self.video, 5)
+        self.assertEqual([t for t, _d in frames], [0, 5, 9.5])     # 10 s video: last frame, no duplicates
+
     def test_bad_file(self):
         bad = os.path.join(self.tmp, "bad.mkv")
         with open(bad, "wb") as f:

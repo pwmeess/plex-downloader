@@ -667,7 +667,6 @@
  "Frame from the video": "Kadr z filmu",
  "Generate posters myself from video frames (needs ffmpeg)": "Samodzielnie generuj miniatury z kadrów filmu (wymaga ffmpeg)",
  "No frame could be read from this file.": "Nie udało się odczytać kadru z tego pliku.",
- "Other frames": "Inne kadry",
  "Posters from video frames": "Plakaty z kadrów filmu",
  "Reading frames from the video… (on a Pi Zero this can take a minute)": "Odczytuję kadry z filmu… (na Pi Zero może to potrwać minutę)",
  "Reading the frame took too long.": "Odczyt kadru trwał za długo.",
@@ -676,5 +675,11 @@
  "There is no video file in this folder.": "W tym folderze nie ma pliku wideo.",
  "ffmpeg is not installed yet – add it with fix.sh → Additional modules.": "ffmpeg nie jest jeszcze zainstalowany – dodasz go w fix.sh → Moduły dodatkowe.",
  "ffmpeg is not installed – add it with fix.sh → Additional modules.": "ffmpeg nie jest zainstalowany – dodasz go w fix.sh → Moduły dodatkowe.",
- "ffmpeg {v} installed": "ffmpeg {v} zainstalowany"
+ "ffmpeg {v} installed": "ffmpeg {v} zainstalowany",
+ "Generate others": "Generuj inne",
+ "Pick a time": "Wskaż czas",
+ "Check": "Sprawdź",
+ "Time in the video (h:mm:ss)": "Czas w filmie (h:mm:ss)",
+ "Shows 6 frames: 10 s before, 5 s before, the time itself and 5, 10 and 15 s after.": "Pokazuje 6 kadrów: 10 s i 5 s przed, sam wskazany czas oraz 5, 10 i 15 s po nim.",
+ "Error – check the time you entered or try again.": "Błąd – sprawdź wpisany czas lub spróbuj ponownie."
 }

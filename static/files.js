@@ -425,29 +425,67 @@
     frameBtn.addEventListener("click", async () => {
       const box = el("div", "fe-frames");
       const grid = el("div", "fe-frame-grid");
-      const msg = el("p", "muted", t("Reading frames from the video… (on a Pi Zero this can take a minute)"));
+      const WAIT = t("Reading frames from the video… (on a Pi Zero this can take a minute)");
+      const msg = el("p", "muted", WAIT);
       box.append(msg, grid);
       let chosen = null, dlg = null;
-      const load = async (shuffle) => {
-        msg.hidden = false; grid.replaceChildren();
-        try {
-          const q = new URLSearchParams({ disk: pane.disk, cat: pane.cat, name: item.name, n: "6", shuffle: shuffle ? "1" : "0" });
-          const r = await api("/api/fm/frames?" + q.toString());
-          msg.hidden = true;
-          r.frames.forEach((fr) => {
-            const b = el("button", "fe-frame"); b.type = "button";
-            const im = document.createElement("img"); im.src = fr.data; im.alt = "";
-            const mm = Math.floor(fr.t / 60), ss = Math.floor(fr.t % 60);
-            b.append(im, el("span", null, `${mm}:${String(ss).padStart(2, "0")}`));
-            b.addEventListener("click", () => { chosen = fr.data; if (dlg) dlg._buttons[2].click(); });
-            grid.appendChild(b);
-          });
-        } catch (e) { msg.hidden = false; msg.textContent = e.message; }
+      const fmt = (sec) => {
+        const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), x = Math.floor(sec % 60);
+        return h ? `${h}:${String(m).padStart(2, "0")}:${String(x).padStart(2, "0")}` : `${m}:${String(x).padStart(2, "0")}`;
       };
-      box._onOpen = (d) => { dlg = d; load(false); };
+      const show = (frames) => {
+        msg.hidden = true;
+        frames.forEach((fr) => {
+          const b = el("button", "fe-frame"); b.type = "button";
+          const im = document.createElement("img"); im.src = fr.data; im.alt = "";
+          b.append(im, el("span", null, fmt(fr.t)));
+          b.addEventListener("click", () => { chosen = fr.data; if (dlg) dlg._buttons[3].click(); });
+          grid.appendChild(b);
+        });
+      };
+      const fail = (text) => { msg.hidden = false; msg.className = "fe-err"; msg.textContent = text; };
+      const load = async (params) => {
+        msg.hidden = false; msg.className = "muted"; msg.textContent = WAIT; grid.replaceChildren();
+        try {
+          const q = new URLSearchParams(Object.assign({ disk: pane.disk, cat: pane.cat, name: item.name, n: "6" }, params));
+          show((await api("/api/fm/frames?" + q.toString())).frames);
+          return true;
+        } catch (e) { fail(params.at !== undefined ? t("Error – check the time you entered or try again.") : e.message); return false; }
+      };
+      // „Pick a time”: h:mm:ss under the buttons → 6 frames around it (-10 s … +15 s)
+      const timeBox = el("div", "fe-time"); timeBox.hidden = true;
+      const tIn = el("input", "input mono"); tIn.placeholder = "0:00:00"; tIn.maxLength = 8; tIn.inputMode = "numeric";
+      const check = el("button", "btn-soft small", t("Check")); check.type = "button";
+      timeBox.append(el("label", "small-label", t("Time in the video (h:mm:ss)")), tIn, check,
+        el("p", "hint", t("Shows 6 frames: 10 s before, 5 s before, the time itself and 5, 10 and 15 s after.")));
+      // 0:95:99 → 0:59:59, max. 5:59:59; also accepts m:ss and seconds
+      const normalize = () => {
+        const raw = tIn.value.replace(/[^0-9:]/g, "");
+        if (!/[0-9]/.test(raw)) return null;
+        const parts = raw.split(":").map((x) => parseInt(x || "0", 10));
+        while (parts.length < 3) parts.unshift(0);
+        let [h, m, sec] = parts.slice(-3);
+        h = Math.min(5, h); m = Math.min(59, m); sec = Math.min(59, sec);
+        tIn.value = `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+        return h * 3600 + m * 60 + sec;
+      };
+      tIn.addEventListener("input", () => { check.disabled = false; });
+      tIn.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); if (!check.disabled) check.click(); } });
+      check.addEventListener("click", async () => {
+        const sec = normalize();
+        if (sec === null) { fail(t("Error – check the time you entered or try again.")); return; }
+        check.disabled = true;           // active again after the next change of the time
+        await load({ at: String(sec) });
+      });
+      box._onOpen = (d) => { dlg = d; d.appendChild(timeBox); load({ shuffle: "0" }); };
       const pick = await modal({ title: t("Frame from the video"), body: box, wide: true,
         buttons: [{ label: t("Cancel"), value: false },
-                  { label: t("Other frames"), value: () => { msg.textContent = t("Reading frames from the video… (on a Pi Zero this can take a minute)"); load(true); return undefined; } },
+                  { label: t("Generate others"), value: () => { load({ shuffle: "1" }); return undefined; } },
+                  { label: t("Pick a time"), value: () => {
+                    timeBox.hidden = !timeBox.hidden;
+                    if (!timeBox.hidden) { tIn.focus(); check.disabled = !tIn.value; }
+                    return undefined;
+                  } },
                   { label: t("Use"), cls: "btn-accent", value: () => chosen || undefined }] });
       if (!pick) return;
       ownJpeg = pick; tmdbCb.checked = false;

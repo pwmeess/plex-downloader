@@ -118,6 +118,33 @@ def candidates(path, n=6, shuffle=False):
     return [(t, data) for _s, t, data in out]
 
 
+def times_around(t, d, n=6, step=5.0):
+    """Frames around a chosen time: t-10, t-5, t, t+5, t+10, t+15 – moved to start at 0:00 near the
+    beginning and to end on the last frame near (or after) the end of the video."""
+    last = max(0.0, d - 0.5)
+    start = max(0.0, float(t) - 2 * step)
+    if start + (n - 1) * step > last:
+        start = max(0.0, last - (n - 1) * step)
+    return [round(min(last, start + i * step), 2) for i in range(n)]
+
+
+def frames_at(path, t, n=6):
+    """Several posters around the time typed in the Edit window, in time order."""
+    if not available():
+        raise FrameError(_("ffmpeg is not installed – add it with fix.sh → Additional modules."))
+    with _sem:
+        d = duration(path)
+        out = []
+        for x in dict.fromkeys(times_around(t, d, n)):
+            try:
+                out.append((x, poster(path, x)))
+            except FrameError:
+                continue
+    if not out:
+        raise FrameError(_("No frame could be read from this file."))
+    return out
+
+
 def first_video(path, is_video):
     """The video to take frames from: the file itself or the first (largest) video in the folder."""
     if os.path.isfile(path):

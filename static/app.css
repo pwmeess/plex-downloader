@@ -885,3 +885,12 @@ dialog.window.modal .win-body { flex: 1 1 auto; }
 .fe-frame span { position: absolute; right: 6px; bottom: 6px; font-size: 11.5px; background: rgba(0,0,0,.65); color: #fff; padding: 1px 6px; border-radius: 4px; font-family: var(--mono); }
 .fe-poster .pv-tools { display: flex; flex-direction: column; gap: 6px; }
 @media (max-width: 640px) { .fe-frame-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.fe-time { display: grid; grid-template-columns: auto 130px auto 1fr; align-items: center; gap: 8px 10px; padding: 12px 22px 16px; border-top: 1px solid var(--line); background: var(--card); flex: none; }
+.fe-time .small-label { margin: 0; }
+.fe-time .hint { grid-column: 1 / -1; margin: 0; }
+.fe-time .btn-soft { justify-self: start; }
+.fe-time .btn-soft:disabled { opacity: .45; cursor: default; }
+.fe-time[hidden] { display: none; }
+.fe-err { color: var(--err); font-weight: 600; }
+dialog.window.modal .win-foot { flex-wrap: wrap; }
+@media (max-width: 640px) { .fe-time { grid-template-columns: 1fr auto; } .fe-time .small-label { grid-column: 1 / -1; } }

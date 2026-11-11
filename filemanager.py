@@ -907,12 +907,13 @@ def frame_thumb(base, name, is_dir):
         return _write_thumb(base, name, is_dir, data)
 
 
-def frame_candidates(disk_id, cat_id, name, n=6, shuffle=False):
+def frame_candidates(disk_id, cat_id, name, n=6, shuffle=False, at=None):
     import base64
     _d, _cat, base = location(disk_id, cat_id)
     path = item_path(base, name)
     try:
-        frames = thumbgen.candidates(thumbgen.first_video(path, _is_video), n, shuffle)
+        video = thumbgen.first_video(path, _is_video)
+        frames = thumbgen.frames_at(video, at, n) if at is not None else thumbgen.candidates(video, n, shuffle)
     except thumbgen.FrameError as e:
         raise FMError(str(e))
     return {"frames": [{"t": t, "data": "data:image/jpeg;base64," + base64.b64encode(d).decode()} for t, d in frames]}

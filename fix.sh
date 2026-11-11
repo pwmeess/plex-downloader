@@ -32,6 +32,13 @@ if [ "${1:-}" != "--text" ] && command -v whiptail >/dev/null 2>&1 && [ -t 0 ] &
   UI="whiptail"
 fi
 TITLE="Plex Downloader"
+# Same look in every terminal (macOS Terminal / iTerm over SSH showed two shades of grey and broken
+# frame lines): one explicit colour set, and UTF-8 line drawing instead of the terminal's ACS characters.
+if [ "$UI" = "whiptail" ]; then
+  export NCURSES_NO_UTF8_ACS=1
+  : "${NEWT_COLORS:=root=white,blue roottext=white,blue helpline=white,blue window=black,lightgray border=black,lightgray shadow=black,black title=red,lightgray textbox=black,lightgray listbox=black,lightgray sellistbox=black,lightgray actlistbox=white,red actsellistbox=white,red button=black,lightgray actbutton=white,red compactbutton=black,lightgray entry=black,lightgray disentry=gray,lightgray checkbox=black,lightgray actcheckbox=white,red emptyscale=,gray fullscale=,red}"
+  export NEWT_COLORS
+fi
 
 # menu "question" tag1 "text1" tag2 "text2" … → prints the chosen tag (empty = Esc / Cancel)
 menu() {
