@@ -208,7 +208,7 @@ class Manager:
         log.info("Uruchamiam aria2c (%s)", self.aria2_bin)
         self.proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                      stdin=subprocess.DEVNULL)
-        for _ in range(50):
+        for _i in range(50):
             if self.aria2.alive():
                 return
             if self.proc.poll() is not None:

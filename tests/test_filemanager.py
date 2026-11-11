@@ -112,6 +112,23 @@ class FMTests(unittest.TestCase):
         self.assertTrue(os.path.isfile(os.path.join(show, "Season 01", "Show - S01E01.mkv")))
         self.assertTrue(os.path.isfile(os.path.join(show, "Season 02", "Show - S02E01.mkv")))
 
+    def test_episodes_without_season_folders(self):
+        """Episodes directly in the show folder (no Season 01) – error 500 in 1.4.0-beta2."""
+        show = os.path.join(self.ta, "Flat Show")
+        os.makedirs(show)
+        for ep in (1, 2):
+            with open(os.path.join(show, "Flat Show - S01E%02d.mkv" % ep), "wb") as f:
+                f.write(os.urandom(3000))
+        eps = self.fm.list_episodes("a", "tv", "Flat Show")
+        self.assertEqual(len(eps["seasons"]), 1)
+        self.assertEqual([e["code"] for e in eps["seasons"][0]["episodes"]], ["S01E01", "S01E02"])
+        plan = self.fm.plan_episodes("a", "tv", "Flat Show", ["Flat Show - S01E02.mkv"], "b", "tv")
+        self.assertTrue(plan["ok"], plan["problems"])
+        self.assertEqual(self.wait(self.fm.ops.move(plan))["status"], "done")
+        self.assertTrue(os.path.isfile(os.path.join(self.tb, "Flat Show", "Flat Show - S01E02.mkv")))
+        with self.assertRaises(self.fm.FMError):
+            self.fm.list_episodes("a", "movies", "Flat Show")
+
     def test_scan_paths(self):
         m = os.path.join(self.tmp, "scan")
         os.makedirs(os.path.join(m, "Plex", "Filmy")); os.makedirs(os.path.join(m, "Plex", "Seriale"))

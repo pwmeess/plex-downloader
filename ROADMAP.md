@@ -2,7 +2,7 @@
 
 🇬🇧 **English** · 🇵🇱 [Polski](ROADMAP.pl.md) · Changelog: [CHANGELOG.md](CHANGELOG.md)
 
-Last updated: 11 November 2026 · stable: **1.3.0** · BETA: **1.4.0-beta0**
+Last updated: 11 November 2026 · stable: **1.3.1** · BETA: **1.4.0-beta3**
 
 ## Ground rules (checked for every release)
 
@@ -40,7 +40,11 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 | 1.3.0-beta3 | EN/PL guides (in the app + PDF); File manager: edit the Plex name, file types (versions / extras) and the poster (own image, video frame, TMDB); `fix.sh` Additional modules; wizard improvements after tests on a Pi Zero |
 | 1.3.0-beta4 | `fix.sh` → Install another version; the wizard also starts after switching a fresh stable installation to BETA |
 | 1.3.0 (stable) | Everything from 1.3.0-beta1…beta4 without the VPN preview: setup wizard, settings export / import, edit names and posters (own image, video frame, TMDB), Plex extras, EN/PL guides, `fix.sh` Additional modules and Install another version |
+| 1.3.1 (stable) | Fix: moving TV shows without season folders (error 500) |
 | 1.4.0-beta0 | 1.3.0 + VPN preview; base for 1.4 (no new features) |
+| 1.4.0-beta1 | Working VPN tab (Tailscale status, address, QR code, login from the panel, devices) and VPN badge in the header |
+| 1.4.0-beta2 | HTTPS in the VPN, home network only / + VPN, log out / change account, WireGuard status; `fix.sh` autostart on / off and main Raspbian archive |
+| 1.4.0-beta3 | VPN chapter in the EN/PL guides (WireGuard: synthetic tests only) |
 
 ## To fix
 
@@ -105,14 +109,16 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
 
 ## 1.4 – remote access over VPN
 
-Release steps: `1.4.0-beta0` (= 1.3.0 + VPN preview, done) → `1.4.0-beta1` (VPN tab working) → … → `1.4.0`.
+Release steps: `1.4.0-beta0` (= 1.3.0 + VPN preview, done) → `1.4.0-beta1` (VPN tab working, done) → `1.4.0-beta2` (HTTPS, home network only / + VPN, WireGuard status, done) → `1.4.0-beta3` (guide, done) → `1.4.0`.
 
 The VPN preview (Settings tab and header badge) is visible only in BETA; it returns to stable together with the working feature.
 
 - [x] Installing Tailscale with the sign-in link (and WireGuard): `fix.sh` → Additional modules (1.3.0-beta3, instead of a separate `setup-vpn.sh`).
-- [ ] VPN tab: "home network only" or "home network + VPN", panel port, VPN status and address, QR code for phones.
-- [ ] No open ports on the router.
-- [ ] EN/PL guide (Tailscale on the Pi, phone and computer).
+- [x] VPN tab: Tailscale status and address, QR code for phones, login from the panel, devices in the VPN, header badge (1.4.0-beta1).
+- [x] HTTPS in the VPN with Tailscale's own certificate (1.4.0-beta2).
+- [x] "Home network only" or "home network + VPN"; WireGuard status; `fix.sh`: autostart on / off, main Raspbian archive when mirrors fail; log out / change account (1.4.0-beta2).
+- [x] No open ports on the router (Tailscale).
+- [x] EN/PL guide (Tailscale on the Pi, phone and computer; WireGuard checked in synthetic tests only) (1.4.0-beta3).
 
 ## 1.5 – adding files from a computer and a USB stick
 

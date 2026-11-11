@@ -208,7 +208,7 @@ def list_items(disk_id, cat_id, busy=()):
 
 def list_episodes(disk_id, cat_id, show):
     """Odcinki serialu pogrupowane według sezonów (do przenoszenia wybranych odcinków)."""
-    _, cat, base = location(disk_id, cat_id)
+    _disk, cat, base = location(disk_id, cat_id)   # not "_": that is the translation function
     if cat["kind"] != "tv":
         raise FMError(_("Episodes can only be selected in TV show categories."))
     root = item_path(base, show)

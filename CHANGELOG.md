@@ -2,6 +2,11 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
+## 1.3.1 – 2026-11-11 (stable)
+
+- **Fix:** moving a TV show whose episodes are directly in the show folder (no `Season 01` folders) failed with “Error 500” – with drag and drop and with the Move button.
+- Fix: the message shown when aria2c cannot be started.
+
 ## 1.3.0 – 2026-11-11 (stable)
 
 Everything from 1.3.0-beta1 … beta4 (details below), without the BETA-only VPN preview:
