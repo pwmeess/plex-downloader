@@ -2,6 +2,10 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
+## 1.5.0-beta0 – 2026-11-11 (BETA)
+
+- Same as 1.4.0 (stable) with a new version number – the base for version 1.5 (TV shows: episodes and conflicts, local moves, USB stick, fixes). No new features yet.
+
 ## 1.4.0 – 2026-11-11 (stable)
 
 Everything from 1.4.0-beta1 … beta3 (details below) and 1.3.1:
