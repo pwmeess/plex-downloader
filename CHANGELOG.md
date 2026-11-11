@@ -9,6 +9,11 @@ All notable changes to Plex Downloader. Stable versions live on the `main` branc
 - VPN tab: link to the VPN chapter of the guide instead of the “Next in BETA” list.
 - **Fix:** moving a TV show whose episodes are directly in the show folder (no `Season 01` folders) failed with “Error 500” (drag and drop and the Move button). Also fixed: the message when aria2c cannot be started.
 
+## 1.3.1 – 2026-11-11 (stable)
+
+- **Fix:** moving a TV show whose episodes are directly in the show folder (no `Season 01` folders) failed with “Error 500” – with drag and drop and with the Move button.
+- Fix: the message shown when aria2c cannot be started.
+
 ## 1.4.0-beta2 – 2026-11-11 (BETA)
 
 - **HTTPS in the VPN (SSL):** Settings → VPN → “Switch HTTPS on”. Tailscale issues a real certificate for the panel's name in your VPN (`https://<name>.<tailnet>.ts.net`, no port number), so the browser shows a padlock instead of “Not secure”. Only your devices in Tailscale can open it; nothing is opened on the internet. If HTTPS certificates are not allowed in the Tailscale account yet, the panel shows the link to allow them. The HTTPS address is first in the list and in the QR code. In the home network the panel stays at its usual http address.
