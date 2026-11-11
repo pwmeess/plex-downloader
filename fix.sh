@@ -545,6 +545,7 @@ case "$opt" in
     fi
     stop_service
     switch_code beta || exit 1
+    rm -f "$APP_DIR/.pinned-version"
     "$APP_DIR/venv/bin/pip" install -q -r requirements.txt
     sudo systemctl restart "$SERVICE"
     c_ok "$(L "BETA installed" "Zainstalowano BETA"): $CUR → $NEW"
