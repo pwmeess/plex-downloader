@@ -2,10 +2,54 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
+## 1.4.0 – 2026-11-11 (stable)
+
+Everything from 1.4.0-beta1 … beta3 (details below) and 1.3.1:
+
+- **Remote access over VPN (Tailscale) – Settings → VPN:** status, the panel's address and name in your VPN with a QR code for the phone, devices in your VPN, Tailscale version check (up to date / out of date / security update), log in and log out / change account from the panel, VPN badge in the header.
+- **HTTPS in the VPN** with Tailscale's own certificate; a warning if Tailscale Funnel would publish the panel on the internet.
+- **Home network only / home network + VPN.**
+- **WireGuard status** (checked in synthetic tests only).
+- `fix.sh` → Additional modules: autostart on / off; the main Raspbian archive when a mirror fails.
+- **Guides (EN/PL):** new chapter 8 “Access from outside your home (VPN)”.
+- File manager: the SHA-256 step is struck through when verification is skipped; phones: settings and dialogs use the full screen width.
+
+## 1.4.0-beta3 – 2026-11-11 (BETA)
+
+- **Guides (EN/PL, HTML and PDF): new chapter 8 “Access from outside your home (VPN)”** – installing Tailscale (also with a broken Raspbian mirror), logging in from the panel, phone and computer, HTTPS in the VPN and Funnel, where the panel is available, what the VPN tab shows, autostart, WireGuard, troubleshooting. Security is now chapter 9.
+- **WireGuard:** status checked in synthetic tests (simulated system commands, no real WireGuard connection) – marked so in the guide.
+- VPN tab: link to the VPN chapter of the guide instead of the “Next in BETA” list.
+- File manager → move window: with “Skip SHA-256 verification” ticked, the verification step in the description is struck through (also after changing the selected episodes); the File manager ⓘ mentions that verification can be skipped.
+- **Fix:** moving a TV show whose episodes are directly in the show folder (no `Season 01` folders) failed with “Error 500” (drag and drop and the Move button). Also fixed: the message when aria2c cannot be started.
+
 ## 1.3.1 – 2026-11-11 (stable)
 
 - **Fix:** moving a TV show whose episodes are directly in the show folder (no `Season 01` folders) failed with “Error 500” – with drag and drop and with the Move button.
 - Fix: the message shown when aria2c cannot be started.
+
+## 1.4.0-beta2 – 2026-11-11 (BETA)
+
+- **HTTPS in the VPN (SSL):** Settings → VPN → “Switch HTTPS on”. Tailscale issues a real certificate for the panel's name in your VPN (`https://<name>.<tailnet>.ts.net`, no port number), so the browser shows a padlock instead of “Not secure”. Only your devices in Tailscale can open it; nothing is opened on the internet. If HTTPS certificates are not allowed in the Tailscale account yet, the panel shows the link to allow them. The HTTPS address is first in the list and in the QR code. In the home network the panel stays at its usual http address.
+- The panel never turns on Tailscale Funnel (public internet); if Funnel is on for the panel's address, the VPN tab shows a red warning with the command to switch it off.
+- **Where the panel is available:** “Home network + VPN” (default) or “Home network only” – then requests that come through the VPN (also the HTTPS address) are refused, while Tailscale stays available for other things (SSH, files, Plex). Switching to “home network only” while using the panel over VPN asks first.
+- **Log out / change account:** logs this Raspberry Pi out of Tailscale (with a warning when you are connected over VPN); log in again with the Log in button.
+- **Tailscale version check:** next to the version a tag “up to date” or “out of date” (“security update” when Tailscale marks it urgent) with the current version and how to update.
+- **WireGuard status** in the VPN tab (interfaces and addresses, when WireGuard is installed).
+- `fix.sh` → Additional modules: **Autostart on / off** for modules with a service (Plex, Samba, Tailscale, WireGuard) – stays after a restart; the module list shows “no autostart”.
+- `fix.sh`: when a broken Raspbian mirror stops an installation (404, “unexpected size”), it offers to download from the main Raspbian archive instead (with a copy of the source list) and tries again.
+- VPN tab: “This device” shows the machine name from the Tailscale console.
+
+## 1.4.0-beta1 – 2026-11-11 (BETA)
+
+- **Settings → VPN works (Tailscale):** status of this Raspberry Pi in the VPN (connected / not logged in / switched off / not installed), VPN address and name, account, Tailscale version, the other devices in your VPN (online / offline) and the panel address over VPN with a **QR code for the phone**.
+- **Log in to Tailscale from the panel:** the login link opens the Tailscale website (also as a QR code to log in on the phone); the tab updates by itself after logging in. The panel never sees the Tailscale login. When the panel is not allowed to switch Tailscale on, it shows the one command to run over SSH.
+- **VPN badge in the header:** grey = not set up, amber = needs attention, green = connected (with the VPN address); click opens the VPN tab.
+- `fix.sh` → Additional modules → Tailscale: installing or updating also allows the panel to log in to Tailscale (`tailscale set --operator`).
+- Phones: settings and dialogs use the full screen width.
+
+## 1.4.0-beta0 – 2026-11-11 (BETA)
+
+- Everything from 1.3.0 (stable), plus the BETA-only VPN preview (header badge and Settings tab) as the base for version 1.4. No new features yet.
 
 ## 1.3.0 – 2026-11-11 (stable)
 

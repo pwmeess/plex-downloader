@@ -255,7 +255,7 @@ cd ~/plex-downloader && ./fix.sh
 4. **Install / update BETA**,
 5. **Leave BETA**,
 6. **Server** – status, stop / start, restart,
-7. **Additional modules** – Plex Media Server, Samba, SMB client, ffmpeg, Tailscale VPN (recommended), WireGuard VPN: status, install, update, stop until the next restart, restart, uninstall,
+7. **Additional modules** – Plex Media Server, Samba, SMB client, ffmpeg, Tailscale VPN (recommended), WireGuard VPN: status, install, update, stop until the next restart, restart, autostart on / off, uninstall,
 8. **Install another version** – the stable versions since 1.2.5 with a short description; settings are kept (a copy goes to `.version-snapshots`), back to the newest: option 1 or `./update.sh`,
 9. **Uninstall**,
 10. **Cancel**.
@@ -311,10 +311,100 @@ Host zero
 
 From now on `ssh plex` or `ssh zero` is enough. Stop a command with **Ctrl+C**, end the session with `exit`.
 
-## 8. Security in your home network {#security}
+## 8. Access from outside your home (VPN) {#vpn}
+
+The panel is meant for your home network. From outside – a phone on mobile data, work, a hotel – you connect through a **VPN**, a private network of your own devices. No ports are opened on the router and the panel stays invisible on the internet.
+
+**Tailscale** is recommended: it connects your devices into a private network, has a free plan for home use, and you log in with a Google, Apple, Microsoft or GitHub account – always on the Tailscale website. The panel never sees or stores that login.
+
+### Installing Tailscale on the Raspberry Pi {#vpn-install}
+
+1. Run `./fix.sh` → **7 Additional modules** → **Tailscale VPN** → **Install**. The script installs Tailscale from the official repository and allows the panel to log in to Tailscale itself.
+2. At the end it asks whether to log in – you can skip that and log in from the panel (below).
+3. If the installation stops with **404 Not Found** or **File has unexpected size** for system packages (e.g. `iptables`), a Raspbian mirror is at fault, not Tailscale. `fix.sh` then offers to download from the main Raspbian archive – answer **Yes**. By hand:
+
+```bash
+sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
+sudo sed -i 's#http://raspbian.raspberrypi.org/raspbian#http://archive.raspbian.org/raspbian#' /etc/apt/sources.list
+sudo apt-get update && sudo apt-get install -y tailscale
+```
+
+If Tailscale was installed earlier in another way, choose **Update** in the same place – the panel then gets the permission to log in.
+
+### Logging in from the panel {#vpn-login}
+
+1. At home open the panel → **Settings → VPN** → **Log in**.
+2. A button with the link to the Tailscale login page appears, together with the same link as a **QR code** – log in on the computer or on the phone.
+3. Choose the account and confirm adding the device. After a few seconds the tab changes to **“Connected to Tailscale”** by itself and the **VPN** badge in the header turns green.
+4. Recommended: in the Tailscale console (login.tailscale.com/admin) → **Machines** → the Raspberry Pi's “…” menu → **Disable key expiry**. Otherwise Tailscale asks to log the Raspberry Pi in again about every 180 days.
+
+### Phone and computer {#vpn-devices}
+
+1. Install the **Tailscale** app (App Store, Google Play, tailscale.com/download) and log in to **the same account**.
+2. In the VPN tab, section **“Open the panel over VPN”**, scan the QR code with the phone (Tailscale app switched on) or copy the address.
+3. Add the panel to the phone's home screen like a regular website. The Raspberry Pi's VPN address (`100.x.y.z`) and its name (`raspberrypi.tail1234.ts.net`) are **permanent** – they do not change after a restart or when devices are switched off.
+
+Away from home, switch the VPN on in the Tailscale app and open the saved address. At home you do not need the VPN – the panel works at its usual address, e.g. `http://192.168.1.10:8800`. Each address is a separate site for the browser, so you log in to the panel over VPN separately (the session lasts 30 days).
+
+### HTTPS in the VPN – a padlock instead of “Not secure” {#vpn-https}
+
+Over VPN the connection is encrypted by Tailscale anyway, but the browser shows “Not secure” because the panel uses `http`. Tailscale can issue a real certificate for the panel:
+
+1. **Settings → VPN** → **Switch HTTPS on**.
+2. The first time, **Allow HTTPS in Tailscale** appears – open the link, allow HTTPS certificates for your account and click **Switch HTTPS on** again.
+3. The panel is available at `https://raspberrypi.tail1234.ts.net` (no port number). This address is first in the list and in the QR code. **The first opening takes 10–20 seconds** while Tailscale gets the certificate; after that it opens at once.
+
+Only your devices in Tailscale can open the HTTPS address. On the approval page Tailscale may also offer **Funnel** – the panel does not need it and never turns it on (Funnel publishes an address to the whole internet). If Funnel were on for the panel's address, the VPN tab shows a red warning with the command to switch it off. You can remove the Funnel permission in the Tailscale console: **Access controls → Definitions → Node attributes** → the row with the `funnel` attribute → “…” → **Delete**.
+
+### Where the panel is available {#vpn-access}
+
+In the VPN tab you choose:
+
+- **Home network + VPN** (default) – the panel opens at home and from your devices in Tailscale,
+- **Home network only** – requests that come through the VPN (also the HTTPS address) are refused. Tailscale still works for other things (SSH, files, Plex).
+
+Switching to “home network only” while you use the panel over VPN cuts you off at once – the panel asks first. You can switch back only from home.
+
+### What the VPN tab shows {#vpn-tab}
+
+- **Status:** connected / not logged in / switched off / service not running / not installed – with a hint what to do.
+- **This device, VPN address and name, account.**
+- **Tailscale version** with an **up to date** or **out of date** tag (and the current version number); a red **security update** tag means an urgent security fix. Update: `fix.sh` → 7 → Tailscale → **Update**.
+- **Devices in your VPN** – which are online.
+- **Log out / change account** – the Raspberry Pi leaves your Tailscale network; then **Log in** gives a new link and QR code (same or another account). Logged in again to the same account, the Raspberry Pi usually comes back with the same address; check in the console that key expiry is still disabled.
+
+The **VPN** badge in the header: grey – VPN not set up, amber – needs attention, green – connected (with the VPN address). Clicking it opens the VPN tab.
+
+### Autostart and switching off {#vpn-autostart}
+
+Tailscale starts with the system and connects without logging in again. You can change that:
+
+- `sudo tailscale down` – disconnects the Raspberry Pi from the VPN (stays so after a restart); back: **Connect** in the panel or `sudo tailscale up`,
+- `./fix.sh` → 7 → Tailscale → **Autostart: on → turn off** – the service does not start after a restart (turn it back on there).
+
+### WireGuard {#vpn-wireguard}
+
+> **Checked only in synthetic tests** – with simulated system commands, without a real WireGuard connection. If something works differently for you, please report it on GitHub (Issues).
+
+WireGuard is for those who already run their own WireGuard server. Unlike Tailscale it needs **a port opened on the router** (usually UDP 51820) and keys and peers set up by hand.
+
+- Installing the tools: `./fix.sh` → 7 → **WireGuard VPN** → **Install**.
+- Configuration: the file `/etc/wireguard/wg0.conf` (keys, addresses, peers) – see the WireGuard documentation; start it with autostart: `sudo systemctl enable --now wg-quick@wg0`.
+- The VPN tab shows a **WireGuard** section: active connections (e.g. `wg0`), their addresses and whether they start with the system. Connected peers and traffic: `sudo wg show`.
+- Open the panel at the Raspberry Pi's address in the WireGuard network, e.g. `http://10.8.0.1:8800`. The **“Home network only”** setting applies only to Tailscale.
+
+### When something does not work {#vpn-trouble}
+
+- **“The panel is not allowed…”** – run once on the Raspberry Pi the command shown in the tab (`sudo tailscale set --operator=<user>`) or `fix.sh` → 7 → Tailscale → **Update**.
+- **“Service is not running”** – `sudo systemctl enable --now tailscaled`.
+- **The phone does not open the address** – is the Tailscale app switched on and logged in to the same account? On the Raspberry Pi: `tailscale status` (device list; `direct` – direct connection, `relay` – through a Tailscale relay server: works, only slower).
+- **The panel over VPN says “available only in the home network”** – at home switch to **Home network + VPN**.
+- **The HTTPS address loads slowly the first time** – that is the certificate being fetched, 10–20 seconds.
+
+## 9. Security in your home network {#security}
 
 - **Do not forward port 8800** (or 32400 without a reason) on your router and do not put the Raspberry Pi in a DMZ – the panel is meant for your home network.
-- For access from outside use a **VPN**: `./fix.sh` → 7 → **Tailscale** (recommended, no open ports) or WireGuard.
+- For access from outside use a **VPN** ([chapter 8](#vpn)): **Tailscale** (recommended, no open ports) or WireGuard.
 - Use **strong passwords**: for the panel, for your Raspberry Pi account and for Samba. Better still, log in with SSH keys ([chapter 7](#ssh)).
 - In Samba use `valid users` – never share folders with guests.
 - Keep the system up to date: `sudo apt update && sudo apt full-upgrade`, and Plex Downloader with `./update.sh`.

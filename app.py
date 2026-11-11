@@ -28,6 +28,7 @@ import naming
 import wizard
 import plexservers
 import thumbgen
+import vpn
 from downloader import Manager, disk_status, probe
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -51,9 +52,30 @@ _failed_logins = {}
 
 # ---------------------------------------------------------------- autoryzacja
 def _same_origin():
-    """Zwykły formularz HTML (bez nagłówka X-PlexDL): Origin/Referer musi wskazywać ten sam host."""
+    """Zwykły formularz HTML (bez nagłówka X-PlexDL): Origin/Referer musi wskazywać ten sam host.
+    Behind `tailscale serve` (HTTPS in the VPN) the browser's host may arrive as X-Forwarded-Host."""
     src = request.headers.get("Origin") or request.headers.get("Referer") or ""
-    return bool(src) and urlparse(src).netloc == request.host
+    if not src:
+        return False
+    hosts = {request.host}
+    if vpn.via_tailscale_proxy(request.remote_addr, request.headers):
+        fwd = request.headers.get("X-Forwarded-Host")
+        if fwd:
+            hosts.add(fwd)
+    return urlparse(src).netloc in hosts
+
+
+def client_ip():
+    """The browser's address; behind `tailscale serve` the request comes from localhost."""
+    ip = request.remote_addr or "?"
+    if vpn.via_tailscale_proxy(ip, request.headers):
+        ip = (request.headers.get("X-Forwarded-For") or "").split(",")[0].strip() or \
+            request.headers.get("Tailscale-User-Login") or ip
+    return ip
+
+
+def via_vpn():
+    return vpn.via_vpn(client_ip()) or vpn.via_tailscale_proxy(request.remote_addr, request.headers)
 
 
 def login_required(view):
@@ -76,7 +98,7 @@ def login():
     no_password = not cfg.get("password_hash")
     error = ""
     if request.method == "POST" and not no_password:
-        ip = request.remote_addr or "?"
+        ip = client_ip()
         fails = _failed_logins.get(ip, 0)
         if fails >= 3:
             time.sleep(min(10, fails))  # spowolnienie zgadywania hasła
@@ -191,8 +213,109 @@ def api_status():
                    engine={"ok": manager.engine_ok},
                    downloads=sum(1 for j in manager.list() if j["status"] in ("downloading", "queued")),
                    ops=fm.ops.active(),
-                   vpn={"available": False, "planned": True},
+                   vpn=_vpn_brief(),
                    version=VERSION)
+
+
+def _vpn_brief():
+    """Header badge: only what it needs (the full status is in Settings → VPN)."""
+    try:
+        v = vpn.status(max_age=30)
+    except Exception:   # never break the header because of VPN
+        v = {"installed": False, "state": "absent"}
+    return {"installed": v.get("installed"), "state": v.get("state"), "ip": v.get("ip", ""),
+            "via_vpn": via_vpn()}
+
+
+def _vpn_payload(v):
+    port = int(config.get().get("port", 8800))
+    urls = []
+    v["https"] = {"on": False, "url": "", "other": False, "public": False}
+    if v.get("state") == "Running":
+        v["https"] = vpn.https_status(port)
+        if v["https"]["on"]:
+            urls.append({"kind": "https", "url": v["https"]["url"]})
+        if v.get("ip"):
+            urls.append({"kind": "ip", "url": "http://%s:%d" % (v["ip"], port)})
+        if v.get("dns_name") and v.get("magic_dns"):
+            urls.append({"kind": "name", "url": "http://%s:%d" % (v["dns_name"], port)})
+    v.update(port=port, urls=urls, via_vpn=via_vpn(), lan_only=bool(config.get().get("vpn_lan_only")),
+             wireguard=vpn.wireguard_status(),
+             system_user=getpass.getuser(), app_dir=BASE_DIR)
+    return jsonify(v)
+
+
+@app.route("/api/vpn")
+@login_required
+def api_vpn():
+    return _vpn_payload(vpn.status(max_age=0 if request.args.get("force") else 5))
+
+
+@app.route("/api/vpn/login", methods=["POST"])
+@login_required
+def api_vpn_login():
+    """Starts the Tailscale login: returns the link to open (also as a QR code for the phone)."""
+    v = vpn.login()
+    if v.get("state") == "Running":
+        actlog.write("VPN", _("Tailscale connected (%s)") % (v.get("ip") or "?"))
+    elif v.get("login_url"):
+        actlog.write("VPN", _("Tailscale login started from the panel"))
+    return _vpn_payload(v)
+
+
+@app.before_request
+def vpn_gate():
+    """Settings → VPN → "Home network only": requests that come through the VPN are refused."""
+    if not config.get().get("vpn_lan_only") or not via_vpn():
+        return None
+    msg = _("The panel is available only in the home network. You can change this at home in Settings → VPN.")
+    if request.path.startswith("/api/"):
+        return jsonify(error=msg), 403
+    return app.response_class("<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'>"
+                              "<title>Plex Downloader</title><body style='font-family:sans-serif;padding:24px'>"
+                              "<h2>Plex Downloader</h2><p>%s</p>" % msg, status=403, mimetype="text/html")
+
+
+@app.route("/api/vpn/access", methods=["POST"])
+@login_required
+def api_vpn_access():
+    lan_only = bool((request.get_json(silent=True) or {}).get("lan_only"))
+    config.update(note="VPN access changed", vpn_lan_only=lan_only)
+    actlog.write("VPN", _("Panel available: home network only") if lan_only else _("Panel available: home network + VPN"))
+    return jsonify(ok=True, lan_only=lan_only)
+
+
+@app.route("/api/vpn/logout", methods=["POST"])
+@login_required
+def api_vpn_logout():
+    res = vpn.logout()
+    if res["ok"]:
+        actlog.write("VPN", _("Tailscale logged out from the panel"))
+    return jsonify(res)
+
+
+@app.route("/api/vpn/https", methods=["POST"])
+@login_required
+def api_vpn_https():
+    """HTTPS in the VPN: Tailscale's own certificate for <name>.ts.net, visible only in your VPN."""
+    on = bool((request.get_json(silent=True) or {}).get("on"))
+    port = int(config.get().get("port", 8800))
+    res = vpn.set_https(on, port)
+    if res["ok"]:
+        actlog.write("VPN", (_("HTTPS in the VPN switched on: %s") % res["url"]) if on
+                     else _("HTTPS in the VPN switched off"))
+    return jsonify(res)
+
+
+@app.route("/api/vpn/qr")
+@login_required
+def api_vpn_qr():
+    text = (request.args.get("text") or "").strip()
+    if not text or len(text) > 400:
+        return jsonify(error=_("Nothing to encode.")), 400
+    resp = app.response_class(vpn.qr_svg(text), mimetype="image/svg+xml")
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
 
 
 @app.route("/api/probe", methods=["POST"])

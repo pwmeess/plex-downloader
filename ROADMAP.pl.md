@@ -2,7 +2,7 @@
 
 🇬🇧 [English](ROADMAP.md) · 🇵🇱 **Polski** · Historia zmian: [CHANGELOG.md](CHANGELOG.md)
 
-Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.3.1** · BETA: **1.4.0-beta3**
+Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.4.0** · BETA: **1.5.0-beta0**
 
 ## Stałe zasady (sprawdzać przy każdej wersji)
 
@@ -43,6 +43,8 @@ Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.3.1** · BETA: **1.4.0
 | 1.4.0-beta1 | Działająca zakładka VPN (status Tailscale, adres, kod QR, logowanie z panelu, urządzenia) i plakietka VPN w nagłówku |
 | 1.4.0-beta2 | HTTPS w VPN, tylko sieć domowa / + VPN, wylogowanie / zmiana konta, status WireGuard; `fix.sh` autostart wł./wył. i główne archiwum Raspbiana |
 | 1.4.0-beta3 | Rozdział o VPN w poradnikach EN/PL (WireGuard: tylko testy syntetyczne) |
+| 1.4.0 (stabilna) | Wszystko z 1.4.0-beta1…beta3: dostęp zdalny przez VPN (status Tailscale, kod QR, logowanie, HTTPS w VPN, tylko sieć domowa / + VPN, status WireGuard), rozdział o VPN w poradnikach |
+| 1.5.0-beta0 | 1.4.0 z nowym numerem wersji; baza dla 1.5 (bez nowych funkcji) |
 
 ## Do poprawy
 
@@ -107,7 +109,7 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
 
 ## 1.4 – dostęp zdalny przez VPN
 
-Kolejne kroki: `1.4.0-beta0` (= 1.3.0 + zapowiedź VPN, gotowe) → `1.4.0-beta1` (działająca zakładka VPN, gotowe) → `1.4.0-beta2` (HTTPS, tylko sieć domowa / + VPN, status WireGuard, gotowe) → `1.4.0-beta3` (instrukcja, gotowe) → `1.4.0`.
+Kolejne kroki: `1.4.0-beta0` (= 1.3.0 + zapowiedź VPN, gotowe) → `1.4.0-beta1` (działająca zakładka VPN, gotowe) → `1.4.0-beta2` (HTTPS, tylko sieć domowa / + VPN, status WireGuard, gotowe) → `1.4.0-beta3` (instrukcja, gotowe) → `1.4.0` (wydana).
 
 Zapowiedzi VPN (zakładka i przycisk w nagłówku) są widoczne tylko w BETA; w wersji stabilnej wrócą razem z działającą funkcją.
 
@@ -118,9 +120,13 @@ Zapowiedzi VPN (zakładka i przycisk w nagłówku) są widoczne tylko w BETA; w 
 - [x] Panel bez otwartych portów na routerze (Tailscale).
 - [x] Instrukcja EN/PL (Tailscale na Pi, telefonie i komputerze; WireGuard sprawdzony tylko w testach syntetycznych) (1.4.0-beta3).
 
-## 1.5 – dodawanie plików z komputera i z pendrive'a
+## 1.5 – seriale, dodawanie plików z komputera i z pendrive'a
 
-Status: **jeszcze nie zrobione** (omawiane wcześniej, zaplanowane na tę wersję).
+Kolejne kroki: `1.5.0-beta0` (= 1.4.0, gotowe) → `1.5.0-beta1` … → `1.5.0`.
+
+- [ ] Seriale: przełącznik „Odcinki / Całość” na pasku zaznaczenia; całość do istniejącego folderu serialu łączy się z nim; konflikt: Pomiń istniejące (domyślnie) / Nadpisz / Anuluj.
+- [ ] Widok odcinków w Menedżerze plików: wspólna miniatura, opis S01E01, edycja tylko sezonu i odcinka, usuwanie.
+- [ ] Przenoszenie lokalne i kilka poprawek z testów.
 - [ ] Przeciągnięcie pliku z komputera do okna przeglądarki: wysyłanie w częściach ze wznawianiem, pasek postępu, wybór dysku i kategorii, nazwa zgodna z Plex.
 - [ ] Wysyłanie kilku plików naraz (np. cały sezon z napisami).
 - [ ] Import z pendrive'a podłączonego do Pi: wykrycie, lista plików, kopiowanie z weryfikacją SHA-256 do wybranej kategorii.

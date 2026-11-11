@@ -21,6 +21,7 @@
     if (name === "plex") loadPlexStatus();
     if (name === "preview") renderThumbDisks();
     if (name === "account") renderAccount();
+    if (name === "vpn") loadVpn(); else stopVpnPoll();
     $(".win-body", dlg).scrollTop = 0;
   }
   $$(".tabs button", dlg).forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
@@ -648,6 +649,314 @@
       window.PD.refreshStatus();
     } catch (e) { m.className = "form-msg bad"; m.textContent = e.message; }
   });
+
+  // ------------------------------------------------------------------ VPN (Tailscale)
+  let vpnPoll = null, vpnUrl = null, vpnHttpsWas = false, httpsNote = null;
+  function stopVpnPoll() { clearTimeout(vpnPoll); vpnPoll = null; }
+  dlg.addEventListener("close", stopVpnPoll);
+  $("#vpnRefresh").addEventListener("click", () => loadVpn(true));
+
+  function cmdBox(cmd) {
+    const pre = el("div", "cmd-code");
+    const b = el("button", "icon-btn copy"); b.type = "button"; b.title = t("Copy"); b.appendChild(icon("copy"));
+    b.addEventListener("click", async () => {
+      const ok = await copyText(cmd);
+      b.classList.toggle("done", ok); b.replaceChildren(icon(ok ? "check" : "copy"));
+      toast(ok ? t("Copied to clipboard.") : t("Could not copy – select the text and copy it manually."), !ok);
+      setTimeout(() => { b.classList.remove("done"); b.replaceChildren(icon("copy")); }, 1800);
+    });
+    pre.append(el("code", null, cmd), b);
+    return pre;
+  }
+  function stateBox(dotCls, title, text) {
+    const box = el("div", "vpn-state");
+    const txt = el("div"); txt.append(el("b", null, title));
+    if (text) { txt.append(el("br")); txt.append(document.createTextNode(text)); }
+    box.append(el("span", "dot " + dotCls), txt);
+    return box;
+  }
+  function qrImg(text, alt) {
+    const img = el("img", "vpn-qr"); img.alt = alt;
+    img.src = "/api/vpn/qr?text=" + encodeURIComponent(text);
+    return img;
+  }
+  function step(text, cmd) {
+    const li = el("li", null, text);
+    if (cmd) li.appendChild(cmdBox(cmd));
+    return li;
+  }
+
+  async function loadVpn(force) {
+    stopVpnPoll();
+    try { renderVpn(await api("/api/vpn" + (force ? "?force=1" : ""))); }
+    catch (e) { $("#vpnBody").replaceChildren(el("p", "form-msg bad", e.message)); }
+  }
+  async function vpnLogin(btn) {
+    btn.disabled = true; btn.textContent = t("Starting…");
+    try { renderVpn(await api("/api/vpn/login", {})); }
+    catch (e) { toast(e.message, true); btn.disabled = false; }
+  }
+
+  async function setHttps(on, btn) {
+    btn.disabled = true; btn.textContent = on ? t("Switching on…") : t("Switching off…");
+    let r;
+    try { r = await api("/api/vpn/https", { on }); }
+    catch (e) { toast(e.message, true); btn.disabled = false; return; }
+    httpsNote = r.ok ? null : r;
+    if (r.ok && on) toast(t("HTTPS is on. The first opening can take a few seconds while Tailscale gets the certificate."));
+    if (r.ok && !on) toast(t("HTTPS in the VPN is off."));
+    await loadVpn(true);
+  }
+
+  function httpsBox(v) {
+    const h = v.https || {};
+    const box = el("div", "vpn-https");
+    const head = el("h3", null, t("Secure connection (HTTPS) in the VPN") + " ");
+    const tip = el("button", "info-i", "i"); tip.type = "button";
+    tip.dataset.tip = t("Tailscale issues a real certificate for the panel's name in your VPN, so the browser shows a padlock instead of “Not secure”. Only your devices in Tailscale can open this address – nothing is opened on the internet.\n\nThe connection over VPN is encrypted by Tailscale either way; HTTPS removes the browser warning and lets the browser remember the password safely.\n\nIn the home network the panel stays at its usual http address.");
+    head.append(tip);
+    box.append(head);
+    const acts = el("div", "vpn-actions");
+    if (h.on) {
+      box.append(stateBox("", t("HTTPS is on"), h.url));
+      if (h.public) {
+        box.append(el("div", "vpn-warn bad", t("Warning: Tailscale Funnel is on for this address, so the panel can be opened from the whole internet, not only from your VPN. Switch Funnel off on the Raspberry Pi:")));
+        box.append(cmdBox("tailscale funnel --https=443 off"));
+      }
+      const off = el("button", "btn-soft small", t("Switch HTTPS off")); off.type = "button";
+      off.addEventListener("click", () => setHttps(false, off));
+      acts.append(off);
+    } else if (h.other) {
+      box.append(el("div", "vpn-warn", t("Port 443 in Tailscale on this Raspberry Pi is already used for something else (tailscale serve). The panel does not change it.")));
+      return box;
+    } else {
+      box.append(el("p", null, t("The panel over VPN now uses http. Switch HTTPS on to get an address with a padlock:") + " "),
+        el("p", "vpn-mono", "https://" + (v.dns_name || "…")));
+      const on = el("button", "btn-accent", t("Switch HTTPS on")); on.type = "button";
+      on.addEventListener("click", () => setHttps(true, on));
+      acts.append(on);
+    }
+    box.append(acts);
+    const n = httpsNote;
+    if (n && n.enable_url) {
+      box.append(el("p", null, t("First, allow HTTPS certificates in your Tailscale account (once, takes a moment). Open the link, confirm, then click “Switch HTTPS on” again.")));
+      const a = el("a", "btn-soft small", t("Allow HTTPS in Tailscale")); a.href = n.enable_url; a.target = "_blank"; a.rel = "noopener";
+      box.append(a);
+    } else if (n && n.denied) {
+      box.append(el("p", null, t("The panel is not allowed to change Tailscale settings yet. Run this once on the Raspberry Pi, then try again:")));
+      box.append(cmdBox(`sudo tailscale set --operator=${v.system_user || "pi"}`));
+    } else if (n && n.error) {
+      box.append(el("div", "vpn-warn", n.error));
+    }
+    return box;
+  }
+
+  function accessBox(v) {
+    const box = el("div", "vpn-https");
+    const head = el("h3", null, t("Where the panel is available") + " ");
+    const tip = el("button", "info-i", "i"); tip.type = "button";
+    tip.dataset.tip = t("Home network + VPN: the panel opens at home and from your devices in Tailscale.\n\nHome network only: requests that come through the VPN (also the HTTPS address) are refused – useful when you want Tailscale on this Raspberry Pi for other things (SSH, files, Plex) but not for the panel.\n\nThis can be changed back only from the home network.");
+    head.append(tip);
+    const seg = el("div", "segmented");
+    [[false, t("Home network + VPN")], [true, t("Home network only")]].forEach(([val, label]) => {
+      const b = el("button", v.lan_only === val ? "on" : "", label); b.type = "button";
+      b.addEventListener("click", async () => {
+        if (v.lan_only === val) return;
+        if (val && v.via_vpn) {
+          const ok = await modal({ title: t("Home network only?"), danger: true,
+            body: t("You are using the panel over VPN right now – the panel will close for you at once and can be switched back only from the home network."),
+            buttons: [{ label: t("Cancel"), value: false }, { label: t("Switch to home network only"), value: true, cls: "btn-danger" }] });
+          if (!ok) return;
+        }
+        try {
+          await api("/api/vpn/access", { lan_only: val });
+          toast(val ? t("The panel is now available only in the home network.") : t("The panel is available at home and over VPN."));
+          if (val && v.via_vpn) { location.reload(); return; }
+          loadVpn(true);
+        } catch (e) { toast(e.message, true); }
+      });
+      seg.append(b);
+    });
+    box.append(head, seg);
+    return box;
+  }
+
+  function wireguardBox(w) {
+    const box = el("div", "vpn-https");
+    box.append(el("h3", null, "WireGuard"));
+    if (!w.interfaces.length) {
+      box.append(el("p", "hint", t("WireGuard is installed, but no WireGuard connection is active. Connections are set up by hand in /etc/wireguard (Tailscale does this for you).")));
+      return box;
+    }
+    const kv = el("dl", "vpn-kv");
+    w.interfaces.forEach((i) => {
+      const dd = el("dd"); dd.append(el("code", null, i.addresses.join(", ") || "–"));
+      if (i.service) dd.append(document.createTextNode(" · " + t("starts with the system")));
+      kv.append(el("dt", null, i.name), dd);
+    });
+    box.append(kv, el("p", "hint", t("Connected peers and traffic (needs administrator rights):")), cmdBox("sudo wg show"));
+    return box;
+  }
+
+  async function vpnLogout(v) {
+    const body = el("div");
+    body.append(el("p", null, t("This Raspberry Pi leaves your Tailscale network. Log in again (to the same or another account) with the Log in button.")));
+    if (v.via_vpn) body.append(el("p", "form-msg bad", t("You are using the panel over VPN right now – you will lose the connection and can log in again only from the home network.")));
+    const ok = await modal({ title: t("Log out of Tailscale?"), body, danger: true,
+      buttons: [{ label: t("Cancel"), value: false }, { label: t("Log out"), value: true, cls: "btn-danger" }] });
+    if (!ok) return;
+    let r;
+    try { r = await api("/api/vpn/logout", {}); } catch (e) { toast(e.message, true); return; }
+    if (r.ok) { toast(t("Logged out of Tailscale.")); vpnUrl = null; loadVpn(true); return; }
+    if (r.denied) {
+      const b = el("div");
+      b.append(el("p", null, t("The panel is not allowed to change Tailscale settings yet. Run this once on the Raspberry Pi, then try again:")),
+        cmdBox(`sudo tailscale set --operator=${v.system_user || "pi"}`));
+      await modal({ title: t("Log out of Tailscale?"), body: b });
+    } else toast(r.error, true);
+  }
+
+  function renderVpn(v) {
+    const body = $("#vpnBody");
+    const out = [];
+    const dir = v.app_dir || "~/plex-downloader";
+    const fixCmd = `cd ${dir} && ./fix.sh`;
+    const opCmd = `sudo tailscale set --operator=${v.system_user || "pi"}`;
+    const st = v.state;
+
+    if (!v.installed) {
+      out.push(stateBox("off", t("Tailscale is not installed."), t("Without a VPN the panel works only in your home network.")));
+      const ol = el("ol", "vpn-steps");
+      ol.append(
+        step(t("On the Raspberry Pi run the repair menu and choose Additional modules → Tailscale VPN → Install. At the end it asks whether to log in – you can do that here as well."), fixCmd),
+        step(t("Install the Tailscale app on your phone or computer and log in to the same account.")),
+        step(t("Come back to this tab: the panel address in the VPN and a QR code for the phone will be here.")));
+      out.push(ol);
+    } else if (st === "daemon_down") {
+      out.push(stateBox("bad", t("Tailscale is installed, but its service is not running."),
+        t("Start it on the Raspberry Pi (it also starts by itself after every restart):")));
+      out.push(cmdBox("sudo systemctl enable --now tailscaled"));
+    } else if (st === "Running") {
+      out.push(stateBox("", t("Connected to Tailscale"),
+        v.via_vpn ? t("You are using the panel over VPN right now.") : t("The panel can be opened from anywhere through the VPN.")));
+      const kv = el("dl", "vpn-kv");
+      const add = (k, val, mono) => { if (!val) return; const dd = el("dd"); dd.append(mono ? el("code", null, val) : document.createTextNode(val)); kv.append(el("dt", null, k), dd); };
+      add(t("This device"), v.hostname);
+      add(t("VPN address"), v.ip, true);
+      add(t("Name in the VPN"), v.magic_dns ? v.dns_name : "", true);
+      add(t("Account"), v.account);
+      if (v.version) {
+        const dd = el("dd"); dd.append(document.createTextNode(v.version + " "));
+        if (v.outdated === false) dd.append(el("span", "tag ok", t("up to date")));
+        else if (v.outdated) {
+          dd.append(el("span", "tag " + (v.urgent ? "bad" : "warn"), v.urgent ? t("security update") : t("out of date")),
+            document.createTextNode(" " + t("current: {v}", { v: v.latest })));
+        }
+        kv.append(el("dt", null, t("Tailscale version")), dd);
+        if (v.outdated) {
+          const upd = el("dd", "vpn-upd");
+          upd.append(document.createTextNode(t("Update on the Raspberry Pi: fix.sh → Additional modules → Tailscale → Update, or:") + " "), el("code", null, "sudo apt-get update && sudo apt-get install --only-upgrade tailscale"));
+          kv.append(el("dt"), upd);
+        }
+      }
+      out.push(kv);
+      out.push(httpsBox(v));
+
+      if (v.urls && v.urls.length) {
+        out.push(el("h3", null, t("Open the panel over VPN")));
+        const hasHttps = v.urls.some((u) => u.kind === "https");
+        if (!vpnUrl || !v.urls.some((u) => u.url === vpnUrl) || (hasHttps && !vpnHttpsWas)) vpnUrl = v.urls[0].url;
+        vpnHttpsWas = hasHttps;
+        const wrap = el("div", "vpn-open");
+        const left = el("div", "vpn-urls");
+        const qrBox = el("div", "vpn-qrbox");
+        const showQr = () => qrBox.replaceChildren(qrImg(vpnUrl, t("QR code")), el("div", "vpn-qr-cap", t("Scan with your phone (Tailscale app switched on)")));
+        v.urls.forEach((u) => {
+          const row = el("button", "vpn-url" + (u.url === vpnUrl ? " on" : "")); row.type = "button";
+          row.append(el("code", null, u.url), el("span", "k", u.kind === "https" ? t("secure (HTTPS)") : u.kind === "ip" ? t("by address") : t("by name")));
+          const cp = el("span", "icon-btn copy"); cp.title = t("Copy"); cp.appendChild(icon("copy"));
+          cp.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            const ok = await copyText(u.url);
+            toast(ok ? t("Copied to clipboard.") : t("Could not copy – select the text and copy it manually."), !ok);
+          });
+          row.append(cp);
+          row.addEventListener("click", () => {
+            vpnUrl = u.url; $$(".vpn-url", left).forEach((x) => x.classList.toggle("on", x === row)); showQr();
+          });
+          left.append(row);
+        });
+        const hint = el("p", "hint", t("Works on any device logged in to the same Tailscale account. Add it to the home screen of your phone like a regular website."));
+        left.append(hint);
+        showQr();
+        wrap.append(left, qrBox);
+        out.push(wrap);
+      }
+
+      out.push(el("h3", null, t("Devices in your VPN") + ` (${v.peers.filter((p) => p.online).length}/${v.peers.length})`));
+      if (!v.peers.length) out.push(el("p", "hint", t("No other devices yet – install the Tailscale app on your phone and log in to the same account.")));
+      else {
+        const list = el("div", "vpn-peers");
+        v.peers.forEach((p) => {
+          const row = el("div", "vpn-peer");
+          const n = el("span", "n", p.name); if (p.os) n.append(el("small", null, p.os));
+          row.append(el("span", "dot" + (p.online ? "" : " off")), n, el("code", null, p.ip));
+          row.title = p.online ? t("online") : t("offline");
+          list.append(row);
+        });
+        out.push(list);
+      }
+    } else if (st === "NeedsMachineAuth") {
+      out.push(stateBox("warn", t("This Raspberry Pi is waiting for approval."),
+        t("Approve it in the Tailscale admin console (Machines), then click Refresh.")));
+      const a = el("a", "btn-soft small", t("Open the Tailscale admin console"));
+      a.href = "https://login.tailscale.com/admin/machines"; a.target = "_blank"; a.rel = "noopener";
+      out.push(a);
+    } else {
+      const loggedOut = st === "NeedsLogin" || st === "NoState";
+      out.push(stateBox("warn", loggedOut ? t("This Raspberry Pi is not logged in to Tailscale yet.") : t("Tailscale is logged in but switched off."),
+        loggedOut ? t("Click Log in – a link opens the Tailscale login page. You can also scan it with your phone.") : t("Click Connect to switch it on again.")));
+      if (v.login_url) {
+        const wrap = el("div", "vpn-open");
+        const left = el("div", "vpn-urls");
+        const a = el("a", "btn-accent", t("Open the Tailscale login page"));
+        a.href = v.login_url; a.target = "_blank"; a.rel = "noopener";
+        left.append(a, el("p", "hint", t("After logging in, this tab updates by itself within a few seconds.")));
+        const q = el("div", "vpn-qrbox"); q.append(qrImg(v.login_url, t("QR code")), el("div", "vpn-qr-cap", t("Log in on your phone")));
+        wrap.append(left, q);
+        out.push(wrap);
+      } else if (v.need_operator) {
+        out.push(el("p", null, t("The panel is not allowed to switch Tailscale on yet. Run this once on the Raspberry Pi, then click the button again:")));
+        out.push(cmdBox(opCmd));
+        const again = el("button", "btn-accent", t("Try again")); again.type = "button";
+        again.addEventListener("click", () => vpnLogin(again));
+        const acts = el("div", "vpn-actions"); acts.append(again);
+        out.push(acts);
+        out.push(el("p", "hint", t("Or log in directly in the terminal – a link is shown there:")));
+        out.push(cmdBox("sudo tailscale up"));
+      } else {
+        const acts = el("div", "vpn-actions");
+        const b = el("button", "btn-accent", loggedOut ? t("Log in") : t("Connect")); b.type = "button";
+        b.addEventListener("click", () => vpnLogin(b));
+        acts.append(b);
+        out.push(acts);
+      }
+      if (v.login_error && !v.need_operator) out.push(el("div", "vpn-warn", v.login_error));
+      if (v.login_running || v.login_url) vpnPoll = setTimeout(() => loadVpn(), 3000);
+    }
+    (v.health || []).forEach((h) => out.push(el("div", "vpn-warn", h)));
+    if (v.installed) out.push(accessBox(v));
+    if (st === "Running") {
+      const acts = el("div", "vpn-actions");
+      const lo = el("button", "btn-soft small", t("Log out / change account")); lo.type = "button";
+      lo.addEventListener("click", () => vpnLogout(v));
+      acts.append(lo);
+      out.push(acts);
+    }
+    if (v.wireguard && v.wireguard.installed) out.push(wireguardBox(v.wireguard));
+    body.replaceChildren(...out);
+    if (st === "Running" && window.PD.refreshStatus) window.PD.refreshStatus();
+  }
 
   $("#openSettings").addEventListener("click", () => open());
   window.PD.openSettings = open;

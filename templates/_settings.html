@@ -13,6 +13,7 @@
     <button type="button" role="tab" data-tab="preview"><svg class="i"><use href="#i-image"/></svg>{{ _("Preview & posters") }}</button>
     <button type="button" role="tab" data-tab="backups"><svg class="i"><use href="#i-history"/></svg>{{ _("Backups") }}</button>
     <button type="button" role="tab" data-tab="account"><svg class="i"><use href="#i-user"/></svg>{{ _("Account") }}</button>
+    <button type="button" role="tab" data-tab="vpn"><svg class="i"><use href="#i-shield"/></svg>VPN</button>
   </nav>
 
   <div class="win-body">
@@ -146,6 +147,17 @@
 
       <h3 class="fold-h"><button type="button" class="fold" id="cmdToggle" aria-expanded="false"><svg class="i"><use href="#i-chev-r"/></svg>{{ _("Terminal commands (SSH)") }}</button> <button type="button" class="info-i" data-tip="{{ _('Log in to the Raspberry Pi over SSH (Terminal on Mac, PowerShell on Windows), then copy a command with the button on the right and paste it into the terminal.') }}">i</button></h3>
       <div id="cmdList" class="cmd-list" hidden></div>
+    </section>
+
+    <!-- VPN: remote access over Tailscale -->
+    <section class="tab-panel vpn-panel" data-panel="vpn" hidden>
+      <div class="vpn-top">
+        <h3 class="first">{{ _("Remote access – Tailscale") }} <button type="button" class="info-i" data-tip="{{ _('Tailscale connects your devices into a private network. You open the panel from anywhere as if you were at home, and it stays invisible on the internet: no ports are opened on the router.\n\nYou log in to Tailscale on its website (Google, Apple, Microsoft or GitHub account). The panel never sees or stores that login. Tailscale has a free plan for home use.') }}">i</button></h3>
+        <button type="button" class="btn-soft small" id="vpnRefresh"><svg class="i"><use href="#i-retry"/></svg>{{ _("Refresh") }}</button>
+      </div>
+      <div id="vpnBody" class="vpn-body"><p class="muted">{{ _("Checking…") }}</p></div>
+
+      <div class="vpn-guide"><a class="btn-soft small" href="/guide#vpn" target="_blank" rel="noopener"><svg class="i"><use href="#i-folder"/></svg>{{ _("Guide: access from outside your home (VPN)") }}</a></div>
     </section>
   </div>
 

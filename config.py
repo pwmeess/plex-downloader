@@ -47,6 +47,7 @@ DEFAULTS = {
     "theme": "dark",             # dark | light
     "wizard_done": False,        # kreator pierwszego uruchomienia zakończony
     "vpn": {"enabled": False, "provider": "tailscale", "listen": "lan"},  # zarezerwowane (wkrótce)
+    "vpn_lan_only": False,       # True = the panel refuses requests that come through the VPN
 }
 
 # Klucze, których przywrócenie kopii NIE nadpisuje (konto i sekrety bieżącej instalacji)

@@ -33,6 +33,7 @@ Historia zmian: [CHANGELOG.md](CHANGELOG.md) · Plan kolejnych wersji: [ROADMAP.
 - **Okładki:** zapisywane w folderze filmu jako `Tytuł (Rok).thumb.jpg` (z TMDB). Gdy TMDB nic nie zwróci, plik nie powstaje i widać obrazek zastępczy. Wyszukiwanie w TMDB można wyłączyć dla wybranej kategorii (np. domowe wideo).
 - **Serwery Plex w nagłówku (1.2):** automatyczne wykrywanie w sieci (GDM) i status online/offline, także dla serwerów dodanych ręcznie.
 - **Kopie zapasowe ustawień (1.2):** punkt przywracania po każdej zmianie, przechowywany 30 dni (ostatni zawsze zostaje). Przywrócenie nie zmienia loginu ani hasła.
+- **Dostęp zdalny przez VPN (1.4):** Ustawienia → VPN pokazują stan Tailscale, adres panelu w Twoim VPN z kodem QR dla telefonu, urządzenia w VPN i to, czy Tailscale jest aktualny; logowanie i zmiana konta z panelu, **HTTPS w VPN** z certyfikatem Tailscale (kłódka, bez numeru portu), „tylko sieć domowa” albo „sieć domowa + VPN” oraz plakietka VPN w nagłówku. Na routerze nic nie jest otwierane. WireGuard: tylko status. Poradnik: rozdział 8.
 - **Eksport i import ustawień (1.3):** plik JSON bez loginu, hasła i kluczy (klucz TMDB opcjonalnie); przy imporcie widać, co się zmieni, i można wybrać sekcje.
 - **Pływające okno ustawień z zakładkami (1.2)** i podpowiedzi ⓘ przy opcjach.
 - Przyciski **Google** i **Zwiastun (YouTube)** w karcie filmu.
@@ -88,7 +89,7 @@ Nagłówek okna Ustawień pokazuje, czy na GitHubie są nowe zmiany.
 ## Wersje: stabilna i BETA
 
 - **Stabilna** (gałąź `main`): instaluje ją `setup.sh` i aktualizuje `update.sh`. Panel sprawdza i ogłasza tylko wersje stabilne.
-- **BETA** (gałąź `beta`): nowe, mniej przetestowane funkcje. Instaluje się ją i aktualizuje wyłącznie przez `fix.sh` (opcja 4). Przed pierwszym przejściem na BETA `fix.sh` zapisuje obecne ustawienia, a przy wyjściu z BETA (opcja 5) wraca do wersji stabilnej, usuwa ustawienia eksperymentalne i przywraca zapisane.
+- **BETA** (gałąź `beta`): nowe, mniej przetestowane funkcje (przygotowywana jest tam kolejna wersja). Instaluje się ją i aktualizuje wyłącznie przez `fix.sh` (opcja 4). Przed pierwszym przejściem na BETA `fix.sh` zapisuje obecne ustawienia, a przy wyjściu z BETA (opcja 5) wraca do wersji stabilnej, usuwa ustawienia eksperymentalne i przywraca zapisane.
 
 ## Naprawa: `fix.sh`
 
@@ -105,7 +106,7 @@ Menu otwiera się w oknie jak `raspi-config` (strzałki + Enter). Na bardzo mał
 4. **Install / update the latest BETA** – instaluje lub aktualizuje wersję BETA,
 5. **Leave BETA** – powrót do wersji stabilnej z usunięciem ustawień eksperymentalnych (bez dodatkowych pytań),
 6. **Server** – status (usługa, autostart, adres panelu, ostatnie wpisy logu), wstrzymanie serwera (autostart bez zmian) albo ponowne uruchomienie bez restartu Pi, restart procesu serwera,
-7. **Moduły dodatkowe** (1.3) – programy współpracujące z Plex Downloaderem: **Plex Media Server**, **Samba** (udostępnianie folderów przez SMB), **klient SMB** (`cifs-utils`, montowanie udziałów), **ffmpeg** (plakaty z kadrów filmu), **Tailscale VPN** (zalecany) i **WireGuard VPN**. Po wybraniu modułu najpierw widać jego status, potem tylko sensowne opcje: zainstaluj, zaktualizuj, zatrzymaj (do restartu, autostart bez zmian) / uruchom, uruchom ponownie, odinstaluj całkowicie. Odinstalowanie Plexa zostawia filmy; baza Plexa jest usuwana tylko po Twojej zgodzie.
+7. **Moduły dodatkowe** (1.3) – programy współpracujące z Plex Downloaderem: **Plex Media Server**, **Samba** (udostępnianie folderów przez SMB), **klient SMB** (`cifs-utils`, montowanie udziałów), **ffmpeg** (plakaty z kadrów filmu), **Tailscale VPN** (zalecany) i **WireGuard VPN**. Po wybraniu modułu najpierw widać jego status, potem tylko sensowne opcje: zainstaluj, zaktualizuj, zatrzymaj (do restartu, autostart bez zmian) / uruchom, uruchom ponownie, autostart wł./wył. (zostaje po restarcie), odinstaluj całkowicie. Odinstalowanie Plexa zostawia filmy; baza Plexa jest usuwana tylko po Twojej zgodzie.
 8. **Zainstaluj inną wersję** (1.3) – wybór wersji stabilnej od 1.2.5 z listy z krótkim opisem; ustawienia zostają (najpierw kopia do `.version-snapshots`), nagłówek menu pokazuje, że zainstalowana jest starsza wersja, a opcja 1 albo `./update.sh` wraca do najnowszej,
 9. **Uninstall** – usuwa usługę z autostartu, opcjonalnie także folder aplikacji,
 10. **Cancel**.
@@ -235,4 +236,4 @@ sudo systemctl restart plex-downloader         # restart
 
 ## Bezpieczeństwo
 
-Aplikacja jest przeznaczona do sieci domowej. Nie wystawiaj portu 8800 do internetu. Do zdalnego dostępu użyj VPN, np. Tailscale lub WireGuard.
+Aplikacja jest przeznaczona do sieci domowej. Nie wystawiaj portu 8800 do internetu. Do zdalnego dostępu użyj VPN: Tailscale (Ustawienia → VPN, poradnik rozdział 8) albo WireGuard.

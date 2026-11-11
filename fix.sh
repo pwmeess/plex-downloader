@@ -205,6 +205,32 @@ pkg_installed() { dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q "insta
 pkg_version()   { dpkg-query -W -f='${Version}' "$1" 2>/dev/null; }
 apt_update()    { c_info "$(L "Refreshing the package list…" "Odświeżam listę pakietów…")"; sudo apt-get update -qq; }
 
+# Raspbian (32-bit Raspberry Pi OS) downloads from a random mirror; some of them lose files of older
+# releases (404) or are half-synced ("unexpected size"). The main archive always has them.
+RASPBIAN_MIRROR="http://raspbian.raspberrypi.org/raspbian"
+RASPBIAN_MAIN="http://archive.raspbian.org/raspbian"
+mirror_fix() {
+  grep -q "$RASPBIAN_MIRROR" /etc/apt/sources.list 2>/dev/null || return 1
+  c_warn "$(L "Some packages could not be downloaded from a Raspbian mirror (the mirror is broken or still syncing)." "Części pakietów nie udało się pobrać z serwera lustrzanego Raspbiana (serwer jest uszkodzony albo w trakcie synchronizacji).")"
+  ask_yes_no "$(L "Download from the main Raspbian archive instead (archive.raspbian.org) and try again? A copy of the package source list is kept (/etc/apt/sources.list.bak)." "Pobierać z głównego archiwum Raspbiana (archive.raspbian.org) i spróbować ponownie? Kopia listy źródeł zostanie zachowana (/etc/apt/sources.list.bak).")" || return 1
+  sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
+  sudo sed -i "s#$RASPBIAN_MIRROR#$RASPBIAN_MAIN#" /etc/apt/sources.list
+  c_ok "$(L "Package source: main Raspbian archive" "Źródło pakietów: główne archiwum Raspbiana")"
+  apt_update
+}
+
+# apt_install pkg… – like apt-get install -y, but offers the main archive when a mirror fails
+apt_install() {
+  local log rc; log="$(mktemp)"
+  sudo apt-get install -y "$@" 2>&1 | tee "$log"; rc=${PIPESTATUS[0]}
+  if [ "$rc" -ne 0 ] && grep -qE "404 +Not Found|unexpected size|Hash Sum mismatch|Failed to fetch|Nie udało się pobrać" "$log" \
+     && mirror_fix; then
+    sudo apt-get install -y "$@"; rc=$?
+  fi
+  rm -f "$log"
+  return "$rc"
+}
+
 mod_name() {
   case "$1" in
     plex)      echo "Plex Media Server" ;;
@@ -232,6 +258,7 @@ mod_state() {     # short state for the module list
   if ! pkg_installed "$pkg"; then L "not installed" "nie zainstalowano"; return; fi
   if [ -n "$svc" ]; then
     if systemctl is-active --quiet "$svc"; then L "running" "działa"; else L "stopped" "zatrzymany"; fi
+    systemctl is-enabled --quiet "$svc" 2>/dev/null || printf ', %s' "$(L "no autostart" "bez autostartu")"
   else
     L "installed" "zainstalowano"
   fi
@@ -273,7 +300,8 @@ mod_status() {
         echo "  $(L "VPN address:" "Adres w VPN:") $(tailscale ip -4 2>/dev/null || echo "– ($(L "not logged in" "nie zalogowano"))")"
         tailscale status 2>/dev/null | head -5 | sed 's/^/    /'
       fi
-      echo "  $(L "Remote access to the panel without opening ports on the router (guide in 1.4)." "Zdalny dostęp do panelu bez otwierania portów na routerze (instrukcja w 1.4).")" ;;
+      echo "  $(L "Remote access to the panel without opening ports on the router." "Zdalny dostęp do panelu bez otwierania portów na routerze.")"
+      echo "  $(L "Status, panel address and QR code for the phone: panel → Settings → VPN." "Status, adres panelu i kod QR dla telefonu: panel → Ustawienia → VPN.")" ;;
     wireguard)
       if pkg_installed "$pkg"; then
         if [ -f /etc/wireguard/wg0.conf ]; then sudo wg show 2>/dev/null | sed 's/^/    /'
@@ -281,6 +309,13 @@ mod_status() {
       fi ;;
   esac
   echo
+}
+
+# The panel runs as this user; as the Tailscale "operator" it may log in / switch Tailscale on itself.
+app_user() { local u; u="$(systemctl show -p User --value plex-downloader 2>/dev/null)"; echo "${u:-$(id -un)}"; }
+ts_operator() {
+  sudo tailscale set --operator="$(app_user)" 2>/dev/null \
+    && echo "  $(L "The panel may now log in to Tailscale (Settings → VPN)." "Panel może teraz logować się do Tailscale (Ustawienia → VPN).")"
 }
 
 mod_install() {
@@ -291,16 +326,20 @@ mod_install() {
       curl -fsSL https://downloads.plex.tv/plex-keys/PlexSign.key | sudo gpg --dearmor --yes -o /usr/share/keyrings/plex.gpg
       echo "deb [signed-by=/usr/share/keyrings/plex.gpg] https://downloads.plex.tv/repo/deb public main" \
         | sudo tee /etc/apt/sources.list.d/plexmediaserver.list >/dev/null
-      apt_update && sudo apt-get install -y plexmediaserver ;;
+      apt_update && apt_install plexmediaserver ;;
     tailscale)
-      curl -fsSL https://tailscale.com/install.sh | sh || return 1
+      if ! curl -fsSL https://tailscale.com/install.sh | sh; then
+        # the Tailscale repository is added first – a failure after that is usually a broken Raspbian mirror
+        [ -f /etc/apt/sources.list.d/tailscale.list ] && mirror_fix && apt_install tailscale tailscale-archive-keyring || return 1
+      fi
+      ts_operator
       if ask_yes_no "$(L "Log in to Tailscale now? A link to open in the browser will be shown." "Zalogować się teraz do Tailscale? Pojawi się link do otwarcia w przeglądarce.")"; then
         sudo tailscale up
       else
-        echo "  $(L "Log in later with:" "Zalogujesz się później:")  sudo tailscale up"
+        echo "  $(L "Log in later in the panel (Settings → VPN) or with:" "Zalogujesz się później w panelu (Ustawienia → VPN) albo poleceniem:")  sudo tailscale up"
       fi ;;
-    wireguard) apt_update && sudo apt-get install -y wireguard-tools ;;
-    *) apt_update && sudo apt-get install -y "$pkg" ;;
+    wireguard) apt_update && apt_install wireguard-tools ;;
+    *) apt_update && apt_install "$pkg" ;;
   esac
   pkg_installed "$pkg" && c_ok "$(mod_name "$m"): $(L "installed" "zainstalowano") $(pkg_version "$pkg")"
   [ "$m" = "plex" ] && pkg_installed "$pkg" && echo "  $(L "Open:" "Otwórz:") http://$(hostname -I | awk '{print $1}'):32400/web"
@@ -308,8 +347,9 @@ mod_install() {
 
 mod_update() {
   local pkg; pkg="$(mod_pkg "$1")"
-  apt_update && sudo apt-get install -y --only-upgrade "$pkg" \
+  apt_update && apt_install --only-upgrade "$pkg" \
     && c_ok "$(mod_name "$1"): $(pkg_version "$pkg")"
+  [ "$1" = "tailscale" ] && ts_operator
   local svc; svc="$(mod_service "$1")"
   [ -n "$svc" ] && systemctl is-active --quiet "$svc" || true
 }
@@ -367,6 +407,11 @@ module_menu() {
         else
           add start "$(L "Start" "Uruchom")"
         fi
+        if systemctl is-enabled --quiet "$svc" 2>/dev/null; then
+          add autostart_off "$(L "Autostart: on → turn off (does not start after a restart)" "Autostart: włączony → wyłącz (nie wystartuje po restarcie)")"
+        else
+          add autostart_on "$(L "Autostart: off → turn on (starts after every restart)" "Autostart: wyłączony → włącz (startuje po każdym restarcie)")"
+        fi
       fi
       add uninstall "$(L "Uninstall completely" "Odinstaluj całkowicie")"
     fi
@@ -382,6 +427,14 @@ module_menu() {
       stop)      sudo systemctl stop "$svc" && c_ok "$(L "Stopped – starts again after a restart." "Zatrzymano – wystartuje po restarcie.")" ;;
       start)     sudo systemctl start "$svc" && sleep 1 && c_ok "$(L "Started:" "Uruchomiono:") $(systemctl is-active "$svc")" ;;
       restart)   sudo systemctl restart "$svc" && sleep 1 && c_ok "$(L "Restarted:" "Zrestartowano:") $(systemctl is-active "$svc")" ;;
+      autostart_off)
+        sudo systemctl disable "$svc" >/dev/null 2>&1 && c_ok "$(L "Autostart off – it stays off after a restart." "Autostart wyłączony – po restarcie się nie uruchomi.")"
+        if systemctl is-active --quiet "$svc" && ask_yes_no "$(L "Also stop it now?" "Zatrzymać też teraz?")"; then
+          sudo systemctl stop "$svc" && c_ok "$(L "Stopped." "Zatrzymano.")"
+        fi ;;
+      autostart_on)
+        sudo systemctl enable --now "$svc" >/dev/null 2>&1 && sleep 1 \
+          && c_ok "$(L "Autostart on – running:" "Autostart włączony – działa:") $(systemctl is-active "$svc")" ;;
       uninstall) mod_uninstall "$m" ;;
       *)         return 0 ;;
     esac

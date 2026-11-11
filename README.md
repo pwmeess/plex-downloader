@@ -40,6 +40,7 @@ Changelog: [CHANGELOG.md](CHANGELOG.md) · Roadmap: [ROADMAP.md](ROADMAP.md) · 
 - **Hidden TMDB key (1.2.6):** the key field is masked like a password, with "Show key" on demand; the panel does not send the key to the browser until you ask for it.
 - **Terminal commands** with a copy button in Settings → Account.
 - **Setup wizard (1.3):** first-run guide for disks and folders, Plex server and TMDB key; can be run again from Settings.
+- **Remote access over VPN (1.4):** Settings → VPN shows the Tailscale status, the panel's address in your VPN with a QR code for the phone, the devices in your VPN and whether Tailscale is up to date; log in or change the account from the panel, **HTTPS in the VPN** with Tailscale's own certificate (padlock, no port number), “home network only” or “home network + VPN”, and a VPN badge in the header. Nothing is opened on the router. WireGuard: status only. Guide: chapter 8.
 - Works on phones.
 
 ## Requirements
@@ -82,7 +83,7 @@ The header of the Settings window shows whether a newer stable version is availa
 ## Stable and BETA versions
 
 - **Stable** (branch `main`): installed by `setup.sh` and updated by `update.sh`. The panel only announces stable versions.
-- **BETA** (branch `beta`): new, less tested features (for example the VPN preview). Installed and updated only with `fix.sh` (option 4). Before the first switch to BETA, `fix.sh` saves your settings; leaving BETA (option 5) returns to stable, removes the experimental settings and restores the saved ones.
+- **BETA** (branch `beta`): new, less tested features (the next version is prepared there). Installed and updated only with `fix.sh` (option 4). Before the first switch to BETA, `fix.sh` saves your settings; leaving BETA (option 5) returns to stable, removes the experimental settings and restores the saved ones.
 
 ## Repair menu: `fix.sh`
 
@@ -99,7 +100,7 @@ The menu opens in a window like `raspi-config` (arrow keys + Enter). On a very s
 4. **Install / update the latest BETA**,
 5. **Leave BETA** – back to stable, experimental settings removed (no extra questions),
 6. **Server** – check status (service, autostart, panel address, last log lines), stop the server (autostart stays on) or start it again without restarting the Pi, restart the server process,
-7. **Additional modules** (1.3) – programs that work with Plex Downloader: **Plex Media Server**, **Samba** (sharing folders over SMB), **SMB client** (`cifs-utils`, mounting shares), **ffmpeg** (posters from video frames), **Tailscale VPN** (recommended) and **WireGuard VPN**. Choosing a module shows its status first, then only the actions that make sense: install, update, stop (until the next restart, autostart stays on) / start, restart, uninstall completely. Uninstalling Plex keeps your movies; the Plex database is deleted only if you agree.
+7. **Additional modules** (1.3) – programs that work with Plex Downloader: **Plex Media Server**, **Samba** (sharing folders over SMB), **SMB client** (`cifs-utils`, mounting shares), **ffmpeg** (posters from video frames), **Tailscale VPN** (recommended) and **WireGuard VPN**. Choosing a module shows its status first, then only the actions that make sense: install, update, stop (until the next restart, autostart stays on) / start, restart, autostart on / off (stays after a restart), uninstall completely. Uninstalling Plex keeps your movies; the Plex database is deleted only if you agree.
 8. **Install another version** (1.3) – choose a stable version since 1.2.5 from a list with short descriptions; your settings are kept (and copied to `.version-snapshots` first), the menu header shows when an older version is installed, and option 1 or `./update.sh` brings you back to the newest,
 9. **Uninstall** – removes the service from autostart, optionally also the app folder,
 10. **Cancel**.
@@ -217,4 +218,4 @@ sudo systemctl restart plex-downloader         # restart
 
 ## Security
 
-The app is meant for a home network. Do not expose port 8800 to the internet. For remote access use a VPN such as Tailscale or WireGuard.
+The app is meant for a home network. Do not expose port 8800 to the internet. For remote access use a VPN: Tailscale (Settings → VPN, guide chapter 8) or WireGuard.

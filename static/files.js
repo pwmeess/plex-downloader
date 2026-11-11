@@ -240,7 +240,11 @@
     body.appendChild(route);
     const how = el("p", "plan-how");
     if (plan.same_fs) how.append(el("b", null, t("Same disk:") + " "), t("instant move (location change, no copying)."));
-    else how.append(el("b", null, t("Other disk:") + " "), t("copy → SHA-256 verification → the original is removed only after a correct copy. Large files may take a few minutes."));
+    else {
+      // the verification step is struck through when “Skip SHA-256 verification” is ticked (applySkip)
+      how.append(el("b", null, t("Other disk:") + " "), t("copy") + " → ", el("span", "sha", t("verification with SHA-256")),
+        " → " + t("the original is removed only after a correct copy. Large files may take a few minutes."));
+    }
     body.appendChild(how);
     const ul = el("ul", "plan-list");
     plan.items.forEach((it) => {
@@ -260,6 +264,9 @@
   }
 
   // „Pomiń weryfikację SHA-256” – tylko przy przenoszeniu na inny dysk, domyślnie odznaczone
+  function applySkip(root, on) {
+    if (root) $$(".plan-how", root).forEach((h) => h.classList.toggle("skip", on));
+  }
   function skipVerifyBox() {
     const row = el("div", "skip-verify");
     const lab = el("label", "check");
@@ -268,6 +275,7 @@
     const tip = el("button", "info-i", "i"); tip.type = "button";
     tip.dataset.tip = t("About twice as fast: the copy is not read a second time to compare checksums. Only the file sizes are compared before the original is deleted, so a damaged copy may go unnoticed. Recommended only for files you can download again.");
     row.append(lab, tip);
+    cb.addEventListener("change", () => applySkip(row.closest("dialog") || row.parentElement, cb.checked));
     row.cb = cb;
     return row;
   }
@@ -334,6 +342,7 @@
         const plan = await api("/api/fm/plan", req);
         if (my !== seq) return;
         planBox.replaceChildren(planBody(plan)); planOk = plan.ok; setBtn();
+        applySkip(planBox, sv.cb.checked);
         sv.hidden = plan.same_fs;
       } catch (e) { if (my === seq) planBox.replaceChildren(el("p", "bad", e.message)); }
     }
