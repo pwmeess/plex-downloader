@@ -230,7 +230,7 @@ def _vpn_brief():
 def _vpn_payload(v):
     port = int(config.get().get("port", 8800))
     urls = []
-    v["https"] = {"on": False, "url": "", "other": False}
+    v["https"] = {"on": False, "url": "", "other": False, "public": False}
     if v.get("state") == "Running":
         v["https"] = vpn.https_status(port)
         if v["https"]["on"]:

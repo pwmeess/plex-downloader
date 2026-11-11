@@ -153,6 +153,13 @@ class TestCli(unittest.TestCase):
         self.assertEqual(r["url"], "https://plexpi.tail1234.ts.net")
         self.assertFalse(vpn.https_status(9999)["on"])          # another port = something else
         self.assertTrue(vpn.https_status(9999)["other"])
+        self.assertFalse(r["public"])
+        with open(os.environ["TS_FAKE_SERVE"]) as f:
+            cfg = json.load(f)
+        cfg["AllowFunnel"] = {"plexpi.tail1234.ts.net:443": True}
+        with open(os.environ["TS_FAKE_SERVE"], "w") as f:
+            json.dump(cfg, f)
+        self.assertTrue(vpn.https_status(8800)["public"])
         r = vpn.set_https(False, 8800)
         self.assertTrue(r["ok"])
         self.assertFalse(r["on"])

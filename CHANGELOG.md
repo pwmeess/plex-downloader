@@ -5,6 +5,7 @@ All notable changes to Plex Downloader. Stable versions live on the `main` branc
 ## 1.4.0-beta2 – in progress (BETA)
 
 - **HTTPS in the VPN (SSL):** Settings → VPN → “Switch HTTPS on”. Tailscale issues a real certificate for the panel's name in your VPN (`https://<name>.<tailnet>.ts.net`, no port number), so the browser shows a padlock instead of “Not secure”. Only your devices in Tailscale can open it; nothing is opened on the internet. If HTTPS certificates are not allowed in the Tailscale account yet, the panel shows the link to allow them. The HTTPS address is first in the list and in the QR code. In the home network the panel stays at its usual http address.
+- The panel never turns on Tailscale Funnel (public internet); if Funnel is on for the panel's address, the VPN tab shows a red warning with the command to switch it off.
 - VPN tab: “This device” shows the machine name from the Tailscale console.
 
 ## 1.4.0-beta1 – 2026-11-11 (BETA)

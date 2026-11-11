@@ -180,7 +180,7 @@ ENABLE_RE = re.compile(r"https://login\.tailscale\.com/f/\S+")
 
 def https_status(port):
     """{"on": bool, "url": "https://…", "other": bool} – other = serve is used for something else on 443."""
-    out = {"on": False, "url": "", "other": False}
+    out = {"on": False, "url": "", "other": False, "public": False}
     if not installed():
         return out
     try:
@@ -194,7 +194,8 @@ def https_status(port):
         h = ((web or {}).get("Handlers") or {}).get("/") or {}
         target = h.get("Proxy") or ""
         if re.search(r"(127\.0\.0\.1|localhost):%d/?$" % int(port), target):
-            out.update(on=True, url="https://" + host[:-4])
+            # Funnel would publish the panel on the internet – the panel never turns it on, but warns
+            out.update(on=True, url="https://" + host[:-4], public=bool((cfg.get("AllowFunnel") or {}).get(host)))
         else:
             out["other"] = True
     return out

@@ -719,6 +719,10 @@
     const acts = el("div", "vpn-actions");
     if (h.on) {
       box.append(stateBox("", t("HTTPS is on"), h.url));
+      if (h.public) {
+        box.append(el("div", "vpn-warn bad", t("Warning: Tailscale Funnel is on for this address, so the panel can be opened from the whole internet, not only from your VPN. Switch Funnel off on the Raspberry Pi:")));
+        box.append(cmdBox("tailscale funnel --https=443 off"));
+      }
       const off = el("button", "btn-soft small", t("Switch HTTPS off")); off.type = "button";
       off.addEventListener("click", () => setHttps(false, off));
       acts.append(off);

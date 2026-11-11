@@ -430,6 +430,7 @@ select.input option { background: var(--card); color: var(--text); }
 .vpn-https h3 { margin: 4px 0 0; }
 .vpn-https p { margin: 0; }
 .vpn-https .vpn-mono { font-family: var(--mono); font-size: 13px; color: var(--text); }
+.vpn-warn.bad { border-left-color: var(--err); color: var(--text); }
 .vpn-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .ph-list { font-size: 13.5px; padding-left: 18px; margin-top: 16px; }
 .ph-list li { margin: 4px 0; }
