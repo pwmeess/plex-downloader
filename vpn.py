@@ -259,3 +259,51 @@ def via_tailscale_proxy(remote_addr, headers):
         return False
     host = (headers.get("X-Forwarded-Host") or headers.get("Host") or "").split(":")[0]
     return bool(headers.get("Tailscale-User-Login")) or host.endswith(".ts.net")
+
+
+def logout():
+    """Logs this Raspberry Pi out of Tailscale (e.g. to log in to another account)."""
+    res = {"ok": False, "denied": False, "error": ""}
+    try:
+        p = _cli("logout", timeout=30)
+    except (OSError, subprocess.SubprocessError) as e:
+        res["error"] = str(e)
+        return res
+    out = ((p.stdout or "") + (p.stderr or "")).strip()
+    if p.returncode == 0:
+        res["ok"] = True
+    elif DENIED_RE.search(out):
+        res["denied"] = True
+    else:
+        res["error"] = out[:300] or "tailscale logout: exit %d" % p.returncode
+    _login.update(url="", error="", denied=False)
+    with _lock:
+        _cache["t"] = 0
+    return res
+
+
+# ---------------------------------------------------------------- WireGuard (status only)
+def wireguard_status():
+    """WireGuard interfaces on this Raspberry Pi, read without root (`ip`); peers need `sudo wg show`."""
+    out = {"installed": bool(shutil.which("wg") or shutil.which("wg-quick")), "interfaces": []}
+    try:
+        p = subprocess.run(["ip", "-o", "link", "show", "type", "wireguard"], capture_output=True, text=True, timeout=5)
+        names = [ln.split(":")[1].strip().split("@")[0] for ln in p.stdout.splitlines() if ln.count(":") >= 2]
+    except (OSError, subprocess.SubprocessError):
+        names = []
+    for n in names:
+        addrs = []
+        try:
+            a = subprocess.run(["ip", "-o", "addr", "show", "dev", n], capture_output=True, text=True, timeout=5).stdout
+            addrs = re.findall(r"inet6? (\S+)", a)
+        except (OSError, subprocess.SubprocessError):
+            pass
+        up = False
+        try:
+            up = subprocess.run(["systemctl", "is-active", "--quiet", "wg-quick@%s" % n], timeout=5).returncode == 0
+        except (OSError, subprocess.SubprocessError):
+            pass
+        out["interfaces"].append({"name": n, "addresses": addrs, "service": up})
+    if names:
+        out["installed"] = True
+    return out

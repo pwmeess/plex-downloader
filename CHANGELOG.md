@@ -2,10 +2,15 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
-## 1.4.0-beta2 – in progress (BETA)
+## 1.4.0-beta2 – 2026-11-11 (BETA)
 
 - **HTTPS in the VPN (SSL):** Settings → VPN → “Switch HTTPS on”. Tailscale issues a real certificate for the panel's name in your VPN (`https://<name>.<tailnet>.ts.net`, no port number), so the browser shows a padlock instead of “Not secure”. Only your devices in Tailscale can open it; nothing is opened on the internet. If HTTPS certificates are not allowed in the Tailscale account yet, the panel shows the link to allow them. The HTTPS address is first in the list and in the QR code. In the home network the panel stays at its usual http address.
 - The panel never turns on Tailscale Funnel (public internet); if Funnel is on for the panel's address, the VPN tab shows a red warning with the command to switch it off.
+- **Where the panel is available:** “Home network + VPN” (default) or “Home network only” – then requests that come through the VPN (also the HTTPS address) are refused, while Tailscale stays available for other things (SSH, files, Plex). Switching to “home network only” while using the panel over VPN asks first.
+- **Log out / change account:** logs this Raspberry Pi out of Tailscale (with a warning when you are connected over VPN); log in again with the Log in button.
+- **WireGuard status** in the VPN tab (interfaces and addresses, when WireGuard is installed).
+- `fix.sh` → Additional modules: **Autostart on / off** for modules with a service (Plex, Samba, Tailscale, WireGuard) – stays after a restart; the module list shows “no autostart”.
+- `fix.sh`: when a broken Raspbian mirror stops an installation (404, “unexpected size”), it offers to download from the main Raspbian archive instead (with a copy of the source list) and tries again.
 - VPN tab: “This device” shows the machine name from the Tailscale console.
 
 ## 1.4.0-beta1 – 2026-11-11 (BETA)

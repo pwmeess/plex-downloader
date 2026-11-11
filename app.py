@@ -239,7 +239,8 @@ def _vpn_payload(v):
             urls.append({"kind": "ip", "url": "http://%s:%d" % (v["ip"], port)})
         if v.get("dns_name") and v.get("magic_dns"):
             urls.append({"kind": "name", "url": "http://%s:%d" % (v["dns_name"], port)})
-    v.update(port=port, urls=urls, via_vpn=via_vpn(),
+    v.update(port=port, urls=urls, via_vpn=via_vpn(), lan_only=bool(config.get().get("vpn_lan_only")),
+             wireguard=vpn.wireguard_status(),
              system_user=getpass.getuser(), app_dir=BASE_DIR)
     return jsonify(v)
 
@@ -260,6 +261,37 @@ def api_vpn_login():
     elif v.get("login_url"):
         actlog.write("VPN", _("Tailscale login started from the panel"))
     return _vpn_payload(v)
+
+
+@app.before_request
+def vpn_gate():
+    """Settings → VPN → "Home network only": requests that come through the VPN are refused."""
+    if not config.get().get("vpn_lan_only") or not via_vpn():
+        return None
+    msg = _("The panel is available only in the home network. You can change this at home in Settings → VPN.")
+    if request.path.startswith("/api/"):
+        return jsonify(error=msg), 403
+    return app.response_class("<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'>"
+                              "<title>Plex Downloader</title><body style='font-family:sans-serif;padding:24px'>"
+                              "<h2>Plex Downloader</h2><p>%s</p>" % msg, status=403, mimetype="text/html")
+
+
+@app.route("/api/vpn/access", methods=["POST"])
+@login_required
+def api_vpn_access():
+    lan_only = bool((request.get_json(silent=True) or {}).get("lan_only"))
+    config.update(note="VPN access changed", vpn_lan_only=lan_only)
+    actlog.write("VPN", _("Panel available: home network only") if lan_only else _("Panel available: home network + VPN"))
+    return jsonify(ok=True, lan_only=lan_only)
+
+
+@app.route("/api/vpn/logout", methods=["POST"])
+@login_required
+def api_vpn_logout():
+    res = vpn.logout()
+    if res["ok"]:
+        actlog.write("VPN", _("Tailscale logged out from the panel"))
+    return jsonify(res)
 
 
 @app.route("/api/vpn/https", methods=["POST"])

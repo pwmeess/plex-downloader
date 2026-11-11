@@ -751,6 +751,71 @@
     return box;
   }
 
+  function accessBox(v) {
+    const box = el("div", "vpn-https");
+    const head = el("h3", null, t("Where the panel is available") + " ");
+    const tip = el("button", "info-i", "i"); tip.type = "button";
+    tip.dataset.tip = t("Home network + VPN: the panel opens at home and from your devices in Tailscale.\n\nHome network only: requests that come through the VPN (also the HTTPS address) are refused – useful when you want Tailscale on this Raspberry Pi for other things (SSH, files, Plex) but not for the panel.\n\nThis can be changed back only from the home network.");
+    head.append(tip);
+    const seg = el("div", "segmented");
+    [[false, t("Home network + VPN")], [true, t("Home network only")]].forEach(([val, label]) => {
+      const b = el("button", v.lan_only === val ? "on" : "", label); b.type = "button";
+      b.addEventListener("click", async () => {
+        if (v.lan_only === val) return;
+        if (val && v.via_vpn) {
+          const ok = await modal({ title: t("Home network only?"), danger: true,
+            body: t("You are using the panel over VPN right now – the panel will close for you at once and can be switched back only from the home network."),
+            buttons: [{ label: t("Cancel"), value: false }, { label: t("Switch to home network only"), value: true, cls: "btn-danger" }] });
+          if (!ok) return;
+        }
+        try {
+          await api("/api/vpn/access", { lan_only: val });
+          toast(val ? t("The panel is now available only in the home network.") : t("The panel is available at home and over VPN."));
+          if (val && v.via_vpn) { location.reload(); return; }
+          loadVpn(true);
+        } catch (e) { toast(e.message, true); }
+      });
+      seg.append(b);
+    });
+    box.append(head, seg);
+    return box;
+  }
+
+  function wireguardBox(w) {
+    const box = el("div", "vpn-https");
+    box.append(el("h3", null, "WireGuard"));
+    if (!w.interfaces.length) {
+      box.append(el("p", "hint", t("WireGuard is installed, but no WireGuard connection is active. Connections are set up by hand in /etc/wireguard (Tailscale does this for you).")));
+      return box;
+    }
+    const kv = el("dl", "vpn-kv");
+    w.interfaces.forEach((i) => {
+      const dd = el("dd"); dd.append(el("code", null, i.addresses.join(", ") || "–"));
+      if (i.service) dd.append(document.createTextNode(" · " + t("starts with the system")));
+      kv.append(el("dt", null, i.name), dd);
+    });
+    box.append(kv, el("p", "hint", t("Connected peers and traffic (needs administrator rights):")), cmdBox("sudo wg show"));
+    return box;
+  }
+
+  async function vpnLogout(v) {
+    const body = el("div");
+    body.append(el("p", null, t("This Raspberry Pi leaves your Tailscale network. Log in again (to the same or another account) with the Log in button.")));
+    if (v.via_vpn) body.append(el("p", "form-msg bad", t("You are using the panel over VPN right now – you will lose the connection and can log in again only from the home network.")));
+    const ok = await modal({ title: t("Log out of Tailscale?"), body, danger: true,
+      buttons: [{ label: t("Cancel"), value: false }, { label: t("Log out"), value: true, cls: "btn-danger" }] });
+    if (!ok) return;
+    let r;
+    try { r = await api("/api/vpn/logout", {}); } catch (e) { toast(e.message, true); return; }
+    if (r.ok) { toast(t("Logged out of Tailscale.")); vpnUrl = null; loadVpn(true); return; }
+    if (r.denied) {
+      const b = el("div");
+      b.append(el("p", null, t("The panel is not allowed to change Tailscale settings yet. Run this once on the Raspberry Pi, then try again:")),
+        cmdBox(`sudo tailscale set --operator=${v.system_user || "pi"}`));
+      await modal({ title: t("Log out of Tailscale?"), body: b });
+    } else toast(r.error, true);
+  }
+
   function renderVpn(v) {
     const body = $("#vpnBody");
     const out = [];
@@ -867,6 +932,15 @@
       if (v.login_running || v.login_url) vpnPoll = setTimeout(() => loadVpn(), 3000);
     }
     (v.health || []).forEach((h) => out.push(el("div", "vpn-warn", h)));
+    if (v.installed) out.push(accessBox(v));
+    if (st === "Running") {
+      const acts = el("div", "vpn-actions");
+      const lo = el("button", "btn-soft small", t("Log out / change account")); lo.type = "button";
+      lo.addEventListener("click", () => vpnLogout(v));
+      acts.append(lo);
+      out.push(acts);
+    }
+    if (v.wireguard && v.wireguard.installed) out.push(wireguardBox(v.wireguard));
     body.replaceChildren(...out);
     if (st === "Running" && window.PD.refreshStatus) window.PD.refreshStatus();
   }
