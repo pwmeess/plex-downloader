@@ -82,6 +82,42 @@
   [[nameIn, "name"], [showIn, "show"], [seasonIn, "season"], [epIn, "episode"], [epTitleIn, "epTitle"]]
     .forEach(([inp, key]) => inp.addEventListener("input", () => { st.dirty[key] = true; updatePreview(); }));
   [advEdition, advVersion, advId].forEach((i) => i.addEventListener("input", updatePreview));
+
+  // ---- edition: up to 3 tags joined into one Plex edition name (Plex allows one edition per movie)
+  const edInputs = () => [advEdition, ...$$("#edExtra input")];
+  function editionValue() { return edInputs().map((i) => i.value.trim()).filter(Boolean).join(" "); }
+  function edOptions(inp) {
+    // list of suggestions without the tags already chosen in the other fields
+    const used = new Set(edInputs().filter((i) => i !== inp).map((i) => i.value.trim().toLowerCase()).filter(Boolean));
+    const all = $$("#editionList option").map((o) => o.value);
+    const dl = $("#" + inp.getAttribute("list"));
+    dl.replaceChildren(...all.filter((v) => !used.has(v.toLowerCase())).map((v) => { const o = el("option"); o.value = v; return o; }));
+  }
+  function edUpdate() {
+    const n = edInputs().length;
+    $("#edAdd").hidden = n >= 3 || !advEdition.value.trim();
+    const len = editionValue().length;
+    const c = $("#edCount");
+    c.textContent = n > 1 || len > 32 ? t("{n}/32 characters", { n: len }) : "";
+    c.classList.toggle("bad", len > 32);
+  }
+  $("#edAdd").addEventListener("click", () => {
+    if (edInputs().length >= 3) return;
+    const k = edInputs().length;
+    const row = el("div", "ed-row");
+    const inp = el("input", "input"); inp.maxLength = 32; inp.placeholder = t("e.g. Blu-ray");
+    inp.setAttribute("list", "editionList" + k);
+    const dl = el("datalist"); dl.id = "editionList" + k;
+    const x = el("button", "icon-btn"); x.type = "button"; x.title = t("Remove"); x.appendChild(icon("x"));
+    x.addEventListener("click", () => { row.remove(); edUpdate(); updatePreview(); });
+    inp.addEventListener("focus", () => edOptions(inp));
+    inp.addEventListener("input", () => { edUpdate(); updatePreview(); });
+    row.append(inp, dl, x);
+    $("#edExtra").appendChild(row);
+    inp.focus();
+    edUpdate();
+  });
+  advEdition.addEventListener("input", edUpdate);
   advOn.addEventListener("change", () => { $("#advBody").hidden = !advOn.checked; updatePreview(); });
 
   function selectedDisk() { return st.disks.find((d) => d.id === st.diskId); }
@@ -91,7 +127,7 @@
     if (!advOn.checked || isOther()) return { folder: "", version: "" };
     const parts = [];
     if (advId.checked && st.infoItem) parts.push(`{tmdb-${st.infoItem.id}}`);
-    const ed = isTv() ? "" : cleanTag(advEdition.value);
+    const ed = isTv() ? "" : cleanTag(editionValue());
     if (ed) parts.push(`{edition-${ed}}`);
     return { folder: parts.length ? " " + parts.join(" ") : "", version: isTv() ? "" : cleanTag(advVersion.value, 40) };
   }
@@ -127,11 +163,11 @@
     if (!isTv() && !isOther() && nameIn.value.trim() && !/\(\d{4}\)/.test(nameIn.value)) {
       hint.appendChild(el("span", "warn", t("Add the year in brackets – Plex matches the movie better, e.g. “Title (2015)”.")));
     }
-    if (!isTv() && !isOther() && st.detectedEdition && cleanTag(advEdition.value) !== st.detectedEdition) {
+    if (!isTv() && !isOther() && st.detectedEdition && !edInputs().some((i) => cleanTag(i.value) === st.detectedEdition)) {
       const s = el("span", "ed-hint");
       s.append(t("Edition detected in the file name: {ed}.", { ed: st.detectedEdition }) + " ");
       const b = el("button", "linklike", t("Use")); b.type = "button";
-      b.addEventListener("click", () => { advOn.checked = true; $("#advBody").hidden = false; advEdition.value = st.detectedEdition; updatePreview(); });
+      b.addEventListener("click", () => { advOn.checked = true; $("#advBody").hidden = false; advEdition.value = st.detectedEdition; edUpdate(); updatePreview(); });
       s.appendChild(b);
       hint.appendChild(s);
     }
@@ -389,6 +425,7 @@
     seasonIn.value = 1; epIn.value = 1;
     st.probe = null; st.dirty = {}; st.catTouched = false; st.detectedEdition = ""; st.infoItem = null;
     $("#advBody").hidden = true;
+    $("#edExtra").replaceChildren(); edUpdate();
     $("#probeInfo").replaceChildren();
     $("#formMsg").textContent = "";
     setCat(st.cat, false);
@@ -404,11 +441,23 @@
       const first = st.disks.find(usable);
       if (first) st.diskId = first.id;
     }
+    if (!st.disks.length) {
+      // brak dysków (np. „Pomiń” w kreatorze): podpowiedź zamiast kafelków
+      const n = el("div", "panel-note no-disks");
+      n.append(icon("drive"), el("span", null, t("No disk yet – add one to start downloading.")));
+      const a = el("button", "linklike", t("Settings → Disks") + " →"); a.type = "button";
+      a.addEventListener("click", () => window.PD.openSettings && window.PD.openSettings("disks"));
+      const w = el("a", "linklike", t("Run setup wizard") + " →"); w.href = "/setup";
+      n.append(a, w);
+      box.appendChild(n);
+      return;
+    }
     st.disks.forEach((d) => {
       const can = usable(d);
-      const b = el("button", "disk" + (d.id === st.diskId && can ? " on" : ""));
+      const b = el("button", "disk" + (d.id === st.diskId && can ? " on" : "") + (can ? "" : " off"));
       b.type = "button";
-      b.disabled = !can;
+      // not „disabled”: the tile must stay draggable and its gear clickable
+      if (!can) b.setAttribute("aria-disabled", "true");
       b.title = diskPath(d) || t("No folder for this category");
       const ico = el("div", "ico"); ico.appendChild(icon("drive"));
       b.append(ico, el("div", "name", d.label), el("div", "sub", d.subtitle || d.mount));
@@ -422,7 +471,8 @@
       if (!d.ok) b.append(el("div", "problem", d.problem || t("Unavailable")));
       else if (!diskPath(d)) b.append(el("div", "problem muted", t("No “{name}” folder", { name: category().label })));
       else if (!d.folders[st.cat]) b.append(el("div", "problem", t("Folder does not exist")));
-      b.addEventListener("click", () => { st.diskId = d.id; store.set("plexdl.disk", d.id); renderDisks(); updatePreview(); });
+      b.addEventListener("click", () => { if (!can) return; st.diskId = d.id; store.set("plexdl.disk", d.id); renderDisks(); updatePreview(); });
+      window.PD.diskTile(b, d, box);
       box.appendChild(b);
     });
   }
@@ -441,7 +491,7 @@
       name: nameIn.value, show: showIn.value, season: seasonIn.value, episode: epIn.value,
       episode_title: epTitleIn.value, size: st.probe && st.probe.size,
       advanced: advOn.checked && !isOther() ? {
-        edition: isTv() ? "" : advEdition.value, version: isTv() ? "" : advVersion.value,
+        edition: isTv() ? "" : editionValue(), version: isTv() ? "" : advVersion.value,
         use_id: advId.checked && !!st.infoItem, tmdb_id: st.infoItem ? st.infoItem.id : null,
       } : null,
     };

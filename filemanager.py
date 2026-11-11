@@ -20,6 +20,7 @@ import actlog
 import config
 import movieinfo
 import naming
+import thumbgen
 from downloader import TMP_DIRNAME, disk_status
 from i18n import _
 
@@ -201,7 +202,7 @@ def list_items(disk_id, cat_id, busy=()):
     st = disk_status(d)
     return {"disk": d["id"], "disk_label": d["label"], "category": cat["id"], "kind": cat["kind"],
             "category_label": cat["label"], "path": base, "free": st["free"], "total": st["total"],
-            "thumbs_mode": config.get().get("thumbs_mode", "online"),
+            "thumbs_mode": config.get().get("thumbs_mode", "online"), "frames": frames_enabled(),
             "tmdb": movieinfo.configured() and cat.get("tmdb", True), "items": items}
 
 
@@ -631,6 +632,12 @@ class Ops:
             if op["cancel"]:
                 break
             op["current"] = name
+            th = find_thumb(base, name, is_dir)
+            if th and _is_own(th):        # chosen by hand (own image or a frame) – keep it
+                op["log"].append({"name": name, "ok": True, "note": "own"})
+                op["items_done"] += 1
+                op["done"] += 1
+                continue
             try:
                 fetch_thumb(cat["kind"], base, name, is_dir, force=True)
                 op["log"].append({"name": name, "ok": True})
@@ -676,6 +683,290 @@ def delete(disk_id, cat_id, names, busy=()):
         except (FMError, OSError) as e:
             problems.append("%s: %s" % (name, e))
     return {"removed": removed, "problems": problems}
+
+
+# ------------------------------------------------------------------ edycja nazwy (Plex) i własny plakat
+def _version_of(stem, bases):
+    """Wersja z nazwy pliku: „Tytuł (2009) {tmdb-1} - 1080p” → „1080p”."""
+    s = naming.strip_tags(stem)
+    for b in bases:
+        if b and s == b:
+            return ""
+        if b and s.startswith(b + " - "):
+            return s[len(b) + 3:].strip()
+    m = re.match(r"^.*?\(\d{4}\)\s+-\s+(.+)$", s)
+    return m.group(1).strip() if m else ""
+
+
+EXTRA_KINDS = ("trailer", "behindthescenes", "deleted", "featurette", "interview", "scene", "short", "other")
+
+
+def _default_versions(files, bases):
+    """Versions read from the names; files with their own names (e.g. „Film komunijny.mp4”,
+    „Skrót film.mp4”) keep that name as the version when the plain name would repeat."""
+    out = {f: _version_of(naming.split_ext(f)[0], bases) for f in files}
+    if len(files) > 1:
+        seen = {}
+        for f, v in out.items():
+            seen.setdefault(v, []).append(f)
+        for v, group in seen.items():
+            if len(group) > 1:
+                for f in group:
+                    stem = naming.strip_tags(naming.split_ext(f)[0])
+                    if not any(stem == b or stem.startswith(b + " - ") for b in bases):
+                        out[f] = naming.clean_tag(stem, 40)
+    return out
+
+
+def _main_videos(path):
+    try:
+        names = sorted(os.listdir(path))
+    except OSError:
+        return []
+    return [f for f in names if not f.startswith(".") and os.path.isfile(os.path.join(path, f)) and _is_video(f)]
+
+
+def item_details(disk_id, cat_id, name):
+    """Dane do okna „Edytuj”: tytuł, rok, edycja, TMDB ID i wersje plików wideo."""
+    _d, cat, base = location(disk_id, cat_id)
+    path = item_path(base, name)
+    is_dir = os.path.isdir(path)
+    label = name if is_dir else naming.split_ext(name)[0]
+    p = naming.parse_name(label)
+    bases = [naming.strip_tags(label)]
+    files = []
+    if cat["kind"] != "tv":
+        names = _main_videos(path) if is_dir else [name]
+        vers = _default_versions(names, bases)
+        files = [{"name": f, "version": vers[f]} for f in names]
+    return {"name": name, "kind": cat["kind"], "is_dir": is_dir, "title": p["title"] or label, "year": p["year"],
+            "edition": p["edition"], "tmdb": p["tmdb"], "files": files,
+            "tmdb_enabled": movieinfo.configured() and cat.get("tmdb", True),
+            "thumb": bool(find_thumb(base, name, is_dir))}
+
+
+def _rename_plan(base, name, kind, title, year, tmdb, edition, versions, episodes, extras=None):
+    path = item_path(base, name)
+    is_dir = os.path.isdir(path)
+    title = naming.sanitize(naming.strip_tags(title or ""))
+    if not title:
+        raise FMError(_("Enter the title."))
+    if year not in (None, ""):
+        try:
+            year = int(year)
+        except (TypeError, ValueError):
+            raise FMError(_("Invalid year."))
+        if not 1870 <= year <= 2100:
+            raise FMError(_("Invalid year."))
+    else:
+        year = None
+    tmdb = str(tmdb or "").strip()
+    if tmdb and not tmdb.isdigit():
+        raise FMError(_("Invalid %s ID.") % "TMDB")
+    new_base = title + (" (%d)" % year if year else "")
+    tags = naming._tags(None if kind == "tv" else edition, {"tmdb": tmdb} if tmdb else None)
+    new_root = new_base + tags
+    old_label = name if is_dir else naming.split_ext(name)[0]
+    inner = []    # (stara nazwa, nowa nazwa) w folderze filmu / ścieżki względne w serialu
+    if is_dir and kind != "tv":
+        taken = {}
+        mains = _main_videos(path)
+        defaults = _default_versions(mains, [naming.strip_tags(name)])
+        for f in mains:
+            stem, ext = naming.split_ext(f)
+            ver = naming.clean_tag((versions or {}).get(f, defaults[f]), 40)
+            kind_x = (extras or {}).get(f)
+            if kind_x in EXTRA_KINDS:
+                # Plex extra in the movie folder: „Description-trailer.mp4” (not a version of the movie)
+                label = naming.clean_tag(ver or naming.strip_tags(stem), 60).rstrip(" -") or "Extra"
+                new_stem = "%s-%s" % (label, kind_x)
+            else:
+                new_stem = new_root + (" - " + ver if ver else "")
+            if new_stem + ext in taken.values():
+                raise FMError(_("Two files would get the same name: %s") % (new_stem + ext))
+            taken[f] = new_stem + ext
+            for g in sorted(os.listdir(path)):   # plik + napisy / plakat o tym samym początku nazwy
+                if g == f or (g.startswith(stem + ".") and not _is_video(g) and not g.endswith(THUMB_EXTS)
+                              and os.path.isfile(os.path.join(path, g))):
+                    taken.setdefault(g, new_stem + (ext if g == f else g[len(stem):]))
+        for g in sorted(os.listdir(path)):       # plakat folderu i inne pliki „Nazwa folderu.*”
+            if g not in taken and g.startswith(name + ".") and os.path.isfile(os.path.join(path, g)):
+                taken[g] = new_root + g[len(name):]
+        inner = [(a, b) for a, b in taken.items() if a != b]
+        new_name = new_root
+    elif is_dir:
+        old_show = naming.strip_tags(name)
+        if episodes and old_show != new_base:
+            for root, dirs, files in os.walk(path):
+                dirs[:] = [x for x in dirs if not x.startswith(".") and x not in SKIP]
+                for f in files:
+                    if f.startswith(old_show + " - "):
+                        rel = os.path.relpath(os.path.join(root, f), path)
+                        inner.append((rel, os.path.join(os.path.dirname(rel), new_base + f[len(old_show):])))
+        new_name = new_root
+    else:
+        stem, ext = naming.split_ext(name)
+        ver = naming.clean_tag((versions or {}).get(name, _version_of(stem, [naming.strip_tags(stem)])), 40)
+        new_stem = new_root + (" - " + ver if ver else "")
+        new_name = new_stem + ext
+        for g in sorted(os.listdir(base)):       # napisy i plakat obok luźnego pliku
+            if g.startswith(stem + ".") and g != name and not _is_video(g):
+                inner.append((g, new_stem + g[len(stem):]))
+    if len(new_name.encode("utf-8")) > 240:
+        raise FMError(_("The name is too long."))
+    _safe_name(new_name)
+    for a, b in inner:
+        for part in b.split(os.sep):
+            _safe_name(part)
+    return {"path": path, "is_dir": is_dir, "new_name": new_name, "inner": inner}
+
+
+def _free(src, dst):
+    """Cel jest wolny albo to ten sam plik (zmiana tylko wielkości liter)."""
+    if not os.path.lexists(dst):
+        return True
+    try:
+        return os.path.samefile(src, dst)
+    except OSError:
+        return False
+
+
+def _ren(src, dst):
+    if src == dst:
+        return
+    if src.lower() == dst.lower():   # exFAT/SMB: sama zmiana wielkości liter przez nazwę pośrednią
+        mid = src + ".plexdl-ren"
+        os.rename(src, mid)
+        os.rename(mid, dst)
+    else:
+        os.rename(src, dst)
+
+
+def rename_item(disk_id, cat_id, name, title, year=None, tmdb=None, edition="", versions=None,
+                episodes=True, dry=False, busy=(), extras=None):
+    """Zmienia nazwę filmu/serialu wg zasad Plex: folder, pliki wideo, napisy i plakat."""
+    d, cat, base = location(disk_id, cat_id)
+    plan = _rename_plan(base, name, cat["kind"], title, year, tmdb, edition, versions, episodes, extras)
+    path, new_name, inner = plan["path"], plan["new_name"], plan["inner"]
+    if is_busy(path, busy):
+        raise FMError(_("a download into this folder is in progress"))
+    root = path if plan["is_dir"] else base
+    for a, b in inner:
+        if not _free(os.path.join(root, a), os.path.join(root, b)):
+            raise FMError(_("Already exists: %s") % b)
+    new_path = os.path.join(base, new_name)
+    if new_name != name and not _free(path, new_path):
+        raise FMError(_("Already exists: %s") % new_name)
+    out = {"new_name": new_name, "changes": ([{"from": name, "to": new_name}] if new_name != name else [])
+           + [{"from": a, "to": b} for a, b in inner]}
+    if dry:
+        return out
+    done = []
+    try:
+        for a, b in inner:
+            _ren(os.path.join(root, a), os.path.join(root, b))
+            done.append((os.path.join(root, b), os.path.join(root, a)))
+        if new_name != name:
+            _ren(path, new_path)
+    except OSError as e:
+        for b, a in reversed(done):   # wycofanie częściowych zmian
+            try:
+                _ren(b, a)
+            except OSError:
+                pass
+        raise FMError(_("Renaming failed: %s") % e)
+    _size_cache.pop(path, None)
+    _thumb_fail.pop(path, None)
+    actlog.write("RENAME", "%s → %s (%s / %s, %d file(s))" % (name, new_name, d["label"], cat["label"], len(inner)))
+    return out
+
+
+OWN_MARK = b"plexdl-own"
+
+
+def _mark(data, tag):
+    """JPEG comment (COM) right after SOI – lets „Refresh posters” skip posters chosen by hand."""
+    seg = b"\xff\xfe" + (len(tag) + 2).to_bytes(2, "big") + tag
+    return data[:2] + seg + data[2:]
+
+
+def _is_own(path):
+    try:
+        with open(path, "rb") as f:
+            return OWN_MARK in f.read(64)
+    except OSError:
+        return False
+
+
+def _write_thumb(base, name, is_dir, data):
+    stem = thumb_base(base, name, is_dir)
+    for ext in THUMB_EXTS:
+        if os.path.exists(stem + ext):
+            os.remove(stem + ext)
+    out = stem + THUMB
+    with open(out + ".part", "wb") as f:
+        f.write(data)
+    os.replace(out + ".part", out)
+    try:
+        os.chmod(out, 0o664)
+    except OSError:
+        pass
+    return out
+
+
+def frames_enabled():
+    return bool(config.get().get("thumbs_frames")) and thumbgen.available()
+
+
+def frame_thumb(base, name, is_dir):
+    """Automatic poster from a video frame (categories without TMDB, or nothing found in TMDB)."""
+    key = os.path.join(base, name)
+    lock = _thumb_locks.setdefault(key, threading.Lock())
+    with lock:
+        existing = find_thumb(base, name, is_dir)
+        if existing:
+            return existing
+        if time.time() - _thumb_fail.get(key + "#frame", 0) < FAIL_TTL:
+            raise FMError("no frame")
+        try:
+            data = thumbgen.best(thumbgen.first_video(key, _is_video))
+        except thumbgen.FrameError as e:
+            _thumb_fail[key + "#frame"] = time.time()
+            raise FMError(str(e))
+        return _write_thumb(base, name, is_dir, data)
+
+
+def frame_candidates(disk_id, cat_id, name, n=6, shuffle=False, at=None):
+    import base64
+    _d, _cat, base = location(disk_id, cat_id)
+    path = item_path(base, name)
+    try:
+        video = thumbgen.first_video(path, _is_video)
+        frames = thumbgen.frames_at(video, at, n) if at is not None else thumbgen.candidates(video, n, shuffle)
+    except thumbgen.FrameError as e:
+        raise FMError(str(e))
+    return {"frames": [{"t": t, "data": "data:image/jpeg;base64," + base64.b64encode(d).decode()} for t, d in frames]}
+
+
+def save_thumb(disk_id, cat_id, name, data):
+    """Własny plakat (JPEG przygotowany w przeglądarce) zamiast okładki z TMDB."""
+    _d, cat, base = location(disk_id, cat_id)
+    path = item_path(base, name)
+    if not data or data[:3] != b"\xff\xd8\xff" or len(data) > 4 * 1024 * 1024:
+        raise FMError(_("The image must be a JPEG up to 4 MB."))
+    _write_thumb(base, name, os.path.isdir(path), _mark(data, OWN_MARK))
+    actlog.write("POSTERS", "own poster: %s (%s)" % (name, cat["label"]))
+    return {"ok": True}
+
+
+def refresh_thumb(disk_id, cat_id, name):
+    _d, cat, base = location(disk_id, cat_id)
+    path = item_path(base, name)
+    if not movieinfo.configured():
+        raise FMError(_("No TMDB key – add it in Settings → Preview & posters."))
+    _thumb_fail.pop(os.path.join(base, name), None)
+    fetch_thumb(cat["kind"], base, name, os.path.isdir(path), force=True)
+    return {"ok": True}
 
 
 # ------------------------------------------------------------------ okładki
@@ -731,9 +1022,17 @@ def get_thumb(disk_id, cat_id, name):
     if existing:
         return existing
     mode = config.get().get("thumbs_mode", "online")
-    if mode != "online" or not movieinfo.configured() or not cat.get("tmdb", True):
+    if mode != "online":       # „only saved posters” / „no posters”: nothing new is created
         raise FMError("no poster")
-    return fetch_thumb(cat["kind"], base, name, is_dir)
+    if mode == "online" and movieinfo.configured() and cat.get("tmdb", True):
+        try:
+            return fetch_thumb(cat["kind"], base, name, is_dir)
+        except FMError:
+            if not frames_enabled():
+                raise
+    if frames_enabled():
+        return frame_thumb(base, name, is_dir)
+    raise FMError("no poster")
 
 
 def delete_thumbs(disk_id):
@@ -760,65 +1059,145 @@ def delete_thumbs(disk_id):
 
 
 # ------------------------------------------------------------------ „Aktualizuj ścieżki”
+# Folder names are compared after _norm(): lower case, no accents, letters and digits only, no plural “s”
+# („Home Videos” = „Home Video”, „TV-Shows” = „TV Shows”). Only names are read – never the contents.
 ALIASES = {
-    "movies": ["movies", "movie", "filmy", "film", "films"],
-    "tv": ["tv shows", "tv", "tvshows", "tv series", "series", "shows", "seriale", "serial"],
-    "kids": ["kids", "children", "dla dzieci", "bajki", "kids movies", "family"],
+    "movies": ["movies", "movie", "films", "film", "filmy", "cinema", "kino", "filmyhd"],
+    "tv": ["tv shows", "tv show", "tv", "tv series", "series", "shows", "seriale", "serial", "seriale tv"],
+    "kids": ["kids", "children", "dla dzieci", "dzieci", "bajki", "kids movies", "family", "cartoons", "kreskowki"],
 }
+WEAK_ALIASES = {"movies": ["videos", "video", "wideo"]}   # used only when nothing else matches
+NOT_VIDEO = {"music", "muzyka", "muza", "audio", "mp3", "flac", "photo", "photos", "zdjecia", "zdjecie", "foto",
+             "fotografie", "pictures", "picture", "images", "obrazy", "book", "books", "ksiazki", "ebooks",
+             "audiobooks", "audiobooki", "documents", "dokumenty", "backup", "backups", "kopie", "download",
+             "downloads", "pobrane", "torrent", "torrents", "software", "programy", "games", "gry", "system",
+             "temp", "tmp", "trash", "recycle", "lostfound", "timemachine", "podcast", "podcasts"}
+CONTAINER = re.compile(r"plex|media|library|biblioteka|multimedia|video|wideo|share|udzial|nas", re.I)
+SCAN_LIMIT = 3000       # folder names listed per disk at most
 
 
-def scan_paths(mount, categories, current=None, max_depth=3, max_dirs=4000):
-    """Szuka na dysku folderów pasujących do kategorii. Zwraca {id: {path, status}}:
-    status = ok (obecna ścieżka istnieje), found (znaleziono), missing (nie znaleziono)."""
+def _norm(name):
+    import unicodedata
+    n = unicodedata.normalize("NFKD", (name or "").lower().replace("ł", "l"))
+    n = re.sub(r"[^a-z0-9]", "", "".join(ch for ch in n if not unicodedata.combining(ch)))
+    return n[:-1] if len(n) > 3 and n.endswith("s") else n
+
+
+def _cat_names(c):
+    names = {c.get("folder") or "", c.get("label") or ""} | set(ALIASES.get(c.get("id"), []))
+    names |= {n for n in c.get("names") or [] if isinstance(n, str)}
+    return {_norm(n) for n in names if _norm(n)}
+
+
+def _list_dirs(path, budget):
+    try:
+        with os.scandir(path) as it:
+            out = []
+            for e in it:
+                if budget[0] <= 0:
+                    break
+                budget[0] -= 1
+                if e.name.startswith(".") or e.name in SKIP or e.name == TMP_DIRNAME:
+                    continue
+                try:
+                    if e.is_dir(follow_symlinks=False):
+                        out.append(e)
+                except OSError:
+                    continue
+            return sorted(out, key=lambda e: e.name.lower())
+    except OSError:
+        return []
+
+
+def scan_disk(mount, categories, current=None):
+    """Library folders on a disk, recognised by their names (2 levels, names only).
+    Returns ({category id: {path, status}}, [other video folders as suggestions])."""
     current = current or {}
     if not mount or not os.path.isdir(mount):
         raise FMError(_("Mount point not found"))
-    wanted = {}
-    for c in categories:
-        names = {(c.get("folder") or "").strip().lower(), (c.get("label") or "").strip().lower()}
-        names |= set(ALIASES.get(c.get("id"), []))
-        wanted[c["id"]] = {n for n in names if n}
-    found, visited = {}, 0
-    queue = [(mount, 0)]
-    while queue and visited < max_dirs:
-        path, depth = queue.pop(0)
-        try:
-            entries = sorted(os.scandir(path), key=lambda e: e.name.lower())
-        except OSError:
-            continue
-        for e in entries:
-            if e.name.startswith(".") or e.name in SKIP or not e.is_dir(follow_symlinks=False):
-                continue
-            visited += 1
-            low = e.name.lower()
-            for cid, names in wanted.items():
-                if low in names and cid not in found:
-                    found[cid] = e.path
-            if depth + 1 < max_depth:
-                queue.append((e.path, depth + 1))
-    # preferujemy foldery leżące obok już znalezionych (np. wszystkie w „Plex 1T/”)
-    roots = [os.path.dirname(p) for p in list(current.values()) + list(found.values()) if p and os.path.isdir(p)]
+    wanted = {c["id"]: _cat_names(c) for c in categories}
+    budget = [SCAN_LIMIT]
+    level0 = _list_dirs(mount, budget)
+    candidates = list(level0)        # (folders checked by name)
+    containers = [e for e in level0 if CONTAINER.search(e.name) and _norm(e.name) not in NOT_VIDEO]
+    if not any(_norm(e.name) in n for e in level0 for n in wanted.values()) and not containers:
+        containers = [e for e in level0 if _norm(e.name) not in NOT_VIDEO]   # e.g. /mnt/disk/Data/Movies
+    for c in containers:
+        sub = _list_dirs(c.path, budget)
+        candidates += sub
+        for e in sub:                # one more level only inside „Plex”-like folders (/Media/Plex/Movies)
+            if CONTAINER.search(e.name) and not any(_norm(e.name) in n for n in wanted.values()):
+                candidates += _list_dirs(e.path, budget)
+    hits = {}                        # category → [paths]
+    used = set()
+    for e in candidates:
+        n = _norm(e.name)
+        for cid, names in wanted.items():
+            if n in names:
+                hits.setdefault(cid, []).append(e.path)
+                used.add(e.path)
+    for cid, weak in WEAK_ALIASES.items():
+        if cid in wanted and cid not in hits:
+            for e in candidates:
+                if e.path not in used and _norm(e.name) in {_norm(w) for w in weak}:
+                    hits.setdefault(cid, []).append(e.path)
+                    used.add(e.path)
+    # several matches → the one next to the other category folders (e.g. all in „Plex 1T/”)
+    parents = {}
+    for paths in hits.values():
+        for p in paths:
+            parents[os.path.dirname(p)] = parents.get(os.path.dirname(p), 0) + 1
     out = {}
     for c in categories:
         cid = c["id"]
         cur = current.get(cid)
         if cur and os.path.isdir(cur):
             out[cid] = {"path": cur, "status": "ok"}
+            used.add(cur)
             continue
-        hit = None
-        for r in roots:
-            for n in wanted[cid]:
-                for entry in (os.listdir(r) if os.path.isdir(r) else []):
-                    if entry.lower() == n and os.path.isdir(os.path.join(r, entry)):
-                        hit = os.path.join(r, entry)
-                        break
-                if hit:
-                    break
-            if hit:
-                break
-        hit = hit or found.get(cid)
+        options = sorted(hits.get(cid, []), key=lambda p: -parents.get(os.path.dirname(p), 0))
+        hit = options[0] if options else _rebase(cur, mount)
         out[cid] = {"path": hit or cur or "", "status": "found" if hit else "missing"}
-    return out
+    # other folders that look like video next to the library folders (e.g. „Movies02”, „Videos.4K”)
+    lib_parents = {os.path.dirname(v["path"]) for v in out.values() if v["status"] in ("ok", "found")}
+    extras = []
+    for e in candidates:
+        if e.path in used or _norm(e.name) in NOT_VIDEO or os.path.dirname(e.path) not in lib_parents:
+            continue
+        if CONTAINER.search(e.name) and os.path.dirname(e.path) == mount:
+            continue
+        guess = next((cid for cid, names in wanted.items() if any(_norm(e.name).startswith(n) for n in names if len(n) >= 4)), "")
+        extras.append({"name": e.name, "path": e.path, "guess": guess})
+        if len(extras) >= 8:
+            break
+    return out, extras
+
+
+def find_plex_dir(mount):
+    """Folder „Plex” (dowolna wielkość liter) bezpośrednio na dysku – tam kreator proponuje foldery kategorii."""
+    try:
+        for e in sorted(os.scandir(mount), key=lambda e: e.name.lower()):
+            if e.is_dir(follow_symlinks=False) and e.name.lower() in ("plex", "plex media", "plex_media", "plexmedia"):
+                return e.path
+    except OSError:
+        pass
+    return None
+
+
+def _rebase(path, mount):
+    """Ścieżka z innego urządzenia (np. /plex_media_1024/Plex 1T/Home Video z Pi z Plexem) przeniesiona
+    na ten punkt montowania (/mnt/plex_1024/Plex 1T/Home Video) – jeśli taki folder tu istnieje."""
+    parts = [x for x in (path or "").split("/") if x]
+    for k in range(1, len(parts)):
+        cand = os.path.join(mount, *parts[k:])
+        if os.path.isdir(cand):
+            return cand
+    return None
+
+
+def scan_paths(mount, categories, current=None):
+    """„Update paths” in Settings: {category id: {path, status}} (see scan_disk)."""
+    return scan_disk(mount, categories, current)[0]
 
 
 def cleanup_tmp():

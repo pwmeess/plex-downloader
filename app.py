@@ -25,7 +25,9 @@ import i18n
 from i18n import _
 import movieinfo
 import naming
+import wizard
 import plexservers
+import thumbgen
 from downloader import Manager, disk_status, probe
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -123,9 +125,33 @@ welcome = app.route("/welcome", methods=["GET", "POST"], endpoint="welcome")(log
 @app.route("/")
 @login_required
 def index():
+    if not config.get().get("wizard_done"):
+        return redirect(url_for("setup_wizard"))
     if not config.get().get("language"):
         return redirect(url_for("welcome"))
     return render_template("index.html", version=VERSION, user=session.get("user"), page="home")
+
+
+@app.route("/guide")
+def guide():
+    """EN/PL guide (also before logging in – linked from the setup wizard); built by tools/build_guides.py."""
+    from markupsafe import Markup
+    glang = request.args.get("lang") or i18n.current() or "en"
+    if glang not in ("en", "pl"):
+        glang = "en"
+    try:
+        with open(os.path.join(BASE_DIR, "static", "guide", "guide.%s.html" % glang), encoding="utf-8") as f:
+            content = Markup(f.read())
+    except OSError:
+        content = Markup("<p>%s</p>") % _("The guide is not available.")
+    return render_template("guide.html", version=VERSION, user=session.get("user"), glang=glang, content=content)
+
+
+@app.route("/setup")
+@login_required
+def setup_wizard():
+    """Kreator pierwszego uruchomienia (także ponownie z Ustawień)."""
+    return render_template("wizard.html", version=VERSION, user=session.get("user"), page="wizard")
 
 
 @app.route("/files")
@@ -205,6 +231,8 @@ def api_info():
         v = a.get(k, "")
         return int(v) if v.isdigit() else None
     try:
+        if a.get("search") == "1":   # only the list of matches (File manager → Edit → Find in TMDB)
+            return jsonify(configured=True, results=movieinfo.search(kind, title, year))
         data = movieinfo.lookup(kind, title, year, num("id"), num("season"), num("episode"))
     except movieinfo.InfoError as e:
         return jsonify(configured=True, error=str(e))
@@ -297,14 +325,26 @@ def api_settings_get():
                    plex_servers=cfg.get("plex_servers", []),
                    plex_autodiscover=cfg.get("plex_autodiscover", True),
                    thumbs_mode=cfg.get("thumbs_mode", "online"),
+                   thumbs_frames=bool(cfg.get("thumbs_frames")), ffmpeg=thumbgen.version(),
                    port=cfg.get("port", 8800), language=i18n.current(), theme=cfg.get("theme", "dark"),
                    app_dir=BASE_DIR, system_user=getpass.getuser(), ip=plexservers.lan_ip(),
-                   log=actlog.info())
+                   home=wizard.home_dir(), log=actlog.info())
 
 
 def _mask_key(key):
     key = key or ""
     return ("•" * 10 + key[-3:]) if len(key) > 6 else ("•" * len(key))
+
+
+@app.route("/api/tmdb/check", methods=["POST"])
+@login_required
+def api_tmdb_check():
+    """Checks a typed TMDB key (or the saved one when none is given) – nothing is saved."""
+    key = (request.get_json(silent=True) or {}).get("key")
+    if not key:
+        key = config.get().get("tmdb_api_key", "")
+    ok, msg = movieinfo.check_key(key)
+    return jsonify(ok=ok, message=msg)
 
 
 @app.route("/api/settings/tmdb-key")
@@ -368,8 +408,6 @@ def api_settings_post():
             if not re.match(r"^[a-z0-9_-]{1,32}$", d["id"]):
                 d["id"] = uuid.uuid4().hex[:8]
             disks.append(d)
-        if not disks:
-            raise ValueError(_("At least one disk must remain."))
         servers = []
         for raw in data.get("plex_servers") or []:
             host = (raw.get("host") or "").strip()
@@ -395,10 +433,345 @@ def api_settings_post():
                   categories=cats, disks=disks, connections_per_file=conns, max_concurrent=conc,
                   max_speed_mbps=speed, require_mount=bool(data.get("require_mount", True)),
                   tmdb_api_key=tmdb_key, plex_servers=servers,
-                  plex_autodiscover=bool(data.get("plex_autodiscover", True)), thumbs_mode=mode)
+                  plex_autodiscover=bool(data.get("plex_autodiscover", True)), thumbs_mode=mode,
+                  thumbs_frames=bool(data.get("thumbs_frames", config.get().get("thumbs_frames"))))
     manager.apply_settings()
     plexservers.monitor.refresh()
     actlog.write("SETTINGS", _("Settings saved"))
+    return jsonify(ok=True)
+
+
+# ---------------------------------------------------------------- eksport / import ustawień
+EXPORT_KEYS = ("categories", "disks", "plex_servers", "plex_autodiscover", "connections_per_file", "max_concurrent",
+               "max_speed_mbps", "require_mount", "thumbs_mode", "thumbs_frames", "language", "theme")
+IMPORT_SECTIONS = {
+    "disks": ("disks",),
+    "categories": ("categories",),
+    "plex": ("plex_servers", "plex_autodiscover"),
+    "downloads": ("connections_per_file", "max_concurrent", "max_speed_mbps", "require_mount"),
+    "preview": ("thumbs_mode", "thumbs_frames", "tmdb_api_key"),
+    "interface": ("language", "theme"),
+}
+
+
+@app.route("/api/settings/export")
+@login_required
+def api_settings_export():
+    """Plik JSON z ustawieniami – bez loginu, hasła i kluczy sesji (klucz TMDB tylko na życzenie)."""
+    from flask import Response
+    import json as _json
+    cfg = config.get()
+    out = {"_plexdl": {"app": "plex-downloader", "version": VERSION, "exported": time.strftime("%Y-%m-%d %H:%M")}}
+    for k in EXPORT_KEYS:
+        out[k] = cfg.get(k)
+    if request.args.get("tmdb") == "1" and cfg.get("tmdb_api_key"):
+        out["tmdb_api_key"] = cfg["tmdb_api_key"]
+    actlog.write("SETTINGS", "settings exported%s" % (" (with TMDB key)" if "tmdb_api_key" in out else ""))
+    name = "plexdl-settings-%s.json" % time.strftime("%Y%m%d-%H%M")
+    return Response(_json.dumps(out, indent=2, ensure_ascii=False), mimetype="application/json",
+                    headers={"Content-Disposition": "attachment; filename=%s" % name})
+
+
+def _import_clean(data):
+    """Sprawdza plik importu; zwraca słownik gotowych wartości (tylko klucze, które są w pliku)."""
+    if not isinstance(data, dict) or not isinstance(data.get("_plexdl"), dict):
+        raise ValueError(_("This is not a Plex Downloader settings file."))
+    out = {}
+    if isinstance(data.get("categories"), list):
+        cats, seen = [], set()
+        for raw in data["categories"]:
+            if not isinstance(raw, dict) or not str(raw.get("label") or "").strip():
+                continue
+            label = str(raw["label"]).strip()[:40]
+            cid = str(raw.get("id") or "")
+            if not re.match(r"^[a-z0-9-]{1,24}$", cid) or cid in seen:
+                cid = re.sub(r"[^a-z0-9]+", "-", label.lower()).strip("-")[:20] or "cat"
+                while cid in seen:
+                    cid = cid[:20] + "-" + uuid.uuid4().hex[:3]
+            seen.add(cid)
+            kind = raw.get("kind") if raw.get("kind") in ("movie", "tv", "other") else "movie"
+            cats.append({"id": cid, "label": label, "kind": kind,
+                         "folder": naming.sanitize(str(raw.get("folder") or ""))[:60],
+                         "tmdb": bool(raw.get("tmdb", True)) and kind != "other"})
+        if cats:
+            out["categories"] = cats
+    if isinstance(data.get("disks"), list):
+        disks = []
+        for raw in data["disks"]:
+            if not isinstance(raw, dict):
+                continue
+            label = str(raw.get("label") or "").strip()[:40]
+            mount = _abs_path(str(raw.get("mount") or ""), label or "?")
+            if not label or not mount:
+                continue
+            paths = {}
+            for cid, val in (raw.get("paths") or {}).items():
+                p = _abs_path(str(val or ""), "%s – %s" % (label, cid))
+                if p:
+                    paths[str(cid)] = p
+            did = str(raw.get("id") or "")
+            disks.append({"id": did if re.match(r"^[a-z0-9_-]{1,32}$", did) else uuid.uuid4().hex[:8],
+                          "label": label, "subtitle": str(raw.get("subtitle") or "")[:40], "mount": mount, "paths": paths})
+        out["disks"] = disks
+    if isinstance(data.get("plex_servers"), list):
+        servers = []
+        for raw in data["plex_servers"]:
+            host = str((raw or {}).get("host") or "").strip()
+            if host and re.match(r"^[A-Za-z0-9.\-:]+$", host):
+                port = int(raw.get("port") or 32400)
+                if 1 <= port <= 65535:
+                    servers.append({"id": str(raw.get("id") or uuid.uuid4().hex[:6])[:12],
+                                    "name": str(raw.get("name") or host)[:40], "host": host, "port": port})
+        out["plex_servers"] = servers
+    if "plex_autodiscover" in data:
+        out["plex_autodiscover"] = bool(data["plex_autodiscover"])
+    if "connections_per_file" in data:
+        out["connections_per_file"] = max(1, min(16, int(data["connections_per_file"])))
+    if "max_concurrent" in data:
+        out["max_concurrent"] = max(1, min(10, int(data["max_concurrent"])))
+    if "max_speed_mbps" in data:
+        out["max_speed_mbps"] = max(0.0, float(data["max_speed_mbps"] or 0))
+    if "require_mount" in data:
+        out["require_mount"] = bool(data["require_mount"])
+    if data.get("thumbs_mode") in ("online", "local", "off"):
+        out["thumbs_mode"] = data["thumbs_mode"]
+    if "thumbs_frames" in data:
+        out["thumbs_frames"] = bool(data["thumbs_frames"])
+    if isinstance(data.get("tmdb_api_key"), str) and data["tmdb_api_key"].strip():
+        out["tmdb_api_key"] = re.sub(r"\s+", "", data["tmdb_api_key"])
+    if data.get("language") in {l["code"] for l in i18n.available()}:
+        out["language"] = data["language"]
+    if data.get("theme") in ("dark", "light"):
+        out["theme"] = data["theme"]
+    return out
+
+
+@app.route("/api/settings/import/preview", methods=["POST"])
+@login_required
+def api_settings_import_preview():
+    try:
+        new = _import_clean((request.get_json(silent=True) or {}).get("data"))
+    except (TypeError, ValueError) as e:
+        return err(str(e) or _("Invalid values."))
+    cfg = config.get()
+    meta = ((request.get_json(silent=True) or {}).get("data") or {}).get("_plexdl") or {}
+    sections = {}
+    for sec, keys in IMPORT_SECTIONS.items():
+        present = [k for k in keys if k in new]
+        if not present:
+            continue
+        changes = [{"key": k, "old": cfg.get(k) if k != "tmdb_api_key" else bool(cfg.get(k)),
+                    "new": new[k] if k != "tmdb_api_key" else True}
+                   for k in present if (cfg.get(k) != new[k])]
+        sections[sec] = {"changes": changes}
+    # dyski: czy foldery z pliku istnieją na tym urządzeniu
+    if "disks" in new:
+        paths = [p for d in new["disks"] for p in d["paths"].values()]
+        status = {x["path"]: x for x in wizard.check(paths)}
+        sections["disks"]["disks"] = [{"label": d["label"], "mount": d["mount"], "mounted": os.path.isdir(d["mount"]),
+                                       "paths": [dict(status.get(p, {}), cat=c) for c, p in d["paths"].items()]}
+                                      for d in new["disks"]]
+    return jsonify(meta=meta, sections=sections)
+
+
+@app.route("/api/settings/import", methods=["POST"])
+@login_required
+def api_settings_import():
+    d = request.get_json(silent=True) or {}
+    try:
+        new = _import_clean(d.get("data"))
+    except (TypeError, ValueError) as e:
+        return err(str(e) or _("Invalid values."))
+    chosen = [s for s in (d.get("sections") or []) if s in IMPORT_SECTIONS]
+    changes = {k: new[k] for s in chosen for k in IMPORT_SECTIONS[s] if k in new}
+    if not changes:
+        return err(_("Nothing selected."))
+    lang = changes.pop("language", None)
+    config.update(note="Settings imported", **changes)
+    if lang and lang != config.get().get("language"):
+        config.set_language(lang)
+    manager.apply_settings()
+    plexservers.monitor.refresh()
+    actlog.write("SETTINGS", "settings imported: %s" % ", ".join(chosen))
+    return jsonify(ok=True, reload=bool(lang) or "theme" in changes)
+
+
+# ---------------------------------------------------------------- dyski: kolejność i nazwa (strona główna, Menedżer plików)
+DISK_LABEL_MAX = 16
+
+
+@app.route("/api/disks/order", methods=["POST"])
+@login_required
+def api_disks_order():
+    ids = (request.get_json(silent=True) or {}).get("ids") or []
+    disks = config.get().get("disks", [])
+    pos = {i: n for n, i in enumerate(ids)}
+    ordered = sorted(disks, key=lambda d: pos.get(d.get("id"), len(pos)))
+    if [d["id"] for d in ordered] != [d["id"] for d in disks]:
+        config.update(make_backup=False, disks=ordered)   # kolejność – bez punktu przywracania
+    return jsonify(ok=True)
+
+
+@app.route("/api/disks/rename", methods=["POST"])
+@login_required
+def api_disks_rename():
+    d = request.get_json(silent=True) or {}
+    label = re.sub(r"\s+", " ", (d.get("label") or "")).strip()[:DISK_LABEL_MAX]
+    if not label:
+        return err(_("Every disk must have a name."))
+    disks = [dict(x) for x in config.get().get("disks", [])]
+    hit = next((x for x in disks if x.get("id") == d.get("id")), None)
+    if not hit:
+        return err(_("Unknown disk."))
+    old, hit["label"] = hit.get("label"), label
+    config.update(note="Disk renamed", disks=disks)
+    actlog.write("SETTINGS", "disk renamed: %s → %s" % (old, label))
+    return jsonify(ok=True, label=label)
+
+
+# ---------------------------------------------------------------- kreator
+@app.route("/api/wizard/state")
+@login_required
+def api_wizard_state():
+    cfg = config.get()
+    return jsonify(mounts=wizard.mounts(), home=wizard.home_dir(), system_user=getpass.getuser(),
+                   ip=plexservers.lan_ip(), port=cfg.get("port", 8800), categories=cfg["categories"],
+                   disks=cfg.get("disks", []), language=cfg.get("language") or i18n.current(),
+                   theme=cfg.get("theme", "dark"), wizard_done=bool(cfg.get("wizard_done")),
+                   tmdb_key_set=bool(cfg.get("tmdb_api_key")), tmdb_key_mask=_mask_key(cfg.get("tmdb_api_key", "")),
+                   plex_servers=cfg.get("plex_servers", []), plex_autodiscover=cfg.get("plex_autodiscover", True),
+                   thumbs_frames=bool(cfg.get("thumbs_frames")), ffmpeg=thumbgen.version())
+
+
+@app.route("/api/wizard/scan", methods=["POST"])
+@login_required
+def api_wizard_scan():
+    d = request.get_json(silent=True) or {}
+    cats = [c for c in (d.get("categories") or config.get()["categories"]) if isinstance(c, dict) and c.get("id")]
+    mount = d.get("mount", "")
+    # disks from an imported settings file: their folder names are searched for, and their paths
+    # are moved onto this mount point (/plex_media_1024/Plex 1T/Movies → /mnt/plex_1024/Plex 1T/Movies)
+    hints = [h for h in d.get("hints") or [] if isinstance(h, dict) and isinstance(h.get("paths"), dict)]
+    for c in cats:
+        c["names"] = [os.path.basename(str(h["paths"].get(c["id"]) or "").rstrip("/")) for h in hints]
+        c["names"] = [n for n in c["names"] if n]
+
+    def run():
+        res, extras = fm.scan_disk(mount, cats)
+        best, best_hits = None, 0
+        for h in hints:
+            hits = 0
+            for c in cats:
+                p = fm._rebase(str(h["paths"].get(c["id"]) or ""), mount) if mount and os.path.isdir(mount) else None
+                if p:
+                    hits += 1
+                    if res.get(c["id"], {}).get("status") != "found":
+                        res[c["id"]] = {"path": p, "status": "found"}
+            if hits > best_hits:
+                best, best_hits = h, hits
+        return {"result": res, "extras": extras, "plex_dir": fm.find_plex_dir(mount),
+                "match": str(best.get("label") or "")[:16] if best else ""}
+    return fm_call(run)
+
+
+@app.route("/api/wizard/import", methods=["POST"])
+@login_required
+def api_wizard_import():
+    """Reads a settings file for the wizard – nothing is saved until Finish."""
+    data = (request.get_json(silent=True) or {}).get("data")
+    try:
+        clean = _import_clean(data)
+    except (TypeError, ValueError) as e:
+        return err(str(e) or _("Invalid values."))
+    meta = data.get("_plexdl") or {}
+    return jsonify(data=clean, meta={"version": str(meta.get("version") or "")[:20],
+                                     "exported": str(meta.get("exported") or "")[:20]})
+
+
+@app.route("/api/wizard/check", methods=["POST"])
+@login_required
+def api_wizard_check():
+    paths = (request.get_json(silent=True) or {}).get("paths") or []
+    return jsonify(result=wizard.check([str(p) for p in paths][:100]))
+
+
+@app.route("/api/wizard/create", methods=["POST"])
+@login_required
+def api_wizard_create():
+    paths = (request.get_json(silent=True) or {}).get("paths") or []
+    created, problems = wizard.create([str(p) for p in paths][:100])
+    for p in created:
+        actlog.write("CREATE", "folder %s" % p)
+    return jsonify(created=created, problems=problems, result=wizard.check([str(p) for p in paths][:100]))
+
+
+@app.route("/api/wizard/finish", methods=["POST"])
+@login_required
+def api_wizard_finish():
+    data = request.get_json(silent=True) or {}
+    cfg = config.get()
+    seen = {c["id"] for c in cfg["categories"]}
+    try:
+        cats = None
+        if isinstance(data.get("categories"), list):
+            # kategorie zmienione w kreatorze (nowa nazwa, nowa kategoria, np. Koncerty)
+            cats = _import_clean({"_plexdl": {}, "categories": data["categories"]}).get("categories")
+            if not cats:
+                raise ValueError(_("At least one category must remain."))
+            seen = {c["id"] for c in cats}
+        disks = []
+        for raw in data.get("disks") or []:
+            label = (raw.get("label") or "").strip()[:40]
+            if not label:
+                raise ValueError(_("Every disk must have a name."))
+            mount = _abs_path(raw.get("mount"), label)
+            if not mount:
+                raise ValueError(_("Enter the mount point for disk %s.") % label)
+            paths = {}
+            for cid, val in (raw.get("paths") or {}).items():
+                p = _abs_path(val, "%s – %s" % (label, cid))
+                if cid in seen and p:
+                    paths[cid] = p
+            disks.append({"id": uuid.uuid4().hex[:8], "label": label,
+                          "subtitle": (raw.get("subtitle") or "").strip()[:40], "mount": mount, "paths": paths})
+        if not disks and not data.get("skip_disks"):
+            raise ValueError(_("At least one disk must remain."))
+        if data.get("skip_disks"):
+            # „Pomiń”: przy pierwszym uruchomieniu bez dysków (przykładowe ścieżki znikają),
+            # przy ponownym kreatorze dotychczasowe dyski zostają
+            disks = cfg.get("disks", []) if cfg.get("wizard_done") else []
+        servers = []
+        for raw in data.get("plex_servers") or []:
+            host = (raw.get("host") or "").strip()
+            if not host:
+                continue
+            if not re.match(r"^[A-Za-z0-9.\-:]+$", host):
+                raise ValueError(_("Invalid Plex server address: %s") % host)
+            port = int(raw.get("port") or 32400)
+            if not 1 <= port <= 65535:
+                raise ValueError(_("Invalid Plex server port."))
+            servers.append({"id": uuid.uuid4().hex[:6], "name": (raw.get("name") or host).strip()[:40],
+                            "host": host, "port": port})
+    except (TypeError, ValueError) as e:
+        return err(str(e) if str(e) else _("Invalid values."))
+    raw_key = data.get("tmdb_api_key")
+    tmdb_key = cfg.get("tmdb_api_key", "") if raw_key is None else re.sub(r"\s+", "", raw_key)
+    extra = {"categories": cats} if cats else {}
+    opts = data.get("options") if isinstance(data.get("options"), dict) else {}
+    if opts:
+        try:
+            o = _import_clean(dict(opts, _plexdl={}))
+        except (TypeError, ValueError):
+            o = {}
+        for k in ("connections_per_file", "max_concurrent", "max_speed_mbps", "thumbs_mode", "thumbs_frames"):
+            if k in o:
+                extra[k] = o[k]
+    config.update(note="Setup wizard", disks=disks, plex_servers=servers, **extra,
+                  plex_autodiscover=bool(data.get("plex_autodiscover", True)), tmdb_api_key=tmdb_key,
+                  require_mount=bool(data.get("require_mount", True)), wizard_done=True)
+    manager.apply_settings()
+    plexservers.monitor.refresh()
+    actlog.write("SETTINGS", "setup wizard finished (%d disk(s))" % len(disks))
     return jsonify(ok=True)
 
 
@@ -452,8 +825,15 @@ def api_log_delete_backups():
 def api_disks_scan():
     d = request.get_json(silent=True) or {}
     try:
-        return jsonify(result=fm.scan_paths((d.get("mount") or "").strip(), d.get("categories") or [],
-                                            d.get("paths") or {}))
+        cats = [c for c in d.get("categories") or [] if isinstance(c, dict) and c.get("id")]
+        # nazwy folderów tej kategorii z innych dysków (np. „Home Video” zamiast „Domowe wideo”)
+        current = d.get("paths") or {}
+        for c in cats:
+            names = {os.path.basename(str(p).rstrip("/")) for disk in config.get().get("disks", [])
+                     for k, p in (disk.get("paths") or {}).items() if k == c["id"] and p}
+            names |= {os.path.basename(str(current.get(c["id"]) or "").rstrip("/"))}
+            c["names"] = [n for n in names if n]
+        return jsonify(result=fm.scan_paths((d.get("mount") or "").strip(), cats, current))
     except fm.FMError as e:
         return err(str(e))
 
@@ -550,6 +930,54 @@ def api_fm_delete():
     if d.get("confirm") != "DELETE":
         return err(_("Deletion not confirmed."))
     return fm_call(fm.delete, d.get("disk"), d.get("cat"), d.get("names") or [], manager.busy_paths())
+
+
+@app.route("/api/fm/item")
+@login_required
+def api_fm_item():
+    a = request.args
+    return fm_call(lambda: dict(fm.item_details(a.get("disk", ""), a.get("cat", ""), a.get("name", "")),
+                                editions=naming.EDITIONS, versions=naming.VERSIONS))
+
+
+@app.route("/api/fm/rename", methods=["POST"])
+@login_required
+def api_fm_rename():
+    d = request.get_json(silent=True) or {}
+    return fm_call(fm.rename_item, d.get("disk"), d.get("cat"), d.get("name", ""), d.get("title", ""),
+                   d.get("year"), d.get("tmdb"), d.get("edition", ""), d.get("versions") or {},
+                   bool(d.get("episodes", True)), bool(d.get("dry")), manager.busy_paths(),
+                   d.get("extras") if isinstance(d.get("extras"), dict) else {})
+
+
+@app.route("/api/fm/thumb/upload", methods=["POST"])
+@login_required
+def api_fm_thumb_upload():
+    import base64
+    d = request.get_json(silent=True) or {}
+    raw = str(d.get("data") or "")
+    try:
+        data = base64.b64decode(raw.split(",", 1)[-1], validate=True)
+    except ValueError:
+        return err(_("The image must be a JPEG up to 4 MB."))
+    return fm_call(fm.save_thumb, d.get("disk"), d.get("cat"), d.get("name", ""), data)
+
+
+@app.route("/api/fm/frames")
+@login_required
+def api_fm_frames():
+    a = request.args
+    n = int(a.get("n", "6")) if a.get("n", "6").isdigit() else 6
+    at = int(a["at"]) if a.get("at", "").isdigit() else None   # seconds typed in „Pick a time”
+    return fm_call(fm.frame_candidates, a.get("disk", ""), a.get("cat", ""), a.get("name", ""), n,
+                   a.get("shuffle") == "1", at)
+
+
+@app.route("/api/fm/thumb/tmdb", methods=["POST"])
+@login_required
+def api_fm_thumb_tmdb():
+    d = request.get_json(silent=True) or {}
+    return fm_call(fm.refresh_thumb, d.get("disk"), d.get("cat"), d.get("name", ""))
 
 
 @app.route("/api/fm/ops")
@@ -661,6 +1089,13 @@ def set_password():
     config.load()
     cfg = config.get()
     print(_("Plex Downloader login setup"))
+    # keys pressed while the installation was running (e.g. Enter) would answer this question at once
+    try:
+        import termios
+        if sys.stdin.isatty():
+            termios.tcflush(sys.stdin, termios.TCIFLUSH)
+    except (ImportError, OSError):
+        pass
     user = input(_("Username [%s]: ") % cfg.get("username", "admin")).strip() or cfg.get("username", "admin")
     while True:
         p1 = getpass.getpass(_("Password (min. 6 characters): "))
@@ -678,6 +1113,13 @@ def set_password():
 def check_folders():
     """Raport dla setup.sh: czy foldery kategorii istnieją i można w nich zapisywać."""
     cfg = config.load()
+    if not cfg.get("wizard_done"):
+        # nowa instalacja: przykładowe ścieżki z config.example.json nie mają tu znaczenia
+        print("  \033[36m%s\033[0m" % _("Disks and folders are set in the setup wizard after the first login."))
+        return
+    if not cfg.get("disks"):
+        print("  \033[33m%s\033[0m" % _("No disks configured yet – add them in Settings → Disks or run the setup wizard."))
+        return
     cats = {c["id"]: c["label"] for c in cfg.get("categories", [])}
     for d in cfg.get("disks", []):
         for cid, label in cats.items():

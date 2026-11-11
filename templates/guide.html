@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="{{ glang }}" data-theme="{{ theme }}">
+<head>
+{% include "_head.html" %}
+  <title>{{ _("Guide") }} · Plex Downloader</title>
+</head>
+<body class="guide-page">
+{% include "_icons.html" %}
+<header class="wz-top guide-top">
+  <div class="brand"><span class="brand-mark"><svg class="i"><use href="#i-logo"/></svg></span>Plex Downloader</div>
+  <span class="wz-title">{{ _("Guide") }}</span>
+  <span class="spacer"></span>
+  <nav class="guide-langs">
+    <a href="/guide?lang=en" class="{{ 'on' if glang == 'en' else '' }}">EN</a>
+    <a href="/guide?lang=pl" class="{{ 'on' if glang == 'pl' else '' }}">PL</a>
+  </nav>
+  <a class="btn-primary small guide-pdf" href="{{ url_for('static', filename='guide/plex-downloader-guide-' + glang + '.pdf') }}?v={{ version }}" download><svg class="i"><use href="#i-down"/></svg>PDF</a>
+  {% if user %}<a class="btn-soft small" href="/">{{ _("Back to the panel") }}</a>{% endif %}
+</header>
+<main class="guide-wrap">
+{{ content }}
+</main>
+<div class="foot-ver">Plex Downloader · {{ _("version") }} {{ version }}</div>
+</body>
+</html>

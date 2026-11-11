@@ -2,7 +2,7 @@
 
 🇬🇧 [English](ROADMAP.md) · 🇵🇱 **Polski** · Historia zmian: [CHANGELOG.md](CHANGELOG.md)
 
-Ostatnia aktualizacja: 9 listopada 2026 · stabilna: **1.2.7** · BETA: **1.2.9-beta**
+Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.3.0** · BETA: **1.4.0-beta0**
 
 ## Stałe zasady (sprawdzać przy każdej wersji)
 
@@ -32,7 +32,13 @@ Ostatnia aktualizacja: 9 listopada 2026 · stabilna: **1.2.7** · BETA: **1.2.9-
 | 1.2.6 (stabilna) | Postęp przenoszenia w dwóch etapach, „Pomiń weryfikację SHA-256”, ukryty klucz TMDB, poprawki wyglądu (telefon, ⓘ), neutralny adres w komendzie `ssh`, test tłumaczeń, dokumentacja po angielsku |
 | 1.2.8-beta | 1.2.6 + zapowiedzi VPN; baza do prac nad 1.3 |
 | 1.2.7 (stabilna) | Optymalizacja rozpoznawania tytułów na podstawie wklejonego linka; ostrzeżenie, gdy link otwiera stronę WWW zamiast pliku |
-| 1.2.9-beta | 1.2.7 + zapowiedzi VPN; baza do 1.3.0-beta1 |
+| 1.2.9-beta | 1.2.7 + zapowiedzi VPN, `fix.sh` w oknie z podmenu Serwer |
+| 1.3.0-beta1 | Kreator konfiguracji (trzy sposoby instalacji, wykrywanie dysków i folderów, komendy do udziału sieciowego) |
+| 1.3.0-beta2 | Eksport i import ustawień z podglądem zmian, szablon dysku „Karta SD (niezalecane)” |
+| 1.3.0-beta3 | Instrukcje EN/PL (w aplikacji + PDF); Menedżer plików: edycja nazwy Plex, rodzaje plików (wersje / dodatki) i plakaty (własny obrazek, kadr z filmu, TMDB); `fix.sh` Moduły dodatkowe; poprawki kreatora po testach na Pi Zero |
+| 1.3.0-beta4 | `fix.sh` → Zainstaluj inną wersję; kreator startuje też po przełączeniu świeżej instalacji stabilnej na BETA |
+| 1.3.0 (stabilna) | Wszystko z 1.3.0-beta1…beta4 bez zapowiedzi VPN: kreator, eksport / import ustawień, edycja nazw i plakatów (własny obrazek, kadr z filmu, TMDB), dodatki Plexa, instrukcje EN/PL, `fix.sh` Moduły dodatkowe i Zainstaluj inną wersję |
+| 1.4.0-beta0 | 1.3.0 + zapowiedź VPN; baza dla 1.4 (bez nowych funkcji) |
 
 ## Do poprawy
 
@@ -41,61 +47,67 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
 
 ## Strona demo (Netlify)
 
-- [x] Demo (najpierw 1.2.5, teraz **1.2.6**): prawdziwy interfejs z symulacją w przeglądarce, EN/PL, okno powitalne, dane max 24 h, wylogowanie czyści wszystko, linki zewnętrzne zablokowane, zmyślone nazwy, IP i klucze, generowane okładki.
+- [x] Demo (najpierw 1.2.5, potem 1.2.6, teraz **1.3.0**): prawdziwy interfejs z symulacją w przeglądarce, EN/PL, okno powitalne, dane max 24 h, wylogowanie czyści wszystko, linki zewnętrzne zablokowane, zmyślone nazwy, IP i klucze, generowane okładki.
 - [ ] Publikacja na Netlify (Piotr) i link do demo w README.
 - [ ] Źródła demo (`demo.js`, skrypt budujący) w repozytorium, w folderze `demo/`, żeby po każdym wydaniu stabilnym dało się je odświeżyć jednym poleceniem.
-- [ ] Po wydaniu 1.3: podmienić link do instrukcji w oknie powitalnym na instrukcje EN/PL (HTML i PDF).
+- [x] Od 1.3: link do instrukcji w oknie powitalnym prowadzi do instrukcji EN/PL (HTML i PDF).
 
 ## 1.3 – kreator pierwszego uruchomienia, instrukcje, wybór wersji
 
 **Kreator pierwszego uruchomienia**
-- [ ] Kolejne kroki: język → motyw → konto → sposób instalacji → dyski i foldery → serwer Plex → klucz TMDB (opcjonalny) → podsumowanie.
-- [ ] Wybór sposobu instalacji (odpowiada trzem scenariuszom):
-  - [ ] „Dyski zewnętrzne (zalecane)”: skanowanie podłączonych dysków (`lsblk`/`df`), propozycja folderów `Movies`, `TV Shows`, `Kids`.
-  - [ ] „Biblioteka na karcie SD (niezalecana)”: punkt montowania `/`, foldery w `~/Plex/…` tworzone automatycznie, ostrzeżenie o pojemności, zużyciu karty i prędkości (w ⓘ).
-  - [ ] „Plex na innym urządzeniu”: adres IP serwera Plex, sprawdzenie połączenia, wskazanie zamontowanego udziału sieciowego, test zapisu. Uwaga w ⓘ, że Plex i Downloader muszą widzieć te same pliki (ścieżki mogą się różnić).
-- [ ] Sprawdzenie uprawnień do zapisu i wolnego miejsca na każdym folderze.
-- [ ] Tworzenie brakujących folderów na żądanie.
-- [ ] W każdym kroku linki do instrukcji: HTML w nowym oknie i PDF do pobrania.
-- [ ] Ponowne uruchomienie kreatora z Ustawień.
+- [x] Kolejne kroki: język → motyw → sposób instalacji → dyski i foldery → serwer Plex → klucz TMDB (opcjonalny) → podsumowanie (konto tworzy `setup.sh`).
+- [x] Wybór sposobu instalacji (odpowiada trzem scenariuszom):
+  - [x] „Dyski zewnętrzne (zalecane)”: skanowanie podłączonych dysków (`lsblk`/`df`), propozycja folderów `Movies`, `TV Shows`, `Kids`.
+  - [x] „Biblioteka na karcie SD (niezalecana)”: punkt montowania `/`, foldery w `~/Plex/…` tworzone automatycznie, ostrzeżenie o pojemności, zużyciu karty i prędkości (w ⓘ).
+  - [x] „Plex na innym urządzeniu”: adres IP serwera Plex, sprawdzenie połączenia, wskazanie zamontowanego udziału sieciowego, test zapisu. Uwaga w ⓘ, że Plex i Downloader muszą widzieć te same pliki (ścieżki mogą się różnić).
+- [x] Sprawdzenie uprawnień do zapisu i wolnego miejsca na każdym folderze.
+- [x] Tworzenie brakujących folderów na żądanie.
+- [x] W każdym kroku linki do instrukcji: rozdział dla danego kroku otwiera się w nowym oknie (HTML, z pobieraniem PDF).
+- [x] Ponowne uruchomienie kreatora z Ustawień.
 
 **Ustawienia**
-- [ ] Eksport i import ustawień (plik JSON, bez hasła; przy imporcie podgląd zmian).
-- [ ] Gotowy szablon „Biblioteka na karcie SD (niezalecana)” w zakładce Dyski.
+- [x] Eksport i import ustawień (plik JSON, bez hasła; przy imporcie podgląd zmian).
+- [x] Gotowy szablon „Biblioteka na karcie SD (niezalecana)” w zakładce Dyski.
 
 **Instrukcje (EN i PL, HTML w aplikacji + PDF)**
-- [ ] Instalacja serwera Plex na Raspberry Pi, w tym:
-  - [ ] wariant z dyskami zewnętrznymi (fstab, uprawnienia),
-  - [ ] wariant testowy z biblioteką na karcie SD (niezalecany): tworzenie folderu, udostępnienie przez SMB, ograniczenia.
-- [ ] Instalacja Plex Downloadera (`setup.sh`, pierwsze logowanie, kreator).
-- [ ] Konfiguracja na dwóch urządzeniach: stałe IP, udział SMB/NFS montowany w fstab, ręczne dodanie serwera Plex w Ustawieniach.
-- [ ] Obsługa: Menedżer plików, kopie ustawień, dziennik, `update.sh`, `fix.sh`, przywracanie ustawień fabrycznych.
-- [ ] Bezpieczeństwo sieci domowej (bez DMZ i przekierowania portu 8800, mocne hasła, Samba z `valid users`).
+- [x] Instalacja serwera Plex na Raspberry Pi, w tym:
+  - [x] wariant z dyskami zewnętrznymi (fstab, uprawnienia),
+  - [x] wariant testowy z biblioteką na karcie SD (niezalecany): tworzenie folderu, udostępnienie przez SMB, ograniczenia.
+- [x] Instalacja Plex Downloadera (`setup.sh`, pierwsze logowanie, kreator).
+- [x] Konfiguracja na dwóch urządzeniach: stałe IP, udział SMB/NFS montowany w fstab, ręczne dodanie serwera Plex w Ustawieniach.
+  - [x] Przykład (już w README): jeden dysk, dwie ścieżki (`/media/ssd1` na Pi z Plexem, `/mnt/ssd1` na Pi z Downloaderem), „Aktualizuj ścieżki” po imporcie, jedna kategoria z różnymi nazwami folderów na dwóch dyskach (`Concerts` / `Live`) i oba foldery w jednej bibliotece Plex, hasło ze znakiem `\` w `.smbcredentials`.
+- [x] Obsługa: Menedżer plików, kopie ustawień, dziennik, `update.sh`, `fix.sh`, przywracanie ustawień fabrycznych.
+- [x] Bezpieczeństwo sieci domowej (bez DMZ i przekierowania portu 8800, mocne hasła, Samba z `valid users`).
 
 **Kolejne kroki wydań**
-- [ ] `1.3.0-beta1`: kreator pierwszego uruchomienia + podmenu serwera w `fix.sh`.
-- [ ] `1.3.0-beta2`: eksport i import ustawień, szablon „Karta SD”.
-- [ ] `1.3.0-beta3`: instrukcje EN/PL (HTML w aplikacji + PDF).
-- [ ] `1.3.0-beta4`: „Zainstaluj inną wersję” w `fix.sh`.
-- [ ] `1.3.0`: wydanie stabilne.
+- [x] `1.3.0-beta1`: kreator pierwszego uruchomienia (podmenu serwera w `fix.sh` weszło już do 1.2.9-beta).
+- [x] `1.3.0-beta2`: eksport i import ustawień, szablon „Karta SD”.
+- [x] `1.3.0-beta3`: instrukcje EN/PL (HTML w aplikacji + PDF).
+  - [x] Menedżer plików: edycja nazwy i plakatu (ikona długopisu na kafelku).
+  - [x] Plakaty z kadrów filmu (ffmpeg): w oknie edycji i automatycznie (Ustawienia / kreator, domyślnie wyłączone).
+  - [x] `fix.sh` → Moduły dodatkowe: Plex Media Server, Samba, klient SMB, ffmpeg, Tailscale, WireGuard (status, instalacja, aktualizacja, zatrzymaj / uruchom, restart, odinstalowanie).
+- [x] `1.3.0-beta4`: „Zainstaluj inną wersję” w `fix.sh`; kreator startuje też po przełączeniu świeżej instalacji stabilnej na BETA.
+- [x] `1.3.0`: wydanie stabilne.
 
 **`fix.sh` – podmenu serwera**
-- [ ] Nowa opcja „Serwer”: 1) sprawdź status (stan usługi, autostart, adres panelu, ostatnie wpisy logu), 2) wstrzymaj serwer – bez wpływu na autostart / uruchom ponownie (zależnie od stanu), 3) restart procesu serwera, 4) powrót.
-- [ ] Wygląd menu: tekstowe z numerami albo okno `whiptail` w stylu `raspi-config` z tymi samymi numerami i zapasowym menu tekstowym (do decyzji).
+- [x] Nowa opcja „Serwer” (w 1.2.9-beta): 1) sprawdź status (stan usługi, autostart, adres panelu, ostatnie wpisy logu), 2) wstrzymaj serwer – bez wpływu na autostart / uruchom ponownie (zależnie od stanu), 3) restart procesu serwera, 4) powrót.
+- [x] Wygląd menu: okno `whiptail` w stylu `raspi-config` z tymi samymi numerami, zapasowe menu tekstowe (`--text`).
 
 **Wybór wersji w `fix.sh` (zmiana sposobu wydawania w repozytorium)**
 - [x] Linie stabilna (`main`) i BETA (`beta`), instalacja i wyjście z BETA w `fix.sh` (od 1.2.5 / 1.2.6-beta).
 - [ ] Każde wydanie od **1.2.5** ma tag git `vX.Y.Z` i wydanie na GitHubie z listą zmian.
 - [x] Plik `CHANGELOG.md` z historią wersji (od 1.2.6).
-- [ ] Nowa opcja w `fix.sh`: „Zainstaluj inną wersję”. Pokazuje listę stabilnych wersji od 1.2.5 z krótkim opisem. Przed zmianą tworzy kopię `config.json`, potem przełącza kod na wybrany tag, odbudowuje środowisko i restartuje usługę.
-- [ ] Panel i `update.sh` wiedzą, że zainstalowana jest wersja przypięta (starsza). Dostępny jest powrót do najnowszej.
-- [ ] Zgodność ustawień: nowsze wersje migrują `config.json` automatycznie. Przy cofnięciu do starszej wersji przywracana jest kopia ustawień z tamtego okresu, jeśli istnieje. Zachowanie sprawdzić w testach.
+- [x] Nowa opcja 8 w `fix.sh`: „Zainstaluj inną wersję” – lista stabilnych wersji od 1.2.5 z krótkim opisem (`releases.txt`, działa bez tagów); kopia `config.json` i kopii zapasowych do `.version-snapshots`, przełączenie kodu, odbudowa środowiska i restart usługi.
+- [x] Panel i `update.sh` wiedzą, że zainstalowana jest wersja przypięta (starsza). Dostępny jest powrót do najnowszej. (nagłówek `fix.sh` pokazuje „starsza wersja”, panel informuje o najnowszej stabilnej, `update.sh` / opcja 1 wracają).
+- [x] Zgodność ustawień: nowsze wersje migrują `config.json` automatycznie, starsze zachowują nieznane klucze; przy cofnięciu ustawienia zostają, a kopia sprzed zmiany jest w `.version-snapshots`.
 
 ## 1.4 – dostęp zdalny przez VPN
 
+Kolejne kroki: `1.4.0-beta0` (= 1.3.0 + zapowiedź VPN, gotowe) → `1.4.0-beta1` (działająca zakładka VPN) → … → `1.4.0`.
+
 Zapowiedzi VPN (zakładka i przycisk w nagłówku) są widoczne tylko w BETA; w wersji stabilnej wrócą razem z działającą funkcją.
 
-- [ ] Skrypt `setup-vpn.sh`: instalacja Tailscale i link do logowania.
+- [x] Instalacja Tailscale z linkiem do logowania (oraz WireGuard): `fix.sh` → Moduły dodatkowe (1.3.0-beta3, zamiast osobnego `setup-vpn.sh`).
 - [ ] Zakładka VPN: wybór „tylko sieć domowa” lub „sieć domowa + VPN”, port panelu, status i adres VPN, kod QR dla telefonu.
 - [ ] Panel bez otwartych portów na routerze.
 - [ ] Instrukcja EN/PL (Tailscale na Pi, telefonie i komputerze).

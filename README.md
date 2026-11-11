@@ -8,7 +8,7 @@ A lightweight download manager for the Raspberry Pi. Paste a direct link to a vi
 - **TV shows:** `…/TV Shows/Show/Season 01/Show - S01E02.mkv`
 - **Kids and custom categories:** `…/Kids/Title (YYYY)/…`, `…/Concerts/…` and so on
 
-Changelog: [CHANGELOG.md](CHANGELOG.md) · Roadmap: [ROADMAP.md](ROADMAP.md)
+Changelog: [CHANGELOG.md](CHANGELOG.md) · Roadmap: [ROADMAP.md](ROADMAP.md) · **Guide:** [English](docs/guide.en.md) · [PDF](static/guide/plex-downloader-guide-en.pdf) (in the app: `/guide`)
 
 ## Features
 
@@ -26,15 +26,18 @@ Changelog: [CHANGELOG.md](CHANGELOG.md) · Roadmap: [ROADMAP.md](ROADMAP.md)
 - **Categories:** Movies, TV Shows, Kids and any custom category of type movie, TV show or "other (keep name)". Each disk has its own folder for each category; folder names are up to you.
 - **Advanced Plex naming:** edition `{edition-Director's Cut}` (Plex Pass), file version `- 1080p` (several versions in one folder) and `{tmdb-…}` ID for exact matching.
 - **File manager:** two columns with posters. Drag and drop movies between folders and disks. Same disk = instant move; another disk = copy → SHA-256 verification → only then the original is removed. Move a whole TV show, one season or selected episodes.
+- **Edit name and poster (1.3):** the pen icon on a card changes the title, year, TMDB ID, edition and file versions following the Plex naming rules (folder, video files, subtitles and poster together, after a confirmation) and sets your own poster image or downloads it again from TMDB.
 - **Two-stage progress (1.2.6):** "copying X of Y" and "verifying X of Y" with the real file size, and one time-left estimate for both stages.
 - **"Skip SHA-256 verification after moving" (1.2.6):** option in the move confirmation (off by default). About twice as fast; only file sizes are compared before the original is deleted.
 - **Posters:** saved in the movie folder as `Title (Year).thumb.jpg` (from TMDB). TMDB lookups can be switched off per category (e.g. home videos).
 - **Plex servers in the header:** automatic discovery on the network (GDM) and online/offline status, also for servers added manually.
 - **Settings backups:** a restore point after every change, kept for 30 days (the latest is always kept). Restoring never changes the username or password.
+- **Settings export and import (1.3):** a JSON file without the username, password and keys (TMDB key optional); on import you see what changes and choose the sections to apply.
 - **Languages and themes:** English (default) and Polish, dark or light theme (Settings → Account). Translations live in `locales/<code>.json`, so a new language is a new file.
 - **Activity log:** `logs/plexdl.log` with downloads, moves (from → to) and deletions; **LOG** viewer in Settings → Account with Clear and Export. 1 MB limit, then `bcup01.log`, `bcup02.log`…
 - **Hidden TMDB key (1.2.6):** the key field is masked like a password, with "Show key" on demand; the panel does not send the key to the browser until you ask for it.
 - **Terminal commands** with a copy button in Settings → Account.
+- **Setup wizard (1.3):** first-run guide for disks and folders, Plex server and TMDB key; can be run again from Settings.
 - Works on phones.
 
 ## Requirements
@@ -63,6 +66,8 @@ The script:
 
 At the end it prints the address, e.g. **http://192.168.1.10:8800**. `setup.sh` always installs the latest **stable** version.
 
+**Setup wizard (1.3):** after the first login a wizard guides you through language, theme, where the library is stored (external disks – recommended, SD card – not recommended, or Plex on another device), disks and folders (found automatically, missing ones created), the Plex server and the TMDB key. On the disks step you can rename a category with the gear (e.g. Kids → Concerts), leave it out of a disk with ✕ or add a new one; missing folders are suggested inside the disk's `Plex` folder and created when you finish. Setting up a second Raspberry Pi or reinstalling? Click **I have a settings file – load it** on the first step: categories, Plex servers, options and the TMDB key come from a file exported in Settings → Backups, and disk paths are matched to this device. You can run it again from **Settings → Account → Run setup wizard**.
+
 ## Updating
 
 ```bash
@@ -84,15 +89,18 @@ cd ~/plex-downloader
 ./fix.sh
 ```
 
-It asks for the language first, then shows:
+The menu opens in a window like `raspi-config` (arrow keys + Enter). On a very small screen, or with `./fix.sh --text`, it is shown as plain text with the same numbers. It asks for the language first, then shows:
 
 1. **Update (check and install)** – checks GitHub and installs a new stable version,
 2. **Reinstall (keep settings)** – fetches the code again and rebuilds the environment, settings stay,
 3. **Clean reinstall** – deletes settings, backups, logs and the download list, then installs the stable version from scratch (confirm with YES),
 4. **Install / update the latest BETA**,
 5. **Leave BETA** – back to stable, experimental settings removed (no extra questions),
-6. **Uninstall** – removes the service from autostart, optionally also the app folder,
-7. **Cancel**.
+6. **Server** – check status (service, autostart, panel address, last log lines), stop the server (autostart stays on) or start it again without restarting the Pi, restart the server process,
+7. **Additional modules** (1.3) – programs that work with Plex Downloader: **Plex Media Server**, **Samba** (sharing folders over SMB), **SMB client** (`cifs-utils`, mounting shares), **ffmpeg** (posters from video frames), **Tailscale VPN** (recommended) and **WireGuard VPN**. Choosing a module shows its status first, then only the actions that make sense: install, update, stop (until the next restart, autostart stays on) / start, restart, uninstall completely. Uninstalling Plex keeps your movies; the Plex database is deleted only if you agree.
+8. **Install another version** (1.3) – choose a stable version since 1.2.5 from a list with short descriptions; your settings are kept (and copied to `.version-snapshots` first), the menu header shows when an older version is installed, and option 1 or `./update.sh` brings you back to the newest,
+9. **Uninstall** – removes the service from autostart, optionally also the app folder,
+10. **Cancel**.
 
 Movies and TV shows on the disks are never touched.
 
@@ -120,7 +128,62 @@ The default paths in `config.example.json` are the author's layout, so yours wil
 
 Removing a disk from the list never deletes files – it only hides the button.
 
-**Library on the SD card (not recommended, e.g. for testing):** use the mount point `/` and folders in your home directory, e.g. `/home/pi/Plex/Movies`. Keep in mind the limited capacity, wear and speed of SD cards.
+**Library on the SD card (not recommended, e.g. for testing):** use the mount point `/` and folders in your home directory, e.g. `/home/pi/Plex/Movies`. In BETA (1.3) the **+ SD card (not recommended)** button in Settings → Disks fills this in and can create the folders. Keep in mind the limited capacity, wear and speed of SD cards.
+
+## Library on another computer (network share)
+
+Plex can run on another computer (for example a second Raspberry Pi) while Plex Downloader runs here. Both must see the same files, so the library folder of the Plex computer is shared over SMB and mounted on this Raspberry Pi. Give both devices a fixed IP address in your router.
+
+Run these commands on the Raspberry Pi with Plex Downloader (replace `192.168.1.10`, `SHARE`, `USER` and `PASSWORD`; `pi` is the user that runs the service):
+
+```bash
+sudo apt install -y cifs-utils                    # tools for SMB shares
+sudo mkdir -p /mnt/plex                           # folder for the share
+# save the share password in a file only you can read
+printf 'username=USER\npassword=PASSWORD\n' > ~/.smbcredentials && chmod 600 ~/.smbcredentials
+# mount now (test)
+sudo mount -t cifs //192.168.1.10/SHARE /mnt/plex -o credentials=/home/pi/.smbcredentials,uid=pi,gid=pi,iocharset=utf8
+```
+
+To mount the share automatically after every restart, add this line to `/etc/fstab` (`sudo nano /etc/fstab`):
+
+```
+//192.168.1.10/SHARE /mnt/plex cifs credentials=/home/pi/.smbcredentials,uid=pi,gid=pi,iocharset=utf8,_netdev,nofail 0 0
+```
+
+Then run `sudo mount -a` – if it shows no error, the share will be mounted after a restart too. In the setup wizard choose **Plex on another device** (the share appears in the list) or enter `/mnt/plex` as the mount point in **Settings → Disks**. The same commands are shown in the wizard with copy buttons.
+
+> **Password with a `\`:** `printf` changes a backslash in the password, so mounting fails with `mount error(13): Permission denied`. Fix the password by hand: `nano ~/.smbcredentials`.
+
+### One disk, two different paths
+
+Each device sees the shared disk under its own path. Example: the disk "SSD 1TB" is plugged into the Plex Pi, and the Plex Downloader Pi mounts it over SMB.
+
+| | Plex Pi | Plex Downloader Pi |
+|---|---|---|
+| Mount point | `/media/ssd1` | `/mnt/ssd1` |
+| Folder of the "Concerts" category | `/media/ssd1/Library/Concerts` | `/mnt/ssd1/Library/Concerts` |
+
+In Plex Downloader always enter the paths **of the device the panel runs on**. A path copied from the Plex Pi (`/media/ssd1/…`) does not exist on the other Pi, and the panel shows "Folder does not exist". The same happens after importing settings from another device.
+
+Easiest fix: **Settings → Disks → Update paths** for that disk, then **Save**. Since 1.3 the panel moves such a path onto its own mount point (`/media/ssd1/Library/Concerts` → `/mnt/ssd1/Library/Concerts`) when the folder exists there. The paths in Plex itself stay as they are – Plex uses its own (`/media/ssd1/…`).
+
+### One category, different folder names on the disks
+
+A category is just a button in the panel – every disk has its own folder field for it, so the folder names may differ. Example: the **Concerts** category, folder `Concerts` on "SSD 1TB" and `Live` on "Pendrive 256GB":
+
+| Disk | Folder of the "Concerts" category |
+|---|---|
+| SSD 1TB | `/mnt/ssd1/Library/Concerts` |
+| Pendrive 256GB | `/mnt/usb256/Library/Live` |
+
+How to set it up by hand:
+
+1. **Settings → Disks**: for each disk enter the full path of its folder in **Folder: Concerts** (or click the yellow **Create** next to an empty field and type the name, e.g. `Live`).
+2. **Save**. "Update paths" will not break it – an existing path is kept, and folder names used on other disks (`Concerts`, `Live`) are also searched for.
+3. In Plex add **both folders to the same library**: Plex → "Concerts" library → **Edit** → **Add folders** → choose `Concerts` on one disk and `Live` on the other. Plex shows the movies from both as one library.
+
+Want the same name everywhere? Rename the folder on the disk (over SMB or with `mv "/mnt/usb256/Library/Live" "/mnt/usb256/Library/Concerts"`), then fix the path in **Settings → Disks** and in the Plex library – in that order, before downloading anything new.
 
 ## Useful commands
 

@@ -42,13 +42,29 @@ c_info "$(L "Installing system packages (aria2, python3-venv, git)…" "Instaluj
 sudo apt-get update -qq
 sudo apt-get install -y -qq aria2 python3 python3-venv python3-pip git >/dev/null
 c_ok "aria2c $(aria2c --version | head -1 | awk '{print $3}')"
+# ffmpeg: posters from video frames (optional). Nothing is shown when it is already there; installing it
+# never stops the setup. On a Pi Zero it takes several minutes, so say so instead of looking frozen.
+if ! command -v ffmpeg >/dev/null 2>&1; then
+  c_info "$(L "Installing ffmpeg (posters from video frames) – on a Pi Zero this can take 5–15 minutes, please wait…" "Instaluję ffmpeg (plakaty z kadrów filmu) – na Pi Zero może to potrwać 5–15 minut, proszę czekać…")"
+  if sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1; then
+    c_ok "ffmpeg"
+  else
+    c_warn "$(L "ffmpeg was not installed – you can add it later with fix.sh → Additional modules." "Nie zainstalowano ffmpeg – możesz go dodać później w fix.sh → Moduły dodatkowe.")"
+  fi
+fi
 
 c_info "$(L "Creating the Python environment (venv)…" "Tworzę środowisko Pythona (venv)…")"
 if [ ! -x "$APP_DIR/venv/bin/python" ]; then
   python3 -m venv "$APP_DIR/venv"
 fi
-"$APP_DIR/venv/bin/pip" install -q --upgrade pip
-"$APP_DIR/venv/bin/pip" install -q -r "$APP_DIR/requirements.txt"
+# Slow or unstable Wi-Fi (Pi Zero): more retries and a longer timeout. Upgrading pip itself is optional.
+PIP_NET=(--retries 10 --timeout 60)
+"$APP_DIR/venv/bin/pip" install -q "${PIP_NET[@]}" --upgrade pip 2>/dev/null \
+  || c_warn "$(L "pip was not upgraded (network) – continuing with the system version." "Nie zaktualizowano pip (sieć) – kontynuuję z wersją systemową.")"
+if ! "$APP_DIR/venv/bin/pip" install -q "${PIP_NET[@]}" -r "$APP_DIR/requirements.txt"; then
+  c_warn "$(L "Could not download the Python packages (connection to pypi.org). Check the network and run ./setup.sh again – nothing is lost." "Nie udało się pobrać pakietów Pythona (połączenie z pypi.org). Sprawdź sieć i uruchom ./setup.sh ponownie – nic nie zostanie utracone.")"
+  exit 1
+fi
 c_ok "$(L "Python dependencies installed" "Zależności Pythona zainstalowane")"
 
 if [ ! -f "$APP_DIR/config.json" ]; then

@@ -42,8 +42,10 @@ DEFAULTS = {
     "plex_servers": [],          # [{"id","name","host","port"}] – dodane ręcznie
     "plex_autodiscover": True,   # wykrywanie serwerów Plex w sieci (GDM) + localhost
     "thumbs_mode": "online",     # online | local | off
+    "thumbs_frames": False,      # posters from video frames (ffmpeg) when TMDB has none / is off
     "language": "",              # "" = jeszcze nie wybrano (ekran wyboru przy logowaniu)
     "theme": "dark",             # dark | light
+    "wizard_done": False,        # kreator pierwszego uruchomienia zakończony
     "vpn": {"enabled": False, "provider": "tailscale", "listen": "lan"},  # zarezerwowane (wkrótce)
 }
 
@@ -113,6 +115,16 @@ def load():
             data = _read(EXAMPLE_PATH)
         cfg = copy.deepcopy(DEFAULTS)
         cfg.update(data)
+        if "wizard_done" not in data:
+            # an installation from before 1.3 counts as set up only when at least one of its library
+            # folders exists here; a fresh stable install switched to BETA (example paths) gets the wizard
+            def _has_library():
+                for d in cfg.get("disks") or []:
+                    for p in (d.get("paths") or {}).values():
+                        if p and os.path.isdir(p):
+                            return True
+                return False
+            cfg["wizard_done"] = os.path.exists(CONFIG_PATH) and _has_library()
         before = json.dumps(data, sort_keys=True)
         normalize(cfg)
         changed = not os.path.exists(CONFIG_PATH)
@@ -134,7 +146,7 @@ def get():
         return _config if _config is not None else load()
 
 
-def save(new=None, note="", note_args=None):
+def save(new=None, note="", note_args=None, make_backup=True):
     global _config
     with _lock:
         if new is not None:
@@ -144,15 +156,16 @@ def save(new=None, note="", note_args=None):
             json.dump(_config, f, indent=2, ensure_ascii=False)
         os.chmod(tmp, 0o600)
         os.replace(tmp, CONFIG_PATH)
-        backup(note, note_args)
+        if make_backup:
+            backup(note, note_args)
 
 
-def update(note="", note_args=None, **changes):
+def update(note="", note_args=None, make_backup=True, **changes):
     with _lock:
         cfg = copy.deepcopy(get())
         cfg.update(changes)
         normalize(cfg)
-        save(cfg, note=note, note_args=note_args)
+        save(cfg, note=note, note_args=note_args, make_backup=make_backup)
         return cfg
 
 

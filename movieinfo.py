@@ -65,6 +65,30 @@ def _get(path, **params):
     return data
 
 
+def check_key(key):
+    """Is this TMDB key valid? (ok, message) – asked without the cache, the key is not saved."""
+    key = re.sub(r"\s+", "", key or "")
+    if not key:
+        return False, _("No TMDB API key.")
+    headers = {"Accept": "application/json", "User-Agent": UA}
+    params = {}
+    if len(key) > 40:
+        headers["Authorization"] = "Bearer " + key
+    else:
+        params["api_key"] = key
+    url = API + "/configuration" + ("?" + urllib.parse.urlencode(params) if params else "")
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=8) as resp:
+            resp.read(1)
+        return True, _("Key OK")
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            return False, _("Invalid key")
+        return False, _("TMDB returned error %d.") % e.code
+    except (urllib.error.URLError, OSError, ValueError):
+        return None, _("No connection to TMDB.")
+
+
 def split_title(text):
     """„Milczenie owiec (1991)” → („Milczenie owiec”, 1991)."""
     text = (text or "").strip()

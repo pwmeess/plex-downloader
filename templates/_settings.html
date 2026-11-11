@@ -21,7 +21,11 @@
       <p class="panel-intro">{{ _("Each disk has a folder for each category. An empty field means the category is not available on that disk.") }}
         <button type="button" class="info-i" data-tip="{{ _('The mount point is the directory where the system sees the disk (check it with df -h). It is used to read free space. Category folders are the Plex library paths, e.g. /plex_media/Plex/Movies.') }}" data-href="https://support.plex.tv/articles/naming-and-organizing-your-movie-media-files/">i</button></p>
       <div id="diskRows"></div>
-      <button class="btn-soft small" type="button" id="addDisk">+ {{ _("Add disk") }}</button>
+      <div class="disk-add">
+        <button class="btn-soft small" type="button" id="addDisk">+ {{ _("Add disk") }}</button>
+        <button class="btn-soft small" type="button" id="addSdDisk">+ {{ _("SD card (not recommended)") }}</button>
+        <button type="button" class="info-i" data-tip="{{ _('Adds a disk with the library on the SD card: mount point / and folders in your home folder (~/Plex/Movies…). Good for testing without external disks. Not recommended for everyday use: SD cards are small, slower and wear out with many writes.') }}">i</button>
+      </div>
     </section>
 
     <!-- KATEGORIE -->
@@ -62,12 +66,18 @@
       <div><label class="small-label" for="sTmdb">{{ _("TMDB API key (API Key or API Read Access Token)") }}
         <button type="button" class="info-i" data-tip="{{ _('Free key from themoviedb.org → Settings → API. Used for the movie preview card and the posters in the File manager. Stored locally only.') }}" data-href="https://www.themoviedb.org/settings/api">i</button></label>
         <input class="input mono" id="sTmdb" type="password" autocomplete="new-password" data-lpignore="true" data-1p-ignore spellcheck="false" placeholder="{{ _('paste the key from themoviedb.org') }}">
+        <span class="key-st" id="sTmdbSt"></span>
         <label class="check"><input type="checkbox" id="sTmdbShow"> {{ _("Show key") }}</label></div>
       <h3>{{ _("Posters in the File manager") }}</h3>
       <div class="radios">
         <label class="check"><input type="radio" name="thumbs" value="online"> {{ _("Download missing posters from TMDB and save them on the disk") }}</label>
         <label class="check"><input type="radio" name="thumbs" value="local"> {{ _("Only posters already saved on the disk") }}</label>
         <label class="check"><input type="radio" name="thumbs" value="off"> {{ _("No posters (fast view, placeholder image)") }}</label>
+      </div>
+      <div class="frames-opt">
+        <label class="check"><input type="checkbox" id="sFrames"> {{ _("Generate posters myself from video frames (needs ffmpeg)") }}</label>
+        <button type="button" class="info-i" data-tip="{{ _('For home videos and titles without a TMDB match (or without a TMDB key) the File manager makes a poster from a frame of the video: several frames are checked and the clearest one is used. Needs ffmpeg – installed by setup.sh, or with fix.sh → Additional modules.\n\nNot recommended to switch on right away: it takes about 10–15 s per movie on a Pi 4 / Pi 400 (longer on a Pi Zero), so the first opening of a large category is slow.\n\nYou can always make a poster from a frame for a single movie: File manager → pen icon (Edit) → Frame from the video.') }}">i</button>
+        <span class="muted small" id="ffmpegState"></span>
       </div>
       <p class="hint">{{ _("The poster is saved in the movie folder as") }} <code>Title (Year).thumb.jpg</code>. {{ _("Plex does not use it – it has its own posters.") }}</p>
       <div class="thumb-actions">
@@ -82,6 +92,19 @@
     <section class="tab-panel" data-panel="backups" hidden>
       <p class="panel-intro">{{ _("Every settings change creates a restore point. Backups older than 30 days are removed automatically, but the latest one is always kept.") }}
         <button type="button" class="info-i" data-tip="{{ _('Restoring a backup changes disks, categories, Plex servers and options. Username, password and session keys stay unchanged for security. Backups are in the backups/ folder on the Raspberry Pi.') }}">i</button></p>
+      <div class="io-box">
+        <h3>{{ _("Export and import") }}
+          <button type="button" class="info-i" data-tip="{{ _('The settings file (JSON) contains disks, categories, Plex servers and options. It never contains the username, password or session keys. Use it to move settings to another Raspberry Pi or to keep a copy outside the Pi. On import you see what will change and choose which parts to apply.') }}">i</button></h3>
+        <div class="io-row">
+          <button class="btn-soft small" type="button" id="expBtn"><svg class="i"><use href="#i-down"/></svg>{{ _("Export settings") }}</button>
+          <label class="check"><input type="checkbox" id="expTmdb"> {{ _("include the TMDB key") }}</label>
+        </div>
+        <div class="io-row">
+          <button class="btn-soft small" type="button" id="impBtn"><svg class="i"><use href="#i-up"/></svg>{{ _("Import settings…") }}</button>
+          <input type="file" id="impFile" accept=".json,application/json" hidden>
+        </div>
+      </div>
+      <h3 class="bk-title">{{ _("Restore points") }}</h3>
       <div class="backup-tools" id="backupTools" hidden>
         <label class="check"><input type="checkbox" id="backupAll"> {{ _("Select all") }}</label>
         <span class="spacer"></span>
@@ -116,6 +139,10 @@
       <h3>{{ _("Activity log") }}</h3>
       <div class="log-row"><button class="btn-soft small" type="button" id="openLog"><svg class="i"><use href="#i-history"/></svg>LOG</button>
         <span class="muted" id="logInfo"></span></div>
+
+      <h3>{{ _("Setup wizard") }} <button type="button" class="info-i" data-tip="{{ _('Runs the first-run wizard again: disks and folders, Plex server and TMDB key. Nothing changes until you click Finish, and your current settings are kept as a restore point.') }}">i</button></h3>
+      <div class="log-row"><a class="btn-soft" href="/setup?fresh=1"><svg class="i"><use href="#i-retry"/></svg>{{ _("Run setup wizard") }}</a>
+        <a class="btn-soft" href="/guide" target="_blank" rel="noopener"><svg class="i"><use href="#i-folder"/></svg>{{ _("Guide (HTML / PDF)") }}</a></div>
 
       <h3 class="fold-h"><button type="button" class="fold" id="cmdToggle" aria-expanded="false"><svg class="i"><use href="#i-chev-r"/></svg>{{ _("Terminal commands (SSH)") }}</button> <button type="button" class="info-i" data-tip="{{ _('Log in to the Raspberry Pi over SSH (Terminal on Mac, PowerShell on Windows), then copy a command with the button on the right and paste it into the terminal.') }}">i</button></h3>
       <div id="cmdList" class="cmd-list" hidden></div>
@@ -153,7 +180,7 @@
         <button class="btn-ghost small fill-paths" type="button" title="{{ _('Search the disk for folders matching the categories and fill in the paths') }}"><svg class="i"><use href="#i-search"/></svg>{{ _("Update paths") }}</button>
         <button class="icon-btn rm" type="button" title="{{ _('Remove disk') }}"><svg class="i"><use href="#i-trash"/></svg></button>
       </span></div>
-    <div><label>{{ _("Button name") }}</label><input class="input" data-k="label"></div>
+    <div><label>{{ _("Button name") }}</label><input class="input" data-k="label" maxlength="16"></div>
     <div><label>{{ _("Caption (e.g. SMB share)") }}</label><input class="input" data-k="subtitle"></div>
     <div class="full"><label>{{ _("Mount point (to read free space)") }}</label><input class="input mono" data-k="mount"></div>
     <div class="full cat-paths"></div>

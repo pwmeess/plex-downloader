@@ -114,6 +114,27 @@
     win.style.left = "50%"; win.style.top = "50%"; win.style.transform = "translate(-50%, -50%)";
   }
 
+  // ------------------------------------------------------------------ TMDB key check (wizard + Settings)
+  function tmdbChecker(input, out) {
+    let timer = null, seq = 0;
+    const set = (cls, text) => { out.className = "key-st " + cls; out.textContent = text; };
+    const run = async (useSaved) => {
+      const key = input.value.trim();
+      if (!key && !useSaved) { set("", ""); return; }
+      const my = ++seq;
+      set("muted", t("Checking the key…"));
+      try {
+        const r = await api("/api/tmdb/check", { key });
+        if (my !== seq) return;
+        if (r.ok === true) set("ok", "✓ " + r.message);
+        else if (r.ok === false) set("bad", "✗ " + r.message);
+        else set("warn", "! " + r.message);
+      } catch (e) { if (my === seq) set("warn", "! " + e.message); }
+    };
+    input.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(() => run(false), 700); });
+    return run;
+  }
+
   // ------------------------------------------------------------------ okno potwierdzenia
   function modal({ title, body, buttons, danger, wide }) {
     return new Promise((resolve) => {
@@ -128,10 +149,14 @@
       const btns = [];
       (buttons || [{ label: "OK", value: true, cls: "btn-accent" }]).forEach((b) => {
         const btn = el("button", b.cls || "btn-soft", b.label); btn.type = "button";
-        if (b.disabled) btn.disabled = true;
+        if (b.disabled) { btn.disabled = true; btn.dataset.off = "1"; }
         if (b.id) btn.dataset.id = b.id;
-        btn.addEventListener("click", () => {
-          const v = typeof b.value === "function" ? b.value() : b.value;
+        btn.addEventListener("click", async () => {
+          let v = typeof b.value === "function" ? b.value() : b.value;
+          if (v && typeof v.then === "function") {   // async action (e.g. a confirmation) – keep the window until done
+            btns.forEach((x) => { x.disabled = true; });
+            try { v = await v; } finally { btns.forEach((x) => { x.disabled = !!x.dataset.off; }); }
+          }
           if (v === undefined) return;
           d.close(); resolve(v);
         });
@@ -181,7 +206,9 @@
     head.append(el("b", null, t("Hint")));
     const x = el("button", "icon-btn"); x.type = "button"; x.appendChild(icon("x")); x.addEventListener("click", closeTip);
     head.appendChild(x);
-    tip.append(head, el("p", null, b.dataset.tip || ""));
+    // "\n\n" in a tooltip = new paragraph
+    tip.appendChild(head);
+    (b.dataset.tip || "").split(/\n\s*\n/).forEach((part) => tip.appendChild(el("p", null, part.trim())));
     if (b.dataset.href) {
       const a = el("a", null, t("More information") + " ↗"); a.href = b.dataset.href; a.target = "_blank"; a.rel = "noopener noreferrer";
       tip.appendChild(a);
@@ -256,6 +283,67 @@
     document.addEventListener("visibilitychange", () => { if (!document.hidden && $("#plexStatus")) refreshStatus(); });
   });
 
+  // ------------------------------------------------------------------ disk tiles: order (drag & drop) and name (gear)
+  const DISK_DT = "application/x-plexdl-disk";
+  let dragDisk = null;
+  function saveDiskOrder(box) {
+    const ids = $$("[data-disk-id]", box).map((x) => x.dataset.diskId);
+    return api("/api/disks/order", { ids }).then(() => document.dispatchEvent(new CustomEvent("pd:settings-saved")))
+      .catch((e) => toast(e.message, true));
+  }
+  // tile: a disk button with data-disk-id; box: its container
+  function diskTile(tile, d, box) {
+    tile.dataset.diskId = d.id;
+    tile.draggable = true;
+    tile.addEventListener("dragstart", (e) => {
+      dragDisk = tile; tile.classList.add("dragging");
+      e.dataTransfer.setData(DISK_DT, d.id); e.dataTransfer.effectAllowed = "move";
+    });
+    tile.addEventListener("dragend", () => {
+      tile.classList.remove("dragging");
+      if (dragDisk) { dragDisk = null; saveDiskOrder(box); }
+    });
+    tile.addEventListener("dragover", (e) => {
+      if (!dragDisk || dragDisk === tile || dragDisk.parentNode !== box) return;
+      e.preventDefault(); e.dataTransfer.dropEffect = "move";
+      const r = tile.getBoundingClientRect();
+      const after = e.clientX > r.left + r.width / 2;
+      box.insertBefore(dragDisk, after ? tile.nextSibling : tile);
+    });
+    tile.addEventListener("drop", (e) => { if (dragDisk) e.preventDefault(); });
+    // gear: rename (max 16 characters) and move left / right (also on phones)
+    const g = el("span", "disk-gear"); g.setAttribute("role", "button"); g.tabIndex = 0;
+    g.title = t("Disk name and order"); g.appendChild(icon("gear"));
+    const open = async (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const body = el("div");
+      const inp = el("input", "input"); inp.value = d.label; inp.maxLength = 16;
+      const cnt = el("span", "muted small-count", `${inp.value.length}/16`);
+      inp.addEventListener("input", () => { cnt.textContent = `${inp.value.length}/16`; });
+      const lab = el("label", "small-label", t("Button name")); lab.append(" ", cnt);
+      body.append(lab, inp, el("p", "hint", t("The order can also be changed by dragging the disk tiles.")));
+      body._onOpen = () => { inp.focus(); inp.select(); };
+      const tiles = $$("[data-disk-id]", box);
+      const i = tiles.indexOf(tile);
+      const v = await modal({ title: t("Disk: {name}", { name: d.label }), body,
+        buttons: [{ label: "◀ " + t("Move left"), value: "left", disabled: i <= 0 },
+          { label: t("Move right") + " ▶", value: "right", disabled: i >= tiles.length - 1 },
+          { label: t("Cancel"), value: false }, { label: t("Save"), value: "save", cls: "btn-accent" }] });
+      if (v === "left" || v === "right") {
+        if (v === "left") box.insertBefore(tile, tiles[i - 1]); else box.insertBefore(tile, tiles[i + 1].nextSibling);
+        saveDiskOrder(box);
+      } else if (v === "save" && inp.value.trim() && inp.value.trim() !== d.label) {
+        try {
+          await api("/api/disks/rename", { id: d.id, label: inp.value });
+          document.dispatchEvent(new CustomEvent("pd:settings-saved"));
+        } catch (er) { toast(er.message, true); }
+      }
+    };
+    g.addEventListener("click", open);
+    g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") open(e); });
+    tile.appendChild(g);
+  }
+
   window.PD = { $, $$, store, t, LANG, LOCALE, api, fmtSize, fmtSpeed, fmtEta, el, icon, catIcon, modal, toast,
-    copyText, makeDraggable, centerWindow, refreshStatus, openSettings: null, status: null };
+    copyText, makeDraggable, centerWindow, refreshStatus, diskTile, tmdbChecker, openSettings: null, status: null };
 })();
