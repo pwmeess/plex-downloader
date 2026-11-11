@@ -128,10 +128,14 @@
       const btns = [];
       (buttons || [{ label: "OK", value: true, cls: "btn-accent" }]).forEach((b) => {
         const btn = el("button", b.cls || "btn-soft", b.label); btn.type = "button";
-        if (b.disabled) btn.disabled = true;
+        if (b.disabled) { btn.disabled = true; btn.dataset.off = "1"; }
         if (b.id) btn.dataset.id = b.id;
-        btn.addEventListener("click", () => {
-          const v = typeof b.value === "function" ? b.value() : b.value;
+        btn.addEventListener("click", async () => {
+          let v = typeof b.value === "function" ? b.value() : b.value;
+          if (v && typeof v.then === "function") {   // async action (e.g. a confirmation) – keep the window until done
+            btns.forEach((x) => { x.disabled = true; });
+            try { v = await v; } finally { btns.forEach((x) => { x.disabled = !!x.dataset.off; }); }
+          }
           if (v === undefined) return;
           d.close(); resolve(v);
         });

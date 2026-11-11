@@ -2,6 +2,17 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
+## 1.3.0-beta3 – 2026-11-11 (BETA, in progress – the EN/PL guides follow)
+
+- **File manager – edit name and poster:** a pen icon above the trash icon on every movie / TV show card opens a window:
+  - title, year and **TMDB ID** (with “Find in TMDB” by title and year), **edition** (up to 3 tags, like when downloading) and the **version** of every video file (e.g. 1080p, 4K),
+  - the new Plex name is shown live, e.g. `Avatar (2009) {tmdb-19995} {edition-Extended Collectors Edition}`,
+  - **Change** asks for a confirmation with the full list of changes; then the folder, the video files, subtitles and the poster are renamed together (subfolders with extras stay as they are); if anything fails, the changes made so far are undone,
+  - TV shows: the folder and optionally the episode files (`Show - S01E01…`) get the new name,
+  - **poster:** “Own image…” (any JPG/PNG/WebP, scaled in the browser to a JPEG) or “download the poster from TMDB” (ticked automatically when the TMDB ID changes),
+  - every change is written to the activity log.
+- Windows on phones use the full available height (long dialogs were cut in half).
+
 ## 1.3.0-beta2 – 2026-11-09 (BETA)
 
 - **Settings export and import** (Settings → Backups → Export and import):

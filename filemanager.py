@@ -678,6 +678,205 @@ def delete(disk_id, cat_id, names, busy=()):
     return {"removed": removed, "problems": problems}
 
 
+# ------------------------------------------------------------------ edycja nazwy (Plex) i własny plakat
+def _version_of(stem, bases):
+    """Wersja z nazwy pliku: „Tytuł (2009) {tmdb-1} - 1080p” → „1080p”."""
+    s = naming.strip_tags(stem)
+    for b in bases:
+        if b and s == b:
+            return ""
+        if b and s.startswith(b + " - "):
+            return s[len(b) + 3:].strip()
+    m = re.match(r"^.*?\(\d{4}\)\s+-\s+(.+)$", s)
+    return m.group(1).strip() if m else ""
+
+
+def _main_videos(path):
+    try:
+        names = sorted(os.listdir(path))
+    except OSError:
+        return []
+    return [f for f in names if not f.startswith(".") and os.path.isfile(os.path.join(path, f)) and _is_video(f)]
+
+
+def item_details(disk_id, cat_id, name):
+    """Dane do okna „Edytuj”: tytuł, rok, edycja, TMDB ID i wersje plików wideo."""
+    _d, cat, base = location(disk_id, cat_id)
+    path = item_path(base, name)
+    is_dir = os.path.isdir(path)
+    label = name if is_dir else naming.split_ext(name)[0]
+    p = naming.parse_name(label)
+    bases = [naming.strip_tags(label)]
+    files = []
+    if cat["kind"] != "tv":
+        for f in (_main_videos(path) if is_dir else [name]):
+            files.append({"name": f, "version": _version_of(naming.split_ext(f)[0], bases)})
+    return {"name": name, "kind": cat["kind"], "is_dir": is_dir, "title": p["title"] or label, "year": p["year"],
+            "edition": p["edition"], "tmdb": p["tmdb"], "files": files,
+            "tmdb_enabled": movieinfo.configured() and cat.get("tmdb", True),
+            "thumb": bool(find_thumb(base, name, is_dir))}
+
+
+def _rename_plan(base, name, kind, title, year, tmdb, edition, versions, episodes):
+    path = item_path(base, name)
+    is_dir = os.path.isdir(path)
+    title = naming.sanitize(naming.strip_tags(title or ""))
+    if not title:
+        raise FMError(_("Enter the title."))
+    if year not in (None, ""):
+        try:
+            year = int(year)
+        except (TypeError, ValueError):
+            raise FMError(_("Invalid year."))
+        if not 1870 <= year <= 2100:
+            raise FMError(_("Invalid year."))
+    else:
+        year = None
+    tmdb = str(tmdb or "").strip()
+    if tmdb and not tmdb.isdigit():
+        raise FMError(_("Invalid %s ID.") % "TMDB")
+    new_base = title + (" (%d)" % year if year else "")
+    tags = naming._tags(None if kind == "tv" else edition, {"tmdb": tmdb} if tmdb else None)
+    new_root = new_base + tags
+    old_label = name if is_dir else naming.split_ext(name)[0]
+    inner = []    # (stara nazwa, nowa nazwa) w folderze filmu / ścieżki względne w serialu
+    if is_dir and kind != "tv":
+        taken = {}
+        for f in _main_videos(path):
+            stem, ext = naming.split_ext(f)
+            ver = naming.clean_tag((versions or {}).get(f, _version_of(stem, [naming.strip_tags(name)])), 40)
+            new_stem = new_root + (" - " + ver if ver else "")
+            if new_stem + ext in taken.values():
+                raise FMError(_("Two files would get the same name: %s") % (new_stem + ext))
+            taken[f] = new_stem + ext
+            for g in sorted(os.listdir(path)):   # plik + napisy / plakat o tym samym początku nazwy
+                if g == f or (g.startswith(stem + ".") and not _is_video(g) and not g.endswith(THUMB_EXTS)
+                              and os.path.isfile(os.path.join(path, g))):
+                    taken.setdefault(g, new_stem + (ext if g == f else g[len(stem):]))
+        for g in sorted(os.listdir(path)):       # plakat folderu i inne pliki „Nazwa folderu.*”
+            if g not in taken and g.startswith(name + ".") and os.path.isfile(os.path.join(path, g)):
+                taken[g] = new_root + g[len(name):]
+        inner = [(a, b) for a, b in taken.items() if a != b]
+        new_name = new_root
+    elif is_dir:
+        old_show = naming.strip_tags(name)
+        if episodes and old_show != new_base:
+            for root, dirs, files in os.walk(path):
+                dirs[:] = [x for x in dirs if not x.startswith(".") and x not in SKIP]
+                for f in files:
+                    if f.startswith(old_show + " - "):
+                        rel = os.path.relpath(os.path.join(root, f), path)
+                        inner.append((rel, os.path.join(os.path.dirname(rel), new_base + f[len(old_show):])))
+        new_name = new_root
+    else:
+        stem, ext = naming.split_ext(name)
+        ver = naming.clean_tag((versions or {}).get(name, _version_of(stem, [naming.strip_tags(stem)])), 40)
+        new_stem = new_root + (" - " + ver if ver else "")
+        new_name = new_stem + ext
+        for g in sorted(os.listdir(base)):       # napisy i plakat obok luźnego pliku
+            if g.startswith(stem + ".") and g != name and not _is_video(g):
+                inner.append((g, new_stem + g[len(stem):]))
+    if len(new_name.encode("utf-8")) > 240:
+        raise FMError(_("The name is too long."))
+    _safe_name(new_name)
+    for a, b in inner:
+        for part in b.split(os.sep):
+            _safe_name(part)
+    return {"path": path, "is_dir": is_dir, "new_name": new_name, "inner": inner}
+
+
+def _free(src, dst):
+    """Cel jest wolny albo to ten sam plik (zmiana tylko wielkości liter)."""
+    if not os.path.lexists(dst):
+        return True
+    try:
+        return os.path.samefile(src, dst)
+    except OSError:
+        return False
+
+
+def _ren(src, dst):
+    if src == dst:
+        return
+    if src.lower() == dst.lower():   # exFAT/SMB: sama zmiana wielkości liter przez nazwę pośrednią
+        mid = src + ".plexdl-ren"
+        os.rename(src, mid)
+        os.rename(mid, dst)
+    else:
+        os.rename(src, dst)
+
+
+def rename_item(disk_id, cat_id, name, title, year=None, tmdb=None, edition="", versions=None,
+                episodes=True, dry=False, busy=()):
+    """Zmienia nazwę filmu/serialu wg zasad Plex: folder, pliki wideo, napisy i plakat."""
+    d, cat, base = location(disk_id, cat_id)
+    plan = _rename_plan(base, name, cat["kind"], title, year, tmdb, edition, versions, episodes)
+    path, new_name, inner = plan["path"], plan["new_name"], plan["inner"]
+    if is_busy(path, busy):
+        raise FMError(_("a download into this folder is in progress"))
+    root = path if plan["is_dir"] else base
+    for a, b in inner:
+        if not _free(os.path.join(root, a), os.path.join(root, b)):
+            raise FMError(_("Already exists: %s") % b)
+    new_path = os.path.join(base, new_name)
+    if new_name != name and not _free(path, new_path):
+        raise FMError(_("Already exists: %s") % new_name)
+    out = {"new_name": new_name, "changes": ([{"from": name, "to": new_name}] if new_name != name else [])
+           + [{"from": a, "to": b} for a, b in inner]}
+    if dry:
+        return out
+    done = []
+    try:
+        for a, b in inner:
+            _ren(os.path.join(root, a), os.path.join(root, b))
+            done.append((os.path.join(root, b), os.path.join(root, a)))
+        if new_name != name:
+            _ren(path, new_path)
+    except OSError as e:
+        for b, a in reversed(done):   # wycofanie częściowych zmian
+            try:
+                _ren(b, a)
+            except OSError:
+                pass
+        raise FMError(_("Renaming failed: %s") % e)
+    _size_cache.pop(path, None)
+    _thumb_fail.pop(path, None)
+    actlog.write("RENAME", "%s → %s (%s / %s, %d file(s))" % (name, new_name, d["label"], cat["label"], len(inner)))
+    return out
+
+
+def save_thumb(disk_id, cat_id, name, data):
+    """Własny plakat (JPEG przygotowany w przeglądarce) zamiast okładki z TMDB."""
+    _d, cat, base = location(disk_id, cat_id)
+    path = item_path(base, name)
+    if not data or data[:3] != b"\xff\xd8\xff" or len(data) > 4 * 1024 * 1024:
+        raise FMError(_("The image must be a JPEG up to 4 MB."))
+    stem = thumb_base(base, name, os.path.isdir(path))
+    for ext in THUMB_EXTS:
+        if os.path.exists(stem + ext):
+            os.remove(stem + ext)
+    out = stem + THUMB
+    with open(out + ".part", "wb") as f:
+        f.write(data)
+    os.replace(out + ".part", out)
+    try:
+        os.chmod(out, 0o664)
+    except OSError:
+        pass
+    actlog.write("POSTERS", "own poster: %s (%s)" % (name, cat["label"]))
+    return {"ok": True}
+
+
+def refresh_thumb(disk_id, cat_id, name):
+    _d, cat, base = location(disk_id, cat_id)
+    path = item_path(base, name)
+    if not movieinfo.configured():
+        raise FMError(_("No TMDB key – add it in Settings → Preview & posters."))
+    _thumb_fail.pop(os.path.join(base, name), None)
+    fetch_thumb(cat["kind"], base, name, os.path.isdir(path), force=True)
+    return {"ok": True}
+
+
 # ------------------------------------------------------------------ okładki
 _thumb_locks = {}
 _thumb_sem = threading.Semaphore(3)

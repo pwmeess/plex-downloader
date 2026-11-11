@@ -26,6 +26,7 @@ Changelog: [CHANGELOG.md](CHANGELOG.md) · Roadmap: [ROADMAP.md](ROADMAP.md)
 - **Categories:** Movies, TV Shows, Kids and any custom category of type movie, TV show or "other (keep name)". Each disk has its own folder for each category; folder names are up to you.
 - **Advanced Plex naming:** edition `{edition-Director's Cut}` (Plex Pass), file version `- 1080p` (several versions in one folder) and `{tmdb-…}` ID for exact matching.
 - **File manager:** two columns with posters. Drag and drop movies between folders and disks. Same disk = instant move; another disk = copy → SHA-256 verification → only then the original is removed. Move a whole TV show, one season or selected episodes.
+- **Edit name and poster (1.3.0-beta3):** the pen icon on a card changes the title, year, TMDB ID, edition and file versions following the Plex naming rules (folder, video files, subtitles and poster together, after a confirmation) and sets your own poster image or downloads it again from TMDB.
 - **Two-stage progress (1.2.6):** "copying X of Y" and "verifying X of Y" with the real file size, and one time-left estimate for both stages.
 - **"Skip SHA-256 verification after moving" (1.2.6):** option in the move confirmation (off by default). About twice as fast; only file sizes are compared before the original is deleted.
 - **Posters:** saved in the movie folder as `Title (Year).thumb.jpg` (from TMDB). TMDB lookups can be switched off per category (e.g. home videos).

@@ -198,11 +198,15 @@
       const kind = this.data ? this.data.kind : "movie";
       const extra = kind === "tv" ? (i.videos ? t("{n} ep.", { n: i.videos }) : "") : "";
       const y = el("div", "y", [i.year, fmtSize(i.size), extra].filter(Boolean).join(" · "));
+      const ed = el("button", "edit"); ed.type = "button"; ed.title = t("Edit name and poster"); ed.appendChild(icon("pen"));
+      ed.disabled = i.busy;
+      ed.addEventListener("click", (e) => { e.stopPropagation(); editItem(this, i); });
       const del = el("button", "del"); del.type = "button"; del.title = t("Delete"); del.appendChild(icon("trash"));
       del.disabled = i.busy;
       del.addEventListener("click", (e) => { e.stopPropagation(); deleteItems(this, [i.name]); });
       const txt = el("div", "txt"); txt.append(tt, y);
-      meta.append(txt, del);
+      const acts = el("div", "acts"); acts.append(ed, del);
+      meta.append(txt, acts);
       c.append(poster, meta);
       poster.addEventListener("click", (e) => {
         if (e.target.closest(".sel-box") || i.busy) return;
@@ -352,6 +356,245 @@
       toast(t("Move started – progress is shown under the header."));
       pollOps(true);
     } catch (e) { toast(e.message, true); }
+  }
+
+  // ------------------------------------------------------------------ edycja nazwy Plex i plakatu
+  function lbl(text, tip) {
+    const l = el("label", "small-label", text);
+    if (tip) { const b = el("button", "info-i", "i"); b.type = "button"; b.dataset.tip = tip; l.appendChild(b); }
+    return l;
+  }
+  // own poster: any image the browser can open → JPEG max. 600 px wide (no image library on the Pi needed)
+  function toJpeg(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const w = Math.min(600, img.naturalWidth), h = Math.round(img.naturalHeight * (w / img.naturalWidth));
+        const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+        cv.getContext("2d").drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        resolve(cv.toDataURL("image/jpeg", 0.88));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(t("This image cannot be opened – use JPG, PNG or WebP."))); };
+      img.src = url;
+    });
+  }
+
+  async function editItem(pane, item) {
+    let info;
+    try {
+      info = await api(`/api/fm/item?disk=${encodeURIComponent(pane.disk)}&cat=${encodeURIComponent(pane.cat)}&name=${encodeURIComponent(item.name)}`);
+    } catch (e) { toast(e.message, true); return; }
+    const isTv = info.kind === "tv";
+    const body = el("div", "fe");
+    body.appendChild(el("p", "fe-old", info.name));
+    const grid = el("div", "fe-grid");
+
+    // ---- poster
+    const pcol = el("div", "fe-poster");
+    const pv = el("div", "pv");
+    const showPh = () => { pv.replaceChildren(icon(catIcon(pane.catObj())), el("span", null, t("no poster"))); };
+    if (info.thumb) {
+      const img = document.createElement("img");
+      img.src = `/api/fm/thumb?disk=${encodeURIComponent(pane.disk)}&cat=${encodeURIComponent(pane.cat)}&name=${encodeURIComponent(item.name)}&v=${Date.now()}`;
+      img.onerror = showPh; pv.appendChild(img);
+    } else showPh();
+    let ownJpeg = null;
+    const tools = el("div", "pv-tools");
+    const file = el("input"); file.type = "file"; file.accept = "image/*"; file.hidden = true;
+    const own = el("button", "btn-soft small"); own.type = "button"; own.append(icon("image"), " " + t("Own image…"));
+    own.title = t("Use your own image as the poster in the File manager (e.g. a scan of the cover).");
+    own.addEventListener("click", () => { file.value = ""; file.click(); });
+    const tmdbBox = el("label", "check");
+    const tmdbCb = el("input"); tmdbCb.type = "checkbox";
+    tmdbBox.append(tmdbCb, " " + t("download the poster from TMDB"));
+    tmdbBox.hidden = !info.tmdb_enabled;
+    file.addEventListener("change", async () => {
+      const f = file.files[0]; if (!f) return;
+      try {
+        ownJpeg = await toJpeg(f);
+        const img = document.createElement("img"); img.src = ownJpeg; pv.replaceChildren(img);
+        tmdbCb.checked = false;
+      } catch (e) { toast(e.message, true); }
+    });
+    tmdbCb.addEventListener("change", () => { if (tmdbCb.checked && ownJpeg) { ownJpeg = null; } });
+    tools.append(own, file, tmdbBox);
+    pcol.append(pv, tools);
+
+    // ---- name fields
+    const f = el("div", "fe-fields");
+    const r1 = el("div", "fe-row");
+    const tw = el("div"), yw = el("div");
+    const title = el("input", "input"); title.value = info.title || ""; title.maxLength = 150;
+    const year = el("input", "input"); year.value = info.year || ""; year.inputMode = "numeric"; year.maxLength = 4; year.placeholder = "2009";
+    tw.append(lbl(isTv ? t("TV show name") : t("Title")), title);
+    yw.append(lbl(t("Year")), year);
+    r1.append(tw, yw);
+    f.appendChild(r1);
+
+    const idw = el("div");
+    const tmdb = el("input", "input mono"); tmdb.value = info.tmdb || ""; tmdb.inputMode = "numeric"; tmdb.placeholder = "19995";
+    const row2 = el("div", "fe-row2"); row2.appendChild(tmdb);
+    const res = el("div", "fe-res");
+    if (info.tmdb_enabled) {
+      const find = el("button", "btn-soft small"); find.type = "button"; find.append(icon("search"), " " + t("Find in TMDB"));
+      find.addEventListener("click", async () => {
+        res.replaceChildren(el("span", "muted", t("Searching…")));
+        try {
+          const q = new URLSearchParams({ kind: isTv ? "tv" : "movie", title: title.value.trim(), year: year.value.trim(), search: "1" });
+          const r = await api("/api/info?" + q.toString());
+          if (r.error) { res.replaceChildren(el("span", "muted", r.error)); return; }
+          const list = (r.results || []);
+          if (!list.length) { res.replaceChildren(el("span", "muted", t("Nothing found – check the title."))); return; }
+          res.replaceChildren(...list.map((x) => {
+            const b = el("button"); b.type = "button";
+            if (x.poster) { const im = document.createElement("img"); im.src = x.poster; im.alt = ""; b.appendChild(im); } else b.appendChild(el("span", "noimg"));
+            const tx = el("span"); tx.append(el("b", null, x.title || x.original_title || "?"),
+              el("small", null, [x.year, x.original_title && x.original_title !== x.title ? x.original_title : "", "TMDB " + x.id].filter(Boolean).join(" · ")));
+            b.appendChild(tx);
+            b.addEventListener("click", () => {
+              tmdb.value = x.id; if (x.year) year.value = x.year;
+              if (!title.value.trim()) title.value = x.title || x.original_title || "";
+              res.replaceChildren(); onTmdb(); preview();
+            });
+            return b;
+          }));
+        } catch (e) { res.replaceChildren(el("span", "muted", e.message)); }
+      });
+      row2.appendChild(find);
+    }
+    idw.append(lbl(t("TMDB ID"), t("The number from the TMDB address, e.g. themoviedb.org/movie/19995 → 19995. Added to the name as {tmdb-19995}, so Plex matches exactly this movie. “Find in TMDB” searches by the title and year above.")), row2, res);
+    f.appendChild(idw);
+    const onTmdb = () => { if (info.tmdb_enabled && String(tmdb.value.trim()) !== String(info.tmdb || "") && !ownJpeg) tmdbCb.checked = true; };
+    tmdb.addEventListener("input", onTmdb);
+
+    // ---- edition (movies): up to 3 tags joined into one {edition-…}
+    const edBox = el("div", "fe-ed");
+    const edDl = el("datalist"); edDl.id = "feEditions";
+    (info.editions || []).forEach((v) => { const o = el("option"); o.value = v; edDl.appendChild(o); });
+    const count = el("span", "fe-count muted");
+    const edAdd = el("button", "btn-ghost small"); edAdd.type = "button"; edAdd.textContent = "+ " + t("Add another tag");
+    const edInputs = () => $$("input", edBox);
+    const edValue = () => edInputs().map((i) => i.value.trim()).filter(Boolean).join(" ");
+    const edUpd = () => {
+      const len = edValue().length;
+      count.textContent = edInputs().length > 1 || len > 32 ? t("{n}/32 characters", { n: len }) : "";
+      count.classList.toggle("bad", len > 32);
+      edAdd.hidden = edInputs().length >= 3 || !edInputs()[0].value.trim();
+    };
+    const edRow = (val, removable) => {
+      const r = el("div", "ed-row");
+      const i = el("input", "input"); i.maxLength = 32; i.value = val || ""; i.setAttribute("list", "feEditions");
+      i.placeholder = t("e.g. Director's Cut");
+      i.addEventListener("input", () => { edUpd(); preview(); });
+      r.appendChild(i);
+      if (removable) {
+        const x = el("button", "icon-btn"); x.type = "button"; x.title = t("Remove"); x.appendChild(icon("x"));
+        x.addEventListener("click", () => { r.remove(); edUpd(); preview(); });
+        r.appendChild(x);
+      }
+      edBox.appendChild(r);
+      return i;
+    };
+    if (!isTv) {
+      const w = el("div");
+      w.append(lbl(t("Edition") + " {edition-…}", t("Movie edition, e.g. Director's Cut, Extended Edition, Remastered 1997, VHS. Plex shows it as a separate edition of the same movie. Added to the folder and file name (Plex recommendation), max. 32 characters. Requires Plex Pass on the server admin account.")), edBox, edDl);
+      edRow(info.edition, false);
+      edAdd.addEventListener("click", () => { if (edInputs().length < 3) { edRow("", true).focus(); edUpd(); } });
+      w.append(edAdd, count);
+      f.appendChild(w);
+      edUpd();
+    }
+
+    // ---- versions of the video files
+    const verInputs = {};
+    if (!isTv && info.files.length) {
+      const vDl = el("datalist"); vDl.id = "feVersions";
+      (info.versions || []).forEach((v) => { const o = el("option"); o.value = v; vDl.appendChild(o); });
+      const w = el("div");
+      w.append(lbl(info.files.length > 1 ? t("File versions") : t("File version"), t("Version label of the same movie, e.g. 4K, 1080p, Polish voice-over. Added to the file name only – Plex merges several versions in one folder into a single item with a version choice.")), vDl);
+      const fl = el("div", "fe-files");
+      info.files.forEach((x) => {
+        const r = el("div", "fe-file");
+        const i = el("input", "input"); i.value = x.version; i.maxLength = 40; i.setAttribute("list", "feVersions"); i.placeholder = t("e.g. 1080p");
+        i.addEventListener("input", preview);
+        verInputs[x.name] = i;
+        const n = el("span", null, x.name); n.title = x.name;
+        r.append(n, i); fl.appendChild(r);
+      });
+      w.appendChild(fl); f.appendChild(w);
+    }
+    let epCb = null;
+    if (isTv) {
+      const l = el("label", "check"); epCb = el("input"); epCb.type = "checkbox"; epCb.checked = true;
+      l.append(epCb, " " + t("also rename the episode files (Show - S01E01…)"));
+      epCb.addEventListener("change", preview);
+      f.appendChild(l);
+    }
+    const nw = el("div");
+    const newName = el("p", "fe-new");
+    nw.append(lbl(t("New name")), newName);
+    f.appendChild(nw);
+    grid.append(pcol, f);
+    body.appendChild(grid);
+
+    const payload = (dry) => ({
+      disk: pane.disk, cat: pane.cat, name: info.name, title: title.value.trim(), year: year.value.trim(),
+      tmdb: tmdb.value.trim(), edition: isTv ? "" : edValue(), dry,
+      versions: Object.fromEntries(Object.entries(verInputs).map(([k, i]) => [k, i.value.trim()])),
+      episodes: epCb ? epCb.checked : true,
+    });
+    let timer = null, last = null;
+    function preview() {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        try {
+          last = await api("/api/fm/rename", payload(true));
+          newName.className = "fe-new";
+          newName.textContent = last.changes.length ? last.new_name : t("no change") + " – " + last.new_name;
+        } catch (e) { last = null; newName.className = "fe-new bad"; newName.textContent = e.message; }
+      }, 250);
+    }
+    [title, year, tmdb].forEach((i) => i.addEventListener("input", preview));
+    preview();
+    body._onOpen = () => { title.focus(); };
+
+    const apply = async () => {
+      if (edValue().length > 32) { toast(t("The edition can have max. 32 characters."), true); return undefined; }
+      let plan;
+      try { plan = await api("/api/fm/rename", payload(true)); } catch (e) { toast(e.message, true); return undefined; }
+      const poster = ownJpeg ? "own" : tmdbCb.checked ? "tmdb" : "";
+      if (!plan.changes.length && !poster) { toast(t("Nothing to change.")); return undefined; }
+      const cb = el("div");
+      cb.appendChild(el("p", null, t("Are you sure? The following will be changed on the disk:")));
+      const ul = el("ul", "fe-plan");
+      plan.changes.slice(0, 14).forEach((c) => { const li = el("li"); li.append(document.createTextNode(c.from + " → "), el("b", null, c.to)); ul.appendChild(li); });
+      if (plan.changes.length > 14) ul.appendChild(el("li", "muted", t("… and {n} more", { n: plan.changes.length - 14 })));
+      if (poster) ul.appendChild(el("li", null, poster === "own" ? t("Poster: your own image") : t("Poster: downloaded again from TMDB")));
+      cb.appendChild(ul);
+      if (plan.changes.length) cb.appendChild(el("p", "hint", t("Plex finds the new names at the next library scan. Subfolders with extras (e.g. Trailers) are not changed.")));
+      const sure = await modal({ title: t("Change “{name}”?", { name: item.title }), body: cb,
+        buttons: [{ label: t("Cancel"), value: false }, { label: t("Yes, change"), value: true, cls: "btn-accent" }] });
+      if (!sure) return undefined;
+      let name = info.name;
+      try {
+        if (plan.changes.length) name = (await api("/api/fm/rename", payload(false))).new_name;
+        if (poster === "own") await api("/api/fm/thumb/upload", { disk: pane.disk, cat: pane.cat, name, data: ownJpeg });
+        else if (poster === "tmdb") {
+          try { await api("/api/fm/thumb/tmdb", { disk: pane.disk, cat: pane.cat, name }); }
+          catch (e) { toast(t("Renamed, but the poster could not be downloaded: {err}", { err: e.message }), true); }
+        }
+      } catch (e) { toast(e.message, true); pane.reload(); return undefined; }
+      toast(t("Changed: {name}", { name }));
+      pane.sel.delete(info.name);
+      pane.reload();
+      const o = pane.other();
+      if (o.disk === pane.disk && o.cat === pane.cat) o.reload();
+      return true;
+    };
+    await modal({ title: t("Edit “{name}”", { name: item.title }), body, wide: true,
+      buttons: [{ label: t("Cancel"), value: false }, { label: t("Change"), cls: "btn-accent", value: apply }] });
   }
 
   // ------------------------------------------------------------------ usuwanie

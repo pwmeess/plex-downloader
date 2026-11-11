@@ -215,6 +215,8 @@ def api_info():
         v = a.get(k, "")
         return int(v) if v.isdigit() else None
     try:
+        if a.get("search") == "1":   # only the list of matches (File manager → Edit → Find in TMDB)
+            return jsonify(configured=True, results=movieinfo.search(kind, title, year))
         data = movieinfo.lookup(kind, title, year, num("id"), num("season"), num("episode"))
     except movieinfo.InfoError as e:
         return jsonify(configured=True, error=str(e))
@@ -896,6 +898,43 @@ def api_fm_delete():
     if d.get("confirm") != "DELETE":
         return err(_("Deletion not confirmed."))
     return fm_call(fm.delete, d.get("disk"), d.get("cat"), d.get("names") or [], manager.busy_paths())
+
+
+@app.route("/api/fm/item")
+@login_required
+def api_fm_item():
+    a = request.args
+    return fm_call(lambda: dict(fm.item_details(a.get("disk", ""), a.get("cat", ""), a.get("name", "")),
+                                editions=naming.EDITIONS, versions=naming.VERSIONS))
+
+
+@app.route("/api/fm/rename", methods=["POST"])
+@login_required
+def api_fm_rename():
+    d = request.get_json(silent=True) or {}
+    return fm_call(fm.rename_item, d.get("disk"), d.get("cat"), d.get("name", ""), d.get("title", ""),
+                   d.get("year"), d.get("tmdb"), d.get("edition", ""), d.get("versions") or {},
+                   bool(d.get("episodes", True)), bool(d.get("dry")), manager.busy_paths())
+
+
+@app.route("/api/fm/thumb/upload", methods=["POST"])
+@login_required
+def api_fm_thumb_upload():
+    import base64
+    d = request.get_json(silent=True) or {}
+    raw = str(d.get("data") or "")
+    try:
+        data = base64.b64decode(raw.split(",", 1)[-1], validate=True)
+    except ValueError:
+        return err(_("The image must be a JPEG up to 4 MB."))
+    return fm_call(fm.save_thumb, d.get("disk"), d.get("cat"), d.get("name", ""), data)
+
+
+@app.route("/api/fm/thumb/tmdb", methods=["POST"])
+@login_required
+def api_fm_thumb_tmdb():
+    d = request.get_json(silent=True) or {}
+    return fm_call(fm.refresh_thumb, d.get("disk"), d.get("cat"), d.get("name", ""))
 
 
 @app.route("/api/fm/ops")
