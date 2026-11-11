@@ -2,7 +2,7 @@
 
 🇬🇧 [English](ROADMAP.md) · 🇵🇱 **Polski** · Historia zmian: [CHANGELOG.md](CHANGELOG.md)
 
-Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.2.7** · BETA: **1.3.0-beta4**
+Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.3.0** · BETA: **1.4.0-beta0**
 
 ## Stałe zasady (sprawdzać przy każdej wersji)
 
@@ -37,6 +37,8 @@ Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.2.7** · BETA: **1.3.0
 | 1.3.0-beta2 | Eksport i import ustawień z podglądem zmian, szablon dysku „Karta SD (niezalecane)” |
 | 1.3.0-beta3 | Instrukcje EN/PL (w aplikacji + PDF); Menedżer plików: edycja nazwy Plex, rodzaje plików (wersje / dodatki) i plakaty (własny obrazek, kadr z filmu, TMDB); `fix.sh` Moduły dodatkowe; poprawki kreatora po testach na Pi Zero |
 | 1.3.0-beta4 | `fix.sh` → Zainstaluj inną wersję; kreator startuje też po przełączeniu świeżej instalacji stabilnej na BETA |
+| 1.3.0 (stabilna) | Wszystko z 1.3.0-beta1…beta4 bez zapowiedzi VPN: kreator, eksport / import ustawień, edycja nazw i plakatów (własny obrazek, kadr z filmu, TMDB), dodatki Plexa, instrukcje EN/PL, `fix.sh` Moduły dodatkowe i Zainstaluj inną wersję |
+| 1.4.0-beta0 | 1.3.0 + zapowiedź VPN; baza dla 1.4 (bez nowych funkcji) |
 
 ## Do poprawy
 
@@ -45,10 +47,10 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
 
 ## Strona demo (Netlify)
 
-- [x] Demo (najpierw 1.2.5, teraz **1.2.6**): prawdziwy interfejs z symulacją w przeglądarce, EN/PL, okno powitalne, dane max 24 h, wylogowanie czyści wszystko, linki zewnętrzne zablokowane, zmyślone nazwy, IP i klucze, generowane okładki.
+- [x] Demo (najpierw 1.2.5, potem 1.2.6, teraz **1.3.0**): prawdziwy interfejs z symulacją w przeglądarce, EN/PL, okno powitalne, dane max 24 h, wylogowanie czyści wszystko, linki zewnętrzne zablokowane, zmyślone nazwy, IP i klucze, generowane okładki.
 - [ ] Publikacja na Netlify (Piotr) i link do demo w README.
 - [ ] Źródła demo (`demo.js`, skrypt budujący) w repozytorium, w folderze `demo/`, żeby po każdym wydaniu stabilnym dało się je odświeżyć jednym poleceniem.
-- [ ] Po wydaniu 1.3: podmienić link do instrukcji w oknie powitalnym na instrukcje EN/PL (HTML i PDF).
+- [x] Od 1.3: link do instrukcji w oknie powitalnym prowadzi do instrukcji EN/PL (HTML i PDF).
 
 ## 1.3 – kreator pierwszego uruchomienia, instrukcje, wybór wersji
 
@@ -85,7 +87,7 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
   - [x] Plakaty z kadrów filmu (ffmpeg): w oknie edycji i automatycznie (Ustawienia / kreator, domyślnie wyłączone).
   - [x] `fix.sh` → Moduły dodatkowe: Plex Media Server, Samba, klient SMB, ffmpeg, Tailscale, WireGuard (status, instalacja, aktualizacja, zatrzymaj / uruchom, restart, odinstalowanie).
 - [x] `1.3.0-beta4`: „Zainstaluj inną wersję” w `fix.sh`; kreator startuje też po przełączeniu świeżej instalacji stabilnej na BETA.
-- [ ] `1.3.0`: wydanie stabilne.
+- [x] `1.3.0`: wydanie stabilne.
 
 **`fix.sh` – podmenu serwera**
 - [x] Nowa opcja „Serwer” (w 1.2.9-beta): 1) sprawdź status (stan usługi, autostart, adres panelu, ostatnie wpisy logu), 2) wstrzymaj serwer – bez wpływu na autostart / uruchom ponownie (zależnie od stanu), 3) restart procesu serwera, 4) powrót.
@@ -100,6 +102,8 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
 - [x] Zgodność ustawień: nowsze wersje migrują `config.json` automatycznie, starsze zachowują nieznane klucze; przy cofnięciu ustawienia zostają, a kopia sprzed zmiany jest w `.version-snapshots`.
 
 ## 1.4 – dostęp zdalny przez VPN
+
+Kolejne kroki: `1.4.0-beta0` (= 1.3.0 + zapowiedź VPN, gotowe) → `1.4.0-beta1` (działająca zakładka VPN) → … → `1.4.0`.
 
 Zapowiedzi VPN (zakładka i przycisk w nagłówku) są widoczne tylko w BETA; w wersji stabilnej wrócą razem z działającą funkcją.
 

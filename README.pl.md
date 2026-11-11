@@ -8,7 +8,7 @@ Lekki menedżer pobierania dla Raspberry Pi. Wklejasz bezpośredni link do pliku
 - **Seriale:** `…/TV Shows/Serial/Season 01/Serial - S01E02.mkv`
 - **Dla dzieci i własne kategorie:** `…/Kids/Tytuł (YYYY)/…`, `…/Concerts/…` itd.
 
-Historia zmian: [CHANGELOG.md](CHANGELOG.md) · Plan kolejnych wersji: [ROADMAP.pl.md](ROADMAP.pl.md). · **Instrukcja:** [po polsku](docs/guide.pl.md) · [PDF](static/guide/plex-downloader-guide-pl.pdf) (w aplikacji: `/guide`, BETA 1.3.0-beta3)
+Historia zmian: [CHANGELOG.md](CHANGELOG.md) · Plan kolejnych wersji: [ROADMAP.pl.md](ROADMAP.pl.md). · **Instrukcja:** [po polsku](docs/guide.pl.md) · [PDF](static/guide/plex-downloader-guide-pl.pdf) (w aplikacji: `/guide`)
 
 ## Funkcje
 
@@ -27,11 +27,11 @@ Historia zmian: [CHANGELOG.md](CHANGELOG.md) · Plan kolejnych wersji: [ROADMAP.
 - **Kategorie (1.2):** Filmy, Seriale, Dla dzieci oraz dowolne własne kategorie typu „film” albo „serial”. Każdy dysk ma osobny folder dla każdej kategorii, a foldery mogą mieć dowolne nazwy.
 - **Opcje zaawansowane nazewnictwa Plex (1.2):** edycja `{edition-Director's Cut}` (Plex Pass), wersja pliku `- 1080p` (kilka wersji w jednym folderze) oraz ID `{tmdb-…}` dla trafnego dopasowania. Edycja jest wykrywana z nazwy pliku, np. `Directors.Cut`.
 - **Menedżer plików (1.2):** dwie kolumny z okładkami. Przeciągnij i upuść, żeby przenieść filmy między folderami i dyskami. Ten sam dysk to natychmiastowe przeniesienie, inny dysk to kopia, weryfikacja SHA-256 i dopiero wtedy usunięcie oryginału. Kosz usuwa cały folder filmu po potwierdzeniu.
-- **Edycja nazwy i plakatu (1.3.0-beta3):** ikona długopisu na kafelku zmienia tytuł, rok, TMDB ID, wydanie i wersje plików zgodnie z zasadami nazewnictwa Plex (folder, pliki wideo, napisy i plakat razem, po potwierdzeniu) oraz ustawia własny obrazek plakatu albo pobiera go ponownie z TMDB.
+- **Edycja nazwy i plakatu (1.3):** ikona długopisu na kafelku zmienia tytuł, rok, TMDB ID, wydanie i wersje plików zgodnie z zasadami nazewnictwa Plex (folder, pliki wideo, napisy i plakat razem, po potwierdzeniu) oraz ustawia własny obrazek plakatu albo pobiera go ponownie z TMDB.
 - **Okładki:** zapisywane w folderze filmu jako `Tytuł (Rok).thumb.jpg` (z TMDB). Gdy TMDB nic nie zwróci, plik nie powstaje i widać obrazek zastępczy. Wyszukiwanie w TMDB można wyłączyć dla wybranej kategorii (np. domowe wideo).
 - **Serwery Plex w nagłówku (1.2):** automatyczne wykrywanie w sieci (GDM) i status online/offline, także dla serwerów dodanych ręcznie.
 - **Kopie zapasowe ustawień (1.2):** punkt przywracania po każdej zmianie, przechowywany 30 dni (ostatni zawsze zostaje). Przywrócenie nie zmienia loginu ani hasła.
-- **Eksport i import ustawień (1.3.0-beta2):** plik JSON bez loginu, hasła i kluczy (klucz TMDB opcjonalnie); przy imporcie widać, co się zmieni, i można wybrać sekcje.
+- **Eksport i import ustawień (1.3):** plik JSON bez loginu, hasła i kluczy (klucz TMDB opcjonalnie); przy imporcie widać, co się zmieni, i można wybrać sekcje.
 - **Pływające okno ustawień z zakładkami (1.2)** i podpowiedzi ⓘ przy opcjach.
 - Przyciski **Google** i **Zwiastun (YouTube)** w karcie filmu.
 - **Języki i motyw (1.2.1):** angielski (domyślny) i polski, motyw ciemny lub jasny (Ustawienia → Konto). Język wybierasz też przy pierwszym logowaniu i w `setup.sh`. Tłumaczenia są w `locales/<kod>.json`, więc nowy język to nowy plik.
@@ -71,7 +71,7 @@ Skrypt wykonuje kolejno:
 
 Na koniec wyświetla adres, np. **http://192.168.1.10:8800**.
 
-**Kreator konfiguracji (1.3, BETA):** po pierwszym logowaniu kreator prowadzi przez język, motyw, miejsce biblioteki (dyski zewnętrzne – zalecane, karta SD – niezalecane albo Plex na innym urządzeniu), dyski i foldery (wyszukiwane automatycznie, brakujące tworzone), serwer Plex i klucz TMDB. W kroku dysków zębatką zmienisz nazwę kategorii (np. Dla dzieci → Koncerty), ✕ pominie ją na danym dysku, a „+ Dodaj kategorię” doda nową; brakujące foldery kreator proponuje w folderze `Plex` na dysku i tworzy przy zakończeniu. Drugie Raspberry Pi albo ponowna instalacja? Na pierwszym kroku kliknij **Mam plik ustawień – wczytaj**: kategorie, serwery Plex, opcje i klucz TMDB kreator weźmie z pliku wyeksportowanego w Ustawienia → Kopie zapasowe, a ścieżki dysków dopasuje do tego urządzenia. Można go uruchomić ponownie w **Ustawienia → Konto → Uruchom kreator**.
+**Kreator konfiguracji (1.3):** po pierwszym logowaniu kreator prowadzi przez język, motyw, miejsce biblioteki (dyski zewnętrzne – zalecane, karta SD – niezalecane albo Plex na innym urządzeniu), dyski i foldery (wyszukiwane automatycznie, brakujące tworzone), serwer Plex i klucz TMDB. W kroku dysków zębatką zmienisz nazwę kategorii (np. Dla dzieci → Koncerty), ✕ pominie ją na danym dysku, a „+ Dodaj kategorię” doda nową; brakujące foldery kreator proponuje w folderze `Plex` na dysku i tworzy przy zakończeniu. Drugie Raspberry Pi albo ponowna instalacja? Na pierwszym kroku kliknij **Mam plik ustawień – wczytaj**: kategorie, serwery Plex, opcje i klucz TMDB kreator weźmie z pliku wyeksportowanego w Ustawienia → Kopie zapasowe, a ścieżki dysków dopasuje do tego urządzenia. Można go uruchomić ponownie w **Ustawienia → Konto → Uruchom kreator**.
 
 ## Aktualizacja
 
@@ -103,8 +103,8 @@ Menu otwiera się w oknie jak `raspi-config` (strzałki + Enter). Na bardzo mał
 4. **Install / update the latest BETA** – instaluje lub aktualizuje wersję BETA,
 5. **Leave BETA** – powrót do wersji stabilnej z usunięciem ustawień eksperymentalnych (bez dodatkowych pytań),
 6. **Server** – status (usługa, autostart, adres panelu, ostatnie wpisy logu), wstrzymanie serwera (autostart bez zmian) albo ponowne uruchomienie bez restartu Pi, restart procesu serwera,
-7. **Moduły dodatkowe** (BETA 1.3.0-beta3) – programy współpracujące z Plex Downloaderem: **Plex Media Server**, **Samba** (udostępnianie folderów przez SMB), **klient SMB** (`cifs-utils`, montowanie udziałów), **ffmpeg** (plakaty z kadrów filmu), **Tailscale VPN** (zalecany) i **WireGuard VPN**. Po wybraniu modułu najpierw widać jego status, potem tylko sensowne opcje: zainstaluj, zaktualizuj, zatrzymaj (do restartu, autostart bez zmian) / uruchom, uruchom ponownie, odinstaluj całkowicie. Odinstalowanie Plexa zostawia filmy; baza Plexa jest usuwana tylko po Twojej zgodzie.
-8. **Zainstaluj inną wersję** (BETA 1.3.0-beta4) – wybór wersji stabilnej od 1.2.5 z listy z krótkim opisem; ustawienia zostają (najpierw kopia do `.version-snapshots`), nagłówek menu pokazuje, że zainstalowana jest starsza wersja, a opcja 1 albo `./update.sh` wraca do najnowszej,
+7. **Moduły dodatkowe** (1.3) – programy współpracujące z Plex Downloaderem: **Plex Media Server**, **Samba** (udostępnianie folderów przez SMB), **klient SMB** (`cifs-utils`, montowanie udziałów), **ffmpeg** (plakaty z kadrów filmu), **Tailscale VPN** (zalecany) i **WireGuard VPN**. Po wybraniu modułu najpierw widać jego status, potem tylko sensowne opcje: zainstaluj, zaktualizuj, zatrzymaj (do restartu, autostart bez zmian) / uruchom, uruchom ponownie, odinstaluj całkowicie. Odinstalowanie Plexa zostawia filmy; baza Plexa jest usuwana tylko po Twojej zgodzie.
+8. **Zainstaluj inną wersję** (1.3) – wybór wersji stabilnej od 1.2.5 z listy z krótkim opisem; ustawienia zostają (najpierw kopia do `.version-snapshots`), nagłówek menu pokazuje, że zainstalowana jest starsza wersja, a opcja 1 albo `./update.sh` wraca do najnowszej,
 9. **Uninstall** – usuwa usługę z autostartu, opcjonalnie także folder aplikacji,
 10. **Cancel**.
 
@@ -146,7 +146,7 @@ Aplikacja **nie wykrywa dysków automatycznie**. Domyślne ścieżki to konfigur
 
 Usunięcie dysku z listy nie kasuje żadnych plików, tylko chowa przycisk.
 
-**Biblioteka na karcie SD (niezalecane, np. do testów):** wpisz punkt montowania `/` i foldery w katalogu domowym, np. `/home/pi/Plex/Movies`. Opcja „Pobieraj tylko na zamontowany dysk” może zostać włączona. Pamiętaj o ograniczonej pojemności, zużyciu i prędkości karty. W BETA (1.3.0-beta2) przycisk **+ Karta SD (niezalecane)** w Ustawienia → Dyski wypełnia to za Ciebie i może utworzyć foldery.
+**Biblioteka na karcie SD (niezalecane, np. do testów):** wpisz punkt montowania `/` i foldery w katalogu domowym, np. `/home/pi/Plex/Movies`. Opcja „Pobieraj tylko na zamontowany dysk” może zostać włączona. Pamiętaj o ograniczonej pojemności, zużyciu i prędkości karty. W BETA (1.3) przycisk **+ Karta SD (niezalecane)** w Ustawienia → Dyski wypełnia to za Ciebie i może utworzyć foldery.
 
 ## Biblioteka na innym komputerze (udział sieciowy)
 
@@ -184,7 +184,7 @@ Każde urządzenie widzi wspólny dysk pod własną ścieżką. Przykład: dysk 
 
 W Plex Downloaderze zawsze wpisuj ścieżki **tego urządzenia, na którym działa panel**. Ścieżka przepisana z Pi z Plexem (`/media/ssd1/…`) na drugim Pi nie istnieje – panel pokaże wtedy „Folder nie istnieje”. To samo dzieje się po imporcie ustawień z drugiego urządzenia.
 
-Najprościej: **Ustawienia → Dyski → Aktualizuj ścieżki** przy danym dysku, potem **Zapisz**. Od wersji 1.3.0-beta2 panel sam przenosi taką ścieżkę na swój punkt montowania (`/media/ssd1/Biblioteka/Concerts` → `/mnt/ssd1/Biblioteka/Concerts`), jeśli folder tam istnieje. Ścieżki w samym Plexie zostają bez zmian – Plex korzysta ze swoich (`/media/ssd1/…`).
+Najprościej: **Ustawienia → Dyski → Aktualizuj ścieżki** przy danym dysku, potem **Zapisz**. Od wersji 1.3 panel sam przenosi taką ścieżkę na swój punkt montowania (`/media/ssd1/Biblioteka/Concerts` → `/mnt/ssd1/Biblioteka/Concerts`), jeśli folder tam istnieje. Ścieżki w samym Plexie zostają bez zmian – Plex korzysta ze swoich (`/media/ssd1/…`).
 
 ### Ta sama kategoria, różne nazwy folderów na dyskach
 

@@ -2,7 +2,7 @@
 
 🇬🇧 **English** · 🇵🇱 [Polski](ROADMAP.pl.md) · Changelog: [CHANGELOG.md](CHANGELOG.md)
 
-Last updated: 11 November 2026 · stable: **1.2.7** · BETA: **1.3.0-beta4**
+Last updated: 11 November 2026 · stable: **1.3.0** · BETA: **1.4.0-beta0**
 
 ## Ground rules (checked for every release)
 
@@ -39,6 +39,8 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 | 1.3.0-beta2 | Settings export / import with a preview of changes, “SD card (not recommended)” disk template |
 | 1.3.0-beta3 | EN/PL guides (in the app + PDF); File manager: edit the Plex name, file types (versions / extras) and the poster (own image, video frame, TMDB); `fix.sh` Additional modules; wizard improvements after tests on a Pi Zero |
 | 1.3.0-beta4 | `fix.sh` → Install another version; the wizard also starts after switching a fresh stable installation to BETA |
+| 1.3.0 (stable) | Everything from 1.3.0-beta1…beta4 without the VPN preview: setup wizard, settings export / import, edit names and posters (own image, video frame, TMDB), Plex extras, EN/PL guides, `fix.sh` Additional modules and Install another version |
+| 1.4.0-beta0 | 1.3.0 + VPN preview; base for 1.4 (no new features) |
 
 ## To fix
 
@@ -47,10 +49,10 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
 
 ## Demo website (Netlify)
 
-- [x] Demo (first 1.2.5, now **1.2.6**): the real interface with an in-browser simulation, EN/PL, welcome window, data kept for max. 24 h, log out wipes everything, external links blocked, made-up names, IPs and keys, generated posters.
+- [x] Demo (first 1.2.5, then 1.2.6, now **1.3.0**): the real interface with an in-browser simulation, EN/PL, welcome window, data kept for max. 24 h, log out wipes everything, external links blocked, made-up names, IPs and keys, generated posters.
 - [ ] Publish on Netlify and link the demo from the README.
 - [ ] Demo sources (`demo.js`, build script) in the repository under `demo/`, so it can be rebuilt with one command after each stable release.
-- [ ] After 1.3: point the guide link in the welcome window to the EN/PL guides (HTML and PDF).
+- [x] Since 1.3: the guide link in the welcome window opens the EN/PL guide (HTML and PDF).
 
 ## 1.3 – first-run wizard, guides, version choice
 
@@ -87,7 +89,7 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
   - [x] Posters from video frames (ffmpeg): in the Edit window and automatically (Settings / wizard, off by default).
   - [x] `fix.sh` → Additional modules: Plex Media Server, Samba, SMB client, ffmpeg, Tailscale, WireGuard (status, install, update, stop / start, restart, uninstall).
 - [x] `1.3.0-beta4`: "Install another version" in `fix.sh`; the wizard also starts after switching a fresh stable installation to BETA.
-- [ ] `1.3.0`: stable release.
+- [x] `1.3.0`: stable release.
 
 **`fix.sh` – server submenu**
 - [x] New option "Server" (in 1.2.9-beta): 1) check status (service state, autostart, panel address, last log lines), 2) stop the server – does not change autostart / start it again (shown depending on the state), 3) restart the service process, 4) back.
@@ -102,6 +104,8 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
 - [x] Settings compatibility: newer versions migrate `config.json` automatically, older versions keep unknown keys; going back keeps the current settings, a copy from before the switch is in `.version-snapshots`.
 
 ## 1.4 – remote access over VPN
+
+Release steps: `1.4.0-beta0` (= 1.3.0 + VPN preview, done) → `1.4.0-beta1` (VPN tab working) → … → `1.4.0`.
 
 The VPN preview (Settings tab and header badge) is visible only in BETA; it returns to stable together with the working feature.
 
