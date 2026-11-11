@@ -144,7 +144,9 @@ def guide():
             content = Markup(f.read())
     except OSError:
         content = Markup("<p>%s</p>") % _("The guide is not available.")
-    return render_template("guide.html", version=VERSION, user=session.get("user"), glang=glang, content=content)
+    # the page itself in the guide's language (EN guide → English header, even with a Polish panel)
+    return render_template("guide.html", version=VERSION, user=session.get("user"), glang=glang, content=content,
+                           _=lambda text, **kw: i18n.gettext(text, lang=glang, **kw))
 
 
 @app.route("/setup")
