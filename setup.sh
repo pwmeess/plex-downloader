@@ -57,8 +57,14 @@ c_info "$(L "Creating the Python environment (venv)…" "Tworzę środowisko Pyt
 if [ ! -x "$APP_DIR/venv/bin/python" ]; then
   python3 -m venv "$APP_DIR/venv"
 fi
-"$APP_DIR/venv/bin/pip" install -q --upgrade pip
-"$APP_DIR/venv/bin/pip" install -q -r "$APP_DIR/requirements.txt"
+# Slow or unstable Wi-Fi (Pi Zero): more retries and a longer timeout. Upgrading pip itself is optional.
+PIP_NET=(--retries 10 --timeout 60)
+"$APP_DIR/venv/bin/pip" install -q "${PIP_NET[@]}" --upgrade pip 2>/dev/null \
+  || c_warn "$(L "pip was not upgraded (network) – continuing with the system version." "Nie zaktualizowano pip (sieć) – kontynuuję z wersją systemową.")"
+if ! "$APP_DIR/venv/bin/pip" install -q "${PIP_NET[@]}" -r "$APP_DIR/requirements.txt"; then
+  c_warn "$(L "Could not download the Python packages (connection to pypi.org). Check the network and run ./setup.sh again – nothing is lost." "Nie udało się pobrać pakietów Pythona (połączenie z pypi.org). Sprawdź sieć i uruchom ./setup.sh ponownie – nic nie zostanie utracone.")"
+  exit 1
+fi
 c_ok "$(L "Python dependencies installed" "Zależności Pythona zainstalowane")"
 
 if [ ! -f "$APP_DIR/config.json" ]; then
