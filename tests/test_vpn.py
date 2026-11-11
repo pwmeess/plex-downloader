@@ -1,0 +1,135 @@
+"""VPN tab: Tailscale status parsing, login flow and QR codes (with a fake `tailscale` command)."""
+import json
+import os
+import stat
+import sys
+import tempfile
+import time
+import unittest
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+import vpn  # noqa: E402
+
+RUNNING = {
+    "Version": "1.76.6-t1234-gabc", "BackendState": "Running", "AuthURL": "",
+    "TailscaleIPs": ["100.101.102.103", "fd7a:115c:a1e0::1"],
+    "Self": {"HostName": "plexpi", "DNSName": "plexpi.tail1234.ts.net.", "UserID": 7, "Online": True},
+    "MagicDNSSuffix": "tail1234.ts.net",
+    "CurrentTailnet": {"Name": "user@example.com", "MagicDNSSuffix": "tail1234.ts.net", "MagicDNSEnabled": True},
+    "User": {"7": {"LoginName": "user@example.com", "DisplayName": "User"}},
+    "Peer": {
+        "a": {"HostName": "iPhone", "DNSName": "iphone.tail1234.ts.net.", "OS": "iOS", "Online": True,
+              "TailscaleIPs": ["100.80.1.2", "fd7a:115c:a1e0::2"]},
+        "b": {"HostName": "laptop", "DNSName": "laptop.tail1234.ts.net.", "OS": "macOS", "Online": False,
+              "TailscaleIPs": ["100.80.1.3"]},
+    },
+    "Health": [],
+}
+
+FAKE = """#!/bin/sh
+if [ "$1" = "status" ]; then cat "$TS_FAKE_JSON"; exit 0; fi
+if [ "$1" = "up" ]; then
+  if [ -n "$TS_FAKE_DENY" ]; then echo "Access denied: prefs write access denied"; exit 1; fi
+  echo ""; echo "To authenticate, visit:"; echo ""; echo "	https://login.tailscale.com/a/abc123"; sleep 30; exit 0
+fi
+exit 1
+"""
+
+
+class TestParse(unittest.TestCase):
+    def test_running(self):
+        v = vpn._parse(RUNNING)
+        self.assertEqual(v["state"], "Running")
+        self.assertEqual(v["ip"], "100.101.102.103")
+        self.assertEqual(v["dns_name"], "plexpi.tail1234.ts.net")
+        self.assertEqual(v["version"], "1.76.6")
+        self.assertEqual(v["account"], "user@example.com")
+        self.assertTrue(v["magic_dns"])
+        self.assertEqual([p["name"] for p in v["peers"]], ["iphone", "laptop"])   # online first
+        self.assertEqual(v["peers"][0]["ip"], "100.80.1.2")
+
+    def test_needs_login(self):
+        v = vpn._parse({"BackendState": "NeedsLogin", "AuthURL": "https://login.tailscale.com/a/x"})
+        self.assertEqual(v["state"], "NeedsLogin")
+        self.assertEqual(v["ip"], "")
+        self.assertEqual(v["auth_url"], "https://login.tailscale.com/a/x")
+
+    def test_via_vpn(self):
+        self.assertTrue(vpn.via_vpn("100.80.1.2"))
+        self.assertTrue(vpn.via_vpn("::ffff:100.80.1.2"))
+        self.assertTrue(vpn.via_vpn("fd7a:115c:a1e0::2"))
+        self.assertFalse(vpn.via_vpn("192.168.1.20"))
+        self.assertFalse(vpn.via_vpn(""))
+        self.assertFalse(vpn.via_vpn("garbage"))
+
+    def test_qr(self):
+        svg = vpn.qr_svg("http://100.101.102.103:8800")
+        self.assertTrue(svg.startswith("<svg"))
+        self.assertIn('fill="#000"', svg)
+
+
+class TestCli(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        d = self.tmp.name
+        exe = os.path.join(d, "tailscale")
+        with open(exe, "w") as f:
+            f.write(FAKE)
+        os.chmod(exe, os.stat(exe).st_mode | stat.S_IEXEC)
+        self.json = os.path.join(d, "status.json")
+        self.env = dict(os.environ)
+        os.environ["PATH"] = d + os.pathsep + os.environ.get("PATH", "")
+        os.environ["TS_FAKE_JSON"] = self.json
+        os.environ.pop("TS_FAKE_DENY", None)
+        vpn._cache.update(t=0, data=None)
+        vpn._login.update(proc=None, url="", error="", denied=False)
+
+    def tearDown(self):
+        p = vpn._login.get("proc")
+        if p and p.poll() is None:
+            p.kill()
+            p.wait()
+        os.environ.clear()
+        os.environ.update(self.env)
+        self.tmp.cleanup()
+
+    def write(self, data):
+        with open(self.json, "w") as f:
+            json.dump(data, f)
+
+    def test_absent(self):
+        os.environ["PATH"] = "/nonexistent"
+        self.assertEqual(vpn.status(0)["state"], "absent")
+
+    def test_daemon_down(self):
+        with open(self.json, "w") as f:
+            f.write("")
+        self.assertEqual(vpn.status(0)["state"], "daemon_down")
+
+    def test_running_and_cache(self):
+        self.write(RUNNING)
+        self.assertEqual(vpn.status(0)["ip"], "100.101.102.103")
+        self.write({"BackendState": "Stopped"})
+        self.assertEqual(vpn.status(30)["state"], "Running")      # cached
+        self.assertEqual(vpn.status(0)["state"], "Stopped")
+
+    def test_login_link(self):
+        self.write({"BackendState": "NeedsLogin"})
+        t0 = time.time()
+        v = vpn.login()
+        self.assertLess(time.time() - t0, 10)
+        self.assertEqual(v["login_url"], "https://login.tailscale.com/a/abc123")
+        self.assertTrue(v["login_running"])
+        self.assertFalse(v["need_operator"])
+
+    def test_login_denied(self):
+        os.environ["TS_FAKE_DENY"] = "1"
+        self.write({"BackendState": "NeedsLogin"})
+        v = vpn.login()
+        self.assertTrue(v["need_operator"])
+        self.assertEqual(v["login_url"], "")
+
+
+if __name__ == "__main__":
+    unittest.main()

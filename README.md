@@ -82,7 +82,7 @@ The header of the Settings window shows whether a newer stable version is availa
 ## Stable and BETA versions
 
 - **Stable** (branch `main`): installed by `setup.sh` and updated by `update.sh`. The panel only announces stable versions.
-- **BETA** (branch `beta`): new, less tested features (for example the VPN preview). Installed and updated only with `fix.sh` (option 4). Before the first switch to BETA, `fix.sh` saves your settings; leaving BETA (option 5) returns to stable, removes the experimental settings and restores the saved ones.
+- **BETA** (branch `beta`): new, less tested features (currently: remote access over VPN – Settings → VPN). Installed and updated only with `fix.sh` (option 4). Before the first switch to BETA, `fix.sh` saves your settings; leaving BETA (option 5) returns to stable, removes the experimental settings and restores the saved ones.
 
 ## Repair menu: `fix.sh`
 

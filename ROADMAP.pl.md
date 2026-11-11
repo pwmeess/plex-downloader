@@ -2,7 +2,7 @@
 
 🇬🇧 [English](ROADMAP.md) · 🇵🇱 **Polski** · Historia zmian: [CHANGELOG.md](CHANGELOG.md)
 
-Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.3.0** · BETA: **1.4.0-beta0**
+Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.3.0** · BETA: **1.4.0-beta1**
 
 ## Stałe zasady (sprawdzać przy każdej wersji)
 
@@ -39,6 +39,7 @@ Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.3.0** · BETA: **1.4.0
 | 1.3.0-beta4 | `fix.sh` → Zainstaluj inną wersję; kreator startuje też po przełączeniu świeżej instalacji stabilnej na BETA |
 | 1.3.0 (stabilna) | Wszystko z 1.3.0-beta1…beta4 bez zapowiedzi VPN: kreator, eksport / import ustawień, edycja nazw i plakatów (własny obrazek, kadr z filmu, TMDB), dodatki Plexa, instrukcje EN/PL, `fix.sh` Moduły dodatkowe i Zainstaluj inną wersję |
 | 1.4.0-beta0 | 1.3.0 + zapowiedź VPN; baza dla 1.4 (bez nowych funkcji) |
+| 1.4.0-beta1 | Działająca zakładka VPN (status Tailscale, adres, kod QR, logowanie z panelu, urządzenia) i plakietka VPN w nagłówku |
 
 ## Do poprawy
 
@@ -103,12 +104,13 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
 
 ## 1.4 – dostęp zdalny przez VPN
 
-Kolejne kroki: `1.4.0-beta0` (= 1.3.0 + zapowiedź VPN, gotowe) → `1.4.0-beta1` (działająca zakładka VPN) → … → `1.4.0`.
+Kolejne kroki: `1.4.0-beta0` (= 1.3.0 + zapowiedź VPN, gotowe) → `1.4.0-beta1` (działająca zakładka VPN, gotowe) → `1.4.0-beta2` (tylko sieć domowa / + VPN, status WireGuard) → `1.4.0-beta3` (instrukcja) → `1.4.0`.
 
 Zapowiedzi VPN (zakładka i przycisk w nagłówku) są widoczne tylko w BETA; w wersji stabilnej wrócą razem z działającą funkcją.
 
 - [x] Instalacja Tailscale z linkiem do logowania (oraz WireGuard): `fix.sh` → Moduły dodatkowe (1.3.0-beta3, zamiast osobnego `setup-vpn.sh`).
-- [ ] Zakładka VPN: wybór „tylko sieć domowa” lub „sieć domowa + VPN”, port panelu, status i adres VPN, kod QR dla telefonu.
+- [x] Zakładka VPN: status i adres Tailscale, kod QR dla telefonu, logowanie z panelu, urządzenia w VPN, plakietka w nagłówku (1.4.0-beta1).
+- [ ] Wybór „tylko sieć domowa” lub „sieć domowa + VPN”, port panelu; status WireGuard (1.4.0-beta2).
 - [ ] Panel bez otwartych portów na routerze.
 - [ ] Instrukcja EN/PL (Tailscale na Pi, telefonie i komputerze).
 

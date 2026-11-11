@@ -13,7 +13,7 @@
     <button type="button" role="tab" data-tab="preview"><svg class="i"><use href="#i-image"/></svg>{{ _("Preview & posters") }}</button>
     <button type="button" role="tab" data-tab="backups"><svg class="i"><use href="#i-history"/></svg>{{ _("Backups") }}</button>
     <button type="button" role="tab" data-tab="account"><svg class="i"><use href="#i-user"/></svg>{{ _("Account") }}</button>
-    <button type="button" role="tab" data-tab="vpn" class="tab-soon"><svg class="i"><use href="#i-shield"/></svg>VPN<span class="soon">{{ _("soon") }}</span></button>
+    <button type="button" role="tab" data-tab="vpn"><svg class="i"><use href="#i-shield"/></svg>VPN</button>
   </nav>
 
   <div class="win-body">
@@ -149,20 +149,19 @@
       <div id="cmdList" class="cmd-list" hidden></div>
     </section>
 
-    <!-- VPN (wkrótce) -->
+    <!-- VPN: remote access over Tailscale -->
     <section class="tab-panel vpn-panel" data-panel="vpn" hidden>
-      <div class="soon-banner"><svg class="i"><use href="#i-shield"/></svg>
-        <div><b>{{ _("Remote access over VPN – in preparation") }}</b><br>{{ _("The panel will stay invisible on the internet. Instead of opening ports on the router, you will connect through a private VPN network.") }}</div></div>
-      <div class="ph-grid">
-        <div class="ph"><label>{{ _("Provider") }}</label><select class="input" disabled><option>{{ _("Tailscale (recommended, no open ports)") }}</option><option>WireGuard</option></select></div>
-        <div class="ph"><label>{{ _("Panel available via") }}</label><select class="input" disabled><option>{{ _("Home network only") }}</option><option>{{ _("Home network + VPN") }}</option></select></div>
-        <div class="ph"><label>{{ _("Panel port") }}</label><input class="input" disabled value="8800"></div>
-        <div class="ph"><label>{{ _("VPN status") }}</label><div class="ph-box">{{ _("Not installed · VPN address: 100.x.x.x:8800 · QR code for your phone") }}</div></div>
+      <div class="vpn-top">
+        <h3 class="first">{{ _("Remote access – Tailscale") }} <button type="button" class="info-i" data-tip="{{ _('Tailscale connects your devices into a private network. You open the panel from anywhere as if you were at home, and it stays invisible on the internet: no ports are opened on the router.\n\nYou log in to Tailscale on its website (Google, Apple, Microsoft or GitHub account). The panel never sees or stores that login. Tailscale has a free plan for home use.') }}">i</button></h3>
+        <button type="button" class="btn-soft small" id="vpnRefresh"><svg class="i"><use href="#i-retry"/></svg>{{ _("Refresh") }}</button>
       </div>
+      <div id="vpnBody" class="vpn-body"><p class="muted">{{ _("Checking…") }}</p></div>
+
+      <h3>{{ _("Next in BETA") }}</h3>
       <ul class="ph-list">
-        <li>{{ _("A setup-vpn.sh script on GitHub: installs Tailscale and shows a login link.") }}</li>
-        <li>{{ _("You always log in to the VPN account on the provider's website. The panel does not store those credentials.") }}</li>
-        <li>{{ _("Step-by-step guides in English and Polish.") }}</li>
+        <li>{{ _("Choose where the panel is available: home network only, or home network + VPN.") }}</li>
+        <li>{{ _("WireGuard status, for those who run their own WireGuard instead of Tailscale.") }}</li>
+        <li>{{ _("A VPN chapter in the guide (English and Polish).") }}</li>
       </ul>
     </section>
   </div>

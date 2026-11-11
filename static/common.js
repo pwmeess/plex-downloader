@@ -240,6 +240,7 @@
         ? t("Plex Downloader is running on {host} ({ip}:{port})", { host: s.server.hostname, ip: s.server.ip, port: s.server.port })
         : t("The aria2c download engine is not running");
       renderPlex(s.plex);
+      renderVpn(s.vpn);
       window.PD.status = s;
       document.dispatchEvent(new CustomEvent("pd:status", { detail: s }));
     } catch (e) {
@@ -271,6 +272,28 @@
       b.addEventListener("click", () => window.PD.openSettings && window.PD.openSettings("plex"));
       box.appendChild(b);
     });
+  }
+
+  // VPN badge: grey = not set up, amber = needs attention, green = connected
+  function renderVpn(v) {
+    const box = $("#vpnStatus");
+    if (!box || !v) return;
+    const b = el("button", "hstat vpn"); b.type = "button";
+    let dot = "off", label = "VPN", tip;
+    if (!v.installed) tip = t("VPN is not set up – click to see how to open the panel from outside your home");
+    else if (v.state === "Running") {
+      dot = ""; tip = t("Tailscale VPN connected · {ip}", { ip: v.ip || "?" }) +
+        (v.via_vpn ? " · " + t("you are connected over VPN right now") : "");
+    } else if (v.state === "NeedsLogin" || v.state === "NeedsMachineAuth") {
+      dot = "warn"; tip = t("Tailscale is installed but not logged in – click to log in");
+    } else { dot = "warn"; tip = t("Tailscale is switched off – click for details"); }
+    b.append(icon("shield"), el("span", "dot " + dot), el("span", "hs-name", label));
+    if (v.state === "Running" && v.ip) b.append(el("span", "hs-addr", v.ip));
+    b.classList.add(dot === "" ? "on" : dot);
+    if (v.via_vpn) b.classList.add("via");
+    b.title = tip;
+    b.addEventListener("click", () => window.PD.openSettings && window.PD.openSettings("vpn"));
+    box.replaceChildren(b);
   }
 
   document.addEventListener("DOMContentLoaded", () => {

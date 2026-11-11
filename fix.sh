@@ -273,7 +273,8 @@ mod_status() {
         echo "  $(L "VPN address:" "Adres w VPN:") $(tailscale ip -4 2>/dev/null || echo "– ($(L "not logged in" "nie zalogowano"))")"
         tailscale status 2>/dev/null | head -5 | sed 's/^/    /'
       fi
-      echo "  $(L "Remote access to the panel without opening ports on the router (guide in 1.4)." "Zdalny dostęp do panelu bez otwierania portów na routerze (instrukcja w 1.4).")" ;;
+      echo "  $(L "Remote access to the panel without opening ports on the router." "Zdalny dostęp do panelu bez otwierania portów na routerze.")"
+      echo "  $(L "Status, panel address and QR code for the phone: panel → Settings → VPN." "Status, adres panelu i kod QR dla telefonu: panel → Ustawienia → VPN.")" ;;
     wireguard)
       if pkg_installed "$pkg"; then
         if [ -f /etc/wireguard/wg0.conf ]; then sudo wg show 2>/dev/null | sed 's/^/    /'
@@ -281,6 +282,13 @@ mod_status() {
       fi ;;
   esac
   echo
+}
+
+# The panel runs as this user; as the Tailscale "operator" it may log in / switch Tailscale on itself.
+app_user() { local u; u="$(systemctl show -p User --value plex-downloader 2>/dev/null)"; echo "${u:-$(id -un)}"; }
+ts_operator() {
+  sudo tailscale set --operator="$(app_user)" 2>/dev/null \
+    && echo "  $(L "The panel may now log in to Tailscale (Settings → VPN)." "Panel może teraz logować się do Tailscale (Ustawienia → VPN).")"
 }
 
 mod_install() {
@@ -294,10 +302,11 @@ mod_install() {
       apt_update && sudo apt-get install -y plexmediaserver ;;
     tailscale)
       curl -fsSL https://tailscale.com/install.sh | sh || return 1
+      ts_operator
       if ask_yes_no "$(L "Log in to Tailscale now? A link to open in the browser will be shown." "Zalogować się teraz do Tailscale? Pojawi się link do otwarcia w przeglądarce.")"; then
         sudo tailscale up
       else
-        echo "  $(L "Log in later with:" "Zalogujesz się później:")  sudo tailscale up"
+        echo "  $(L "Log in later in the panel (Settings → VPN) or with:" "Zalogujesz się później w panelu (Ustawienia → VPN) albo poleceniem:")  sudo tailscale up"
       fi ;;
     wireguard) apt_update && sudo apt-get install -y wireguard-tools ;;
     *) apt_update && sudo apt-get install -y "$pkg" ;;
@@ -310,6 +319,7 @@ mod_update() {
   local pkg; pkg="$(mod_pkg "$1")"
   apt_update && sudo apt-get install -y --only-upgrade "$pkg" \
     && c_ok "$(mod_name "$1"): $(pkg_version "$pkg")"
+  [ "$1" = "tailscale" ] && ts_operator
   local svc; svc="$(mod_service "$1")"
   [ -n "$svc" ] && systemctl is-active --quiet "$svc" || true
 }

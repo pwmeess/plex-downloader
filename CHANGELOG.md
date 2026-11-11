@@ -2,6 +2,14 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
+## 1.4.0-beta1 – 2026-11-11 (BETA)
+
+- **Settings → VPN works (Tailscale):** status of this Raspberry Pi in the VPN (connected / not logged in / switched off / not installed), VPN address and name, account, Tailscale version, the other devices in your VPN (online / offline) and the panel address over VPN with a **QR code for the phone**.
+- **Log in to Tailscale from the panel:** the login link opens the Tailscale website (also as a QR code to log in on the phone); the tab updates by itself after logging in. The panel never sees the Tailscale login. When the panel is not allowed to switch Tailscale on, it shows the one command to run over SSH.
+- **VPN badge in the header:** grey = not set up, amber = needs attention, green = connected (with the VPN address); click opens the VPN tab.
+- `fix.sh` → Additional modules → Tailscale: installing or updating also allows the panel to log in to Tailscale (`tailscale set --operator`).
+- Phones: settings and dialogs use the full screen width.
+
 ## 1.4.0-beta0 – 2026-11-11 (BETA)
 
 - Everything from 1.3.0 (stable), plus the BETA-only VPN preview (header badge and Settings tab) as the base for version 1.4. No new features yet.

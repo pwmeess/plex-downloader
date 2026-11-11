@@ -88,7 +88,7 @@ Nagłówek okna Ustawień pokazuje, czy na GitHubie są nowe zmiany.
 ## Wersje: stabilna i BETA
 
 - **Stabilna** (gałąź `main`): instaluje ją `setup.sh` i aktualizuje `update.sh`. Panel sprawdza i ogłasza tylko wersje stabilne.
-- **BETA** (gałąź `beta`): nowe, mniej przetestowane funkcje. Instaluje się ją i aktualizuje wyłącznie przez `fix.sh` (opcja 4). Przed pierwszym przejściem na BETA `fix.sh` zapisuje obecne ustawienia, a przy wyjściu z BETA (opcja 5) wraca do wersji stabilnej, usuwa ustawienia eksperymentalne i przywraca zapisane.
+- **BETA** (gałąź `beta`): nowe, mniej przetestowane funkcje (obecnie: dostęp zdalny przez VPN – Ustawienia → VPN). Instaluje się ją i aktualizuje wyłącznie przez `fix.sh` (opcja 4). Przed pierwszym przejściem na BETA `fix.sh` zapisuje obecne ustawienia, a przy wyjściu z BETA (opcja 5) wraca do wersji stabilnej, usuwa ustawienia eksperymentalne i przywraca zapisane.
 
 ## Naprawa: `fix.sh`
 

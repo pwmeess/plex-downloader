@@ -28,6 +28,7 @@ import naming
 import wizard
 import plexservers
 import thumbgen
+import vpn
 from downloader import Manager, disk_status, probe
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -191,8 +192,60 @@ def api_status():
                    engine={"ok": manager.engine_ok},
                    downloads=sum(1 for j in manager.list() if j["status"] in ("downloading", "queued")),
                    ops=fm.ops.active(),
-                   vpn={"available": False, "planned": True},
+                   vpn=_vpn_brief(),
                    version=VERSION)
+
+
+def _vpn_brief():
+    """Header badge: only what it needs (the full status is in Settings → VPN)."""
+    try:
+        v = vpn.status(max_age=30)
+    except Exception:   # never break the header because of VPN
+        v = {"installed": False, "state": "absent"}
+    return {"installed": v.get("installed"), "state": v.get("state"), "ip": v.get("ip", ""),
+            "via_vpn": vpn.via_vpn(request.remote_addr)}
+
+
+def _vpn_payload(v):
+    port = int(config.get().get("port", 8800))
+    urls = []
+    if v.get("state") == "Running":
+        if v.get("ip"):
+            urls.append({"kind": "ip", "url": "http://%s:%d" % (v["ip"], port)})
+        if v.get("dns_name") and v.get("magic_dns"):
+            urls.append({"kind": "name", "url": "http://%s:%d" % (v["dns_name"], port)})
+    v.update(port=port, urls=urls, via_vpn=vpn.via_vpn(request.remote_addr),
+             system_user=getpass.getuser(), app_dir=BASE_DIR)
+    return jsonify(v)
+
+
+@app.route("/api/vpn")
+@login_required
+def api_vpn():
+    return _vpn_payload(vpn.status(max_age=0 if request.args.get("force") else 5))
+
+
+@app.route("/api/vpn/login", methods=["POST"])
+@login_required
+def api_vpn_login():
+    """Starts the Tailscale login: returns the link to open (also as a QR code for the phone)."""
+    v = vpn.login()
+    if v.get("state") == "Running":
+        actlog.write("VPN", _("Tailscale connected (%s)") % (v.get("ip") or "?"))
+    elif v.get("login_url"):
+        actlog.write("VPN", _("Tailscale login started from the panel"))
+    return _vpn_payload(v)
+
+
+@app.route("/api/vpn/qr")
+@login_required
+def api_vpn_qr():
+    text = (request.args.get("text") or "").strip()
+    if not text or len(text) > 400:
+        return jsonify(error=_("Nothing to encode.")), 400
+    resp = app.response_class(vpn.qr_svg(text), mimetype="image/svg+xml")
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
 
 
 @app.route("/api/probe", methods=["POST"])

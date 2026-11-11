@@ -7,7 +7,7 @@ import re
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PATTERNS = [r'\b_\(\s*"((?:[^"\\]|\\.)*)"', r"\b_\(\s*'((?:[^'\\]|\\.)*)'", r'\bt\(\s*"((?:[^"\\]|\\.)*)"',
+PATTERNS = [r'\b_\(\s*"((?:[^"\\]|\\.)*)"', r"\b_\(\s*'((?:[^'\\]|\\.)*)'", r'\bt\(\s*"((?:[^"\\]|\\.)*)"', r"\bt\(\s*'((?:[^'\\]|\\.)*)'",
             r'\bnote="((?:[^"\\]|\\.)*)"']
 # strings used indirectly (variables, config notes, BETA-only templates)
 INDIRECT = {
