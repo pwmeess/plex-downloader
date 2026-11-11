@@ -784,7 +784,6 @@
  "Update on the Raspberry Pi: fix.sh → Additional modules → Tailscale → Update, or:": "Zaktualizuj na Raspberry Pi: fix.sh → Moduły dodatkowe → Tailscale → Zaktualizuj, albo:",
  "Guide: access from outside your home (VPN)": "Poradnik: dostęp spoza domu (VPN)",
  "Choose a disk and category in each column. Select movies and drag them to the other column (or use the Move button). On the same disk the move is instant. Between disks files are copied, verified with a SHA-256 checksum, and the original is removed only after a correct copy. The verification can be skipped in the move window (faster, for files you can download again).": "Wybierz dysk i kategorię w każdej kolumnie. Zaznacz filmy i przeciągnij je do drugiej kolumny (albo użyj przycisku Przenieś). Na tym samym dysku przeniesienie jest natychmiastowe. Między dyskami pliki są kopiowane, sprawdzane sumą SHA-256, a oryginał jest usuwany dopiero po poprawnej kopii. Weryfikację można pominąć w oknie przenoszenia (szybciej, dla plików, które możesz pobrać ponownie).",
- "(skipped – only the file sizes are compared)": "(pominięta – porównywane są tylko rozmiary plików)",
  "copy": "kopia",
  "the original is removed only after a correct copy. Large files may take a few minutes.": "oryginał jest usuwany dopiero po poprawnej kopii. Duże pliki mogą zająć kilka minut.",
  "verification with SHA-256": "weryfikacja SHA-256"

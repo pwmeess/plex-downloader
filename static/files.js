@@ -243,7 +243,6 @@
     else {
       // the verification step is struck through when “Skip SHA-256 verification” is ticked (applySkip)
       how.append(el("b", null, t("Other disk:") + " "), t("copy") + " → ", el("span", "sha", t("verification with SHA-256")),
-        el("span", "sha-alt", " " + t("(skipped – only the file sizes are compared)")),
         " → " + t("the original is removed only after a correct copy. Large files may take a few minutes."));
     }
     body.appendChild(how);

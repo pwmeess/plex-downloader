@@ -7,7 +7,7 @@ All notable changes to Plex Downloader. Stable versions live on the `main` branc
 - **Guides (EN/PL, HTML and PDF): new chapter 8 “Access from outside your home (VPN)”** – installing Tailscale (also with a broken Raspbian mirror), logging in from the panel, phone and computer, HTTPS in the VPN and Funnel, where the panel is available, what the VPN tab shows, autostart, WireGuard, troubleshooting. Security is now chapter 9.
 - **WireGuard:** status checked in synthetic tests (simulated system commands, no real WireGuard connection) – marked so in the guide.
 - VPN tab: link to the VPN chapter of the guide instead of the “Next in BETA” list.
-- File manager → move window: with “Skip SHA-256 verification” ticked, the verification step in the description is struck through and marked “skipped – only the file sizes are compared” (also after changing the selected episodes); the File manager ⓘ mentions that verification can be skipped.
+- File manager → move window: with “Skip SHA-256 verification” ticked, the verification step in the description is struck through (also after changing the selected episodes); the File manager ⓘ mentions that verification can be skipped.
 - **Fix:** moving a TV show whose episodes are directly in the show folder (no `Season 01` folders) failed with “Error 500” (drag and drop and the Move button). Also fixed: the message when aria2c cannot be started.
 
 ## 1.3.1 – 2026-11-11 (stable)
