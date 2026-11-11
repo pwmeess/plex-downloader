@@ -446,7 +446,7 @@ version_menu() {
   git reset -q --hard "$ref" || { c_warn "$(L "Switching failed." "Przełączenie nie powiodło się.")"; return 1; }
   cp -p "$tools/fix.sh" "$tools/update.sh" "$APP_DIR/" 2>/dev/null; rm -rf "$tools"
   # newest stable (the code may differ only in releases.txt) → not an „older version”
-  if git diff --quiet HEAD origin/main -- . ':(exclude)releases.txt' ':(exclude)fix.sh' ':(exclude)update.sh' 2>/dev/null; then rm -f "$PIN"; else echo "$target" > "$PIN"; fi
+  if git diff --quiet HEAD origin/main -- . ':(exclude)releases.txt' ':(exclude)fix.sh' ':(exclude)update.sh' ':(exclude)*.md' 2>/dev/null; then rm -f "$PIN"; else echo "$target" > "$PIN"; fi
   "$APP_DIR/venv/bin/pip" install -q -r requirements.txt
   sudo systemctl restart "$SERVICE" && sleep 2
   c_ok "$(L "Installed" "Zainstalowano"): $CUR → $(cat VERSION)  ·  $(panel_url)"
