@@ -27,6 +27,7 @@ import movieinfo
 import naming
 import wizard
 import plexservers
+import thumbgen
 from downloader import Manager, disk_status, probe
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -309,6 +310,7 @@ def api_settings_get():
                    plex_servers=cfg.get("plex_servers", []),
                    plex_autodiscover=cfg.get("plex_autodiscover", True),
                    thumbs_mode=cfg.get("thumbs_mode", "online"),
+                   thumbs_frames=bool(cfg.get("thumbs_frames")), ffmpeg=thumbgen.version(),
                    port=cfg.get("port", 8800), language=i18n.current(), theme=cfg.get("theme", "dark"),
                    app_dir=BASE_DIR, system_user=getpass.getuser(), ip=plexservers.lan_ip(),
                    home=wizard.home_dir(), log=actlog.info())
@@ -405,7 +407,8 @@ def api_settings_post():
                   categories=cats, disks=disks, connections_per_file=conns, max_concurrent=conc,
                   max_speed_mbps=speed, require_mount=bool(data.get("require_mount", True)),
                   tmdb_api_key=tmdb_key, plex_servers=servers,
-                  plex_autodiscover=bool(data.get("plex_autodiscover", True)), thumbs_mode=mode)
+                  plex_autodiscover=bool(data.get("plex_autodiscover", True)), thumbs_mode=mode,
+                  thumbs_frames=bool(data.get("thumbs_frames", config.get().get("thumbs_frames"))))
     manager.apply_settings()
     plexservers.monitor.refresh()
     actlog.write("SETTINGS", _("Settings saved"))
@@ -414,13 +417,13 @@ def api_settings_post():
 
 # ---------------------------------------------------------------- eksport / import ustawień
 EXPORT_KEYS = ("categories", "disks", "plex_servers", "plex_autodiscover", "connections_per_file", "max_concurrent",
-               "max_speed_mbps", "require_mount", "thumbs_mode", "language", "theme")
+               "max_speed_mbps", "require_mount", "thumbs_mode", "thumbs_frames", "language", "theme")
 IMPORT_SECTIONS = {
     "disks": ("disks",),
     "categories": ("categories",),
     "plex": ("plex_servers", "plex_autodiscover"),
     "downloads": ("connections_per_file", "max_concurrent", "max_speed_mbps", "require_mount"),
-    "preview": ("thumbs_mode", "tmdb_api_key"),
+    "preview": ("thumbs_mode", "thumbs_frames", "tmdb_api_key"),
     "interface": ("language", "theme"),
 }
 
@@ -506,6 +509,8 @@ def _import_clean(data):
         out["require_mount"] = bool(data["require_mount"])
     if data.get("thumbs_mode") in ("online", "local", "off"):
         out["thumbs_mode"] = data["thumbs_mode"]
+    if "thumbs_frames" in data:
+        out["thumbs_frames"] = bool(data["thumbs_frames"])
     if isinstance(data.get("tmdb_api_key"), str) and data["tmdb_api_key"].strip():
         out["tmdb_api_key"] = re.sub(r"\s+", "", data["tmdb_api_key"])
     if data.get("language") in {l["code"] for l in i18n.available()}:
@@ -608,7 +613,8 @@ def api_wizard_state():
                    disks=cfg.get("disks", []), language=cfg.get("language") or i18n.current(),
                    theme=cfg.get("theme", "dark"), wizard_done=bool(cfg.get("wizard_done")),
                    tmdb_key_set=bool(cfg.get("tmdb_api_key")), tmdb_key_mask=_mask_key(cfg.get("tmdb_api_key", "")),
-                   plex_servers=cfg.get("plex_servers", []), plex_autodiscover=cfg.get("plex_autodiscover", True))
+                   plex_servers=cfg.get("plex_servers", []), plex_autodiscover=cfg.get("plex_autodiscover", True),
+                   thumbs_frames=bool(cfg.get("thumbs_frames")), ffmpeg=thumbgen.version())
 
 
 @app.route("/api/wizard/scan", methods=["POST"])
@@ -731,7 +737,7 @@ def api_wizard_finish():
             o = _import_clean(dict(opts, _plexdl={}))
         except (TypeError, ValueError):
             o = {}
-        for k in ("connections_per_file", "max_concurrent", "max_speed_mbps", "thumbs_mode"):
+        for k in ("connections_per_file", "max_concurrent", "max_speed_mbps", "thumbs_mode", "thumbs_frames"):
             if k in o:
                 extra[k] = o[k]
     config.update(note="Setup wizard", disks=disks, plex_servers=servers, **extra,
@@ -928,6 +934,14 @@ def api_fm_thumb_upload():
     except ValueError:
         return err(_("The image must be a JPEG up to 4 MB."))
     return fm_call(fm.save_thumb, d.get("disk"), d.get("cat"), d.get("name", ""), data)
+
+
+@app.route("/api/fm/frames")
+@login_required
+def api_fm_frames():
+    a = request.args
+    n = int(a.get("n", "6")) if a.get("n", "6").isdigit() else 6
+    return fm_call(fm.frame_candidates, a.get("disk", ""), a.get("cat", ""), a.get("name", ""), n, a.get("shuffle") == "1")
 
 
 @app.route("/api/fm/thumb/tmdb", methods=["POST"])

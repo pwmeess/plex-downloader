@@ -173,7 +173,7 @@
         p.append(icon(catIcon(this.catObj())), el("span", null, i.title));
         return p;
       };
-      if (mode !== "off" && (i.thumb || (mode === "online" && this.data.tmdb))) {
+      if (mode !== "off" && (i.thumb || (mode === "online" && (this.data.tmdb || this.data.frames)))) {
         const img = document.createElement("img");
         img.loading = "lazy"; img.alt = i.title; img.draggable = false;
         img.src = `/api/fm/thumb?disk=${encodeURIComponent(this.disk)}&cat=${encodeURIComponent(this.cat)}&name=${encodeURIComponent(i.name)}&v=${i.thumb_v}`;
@@ -419,7 +419,41 @@
       } catch (e) { toast(e.message, true); }
     });
     tmdbCb.addEventListener("change", () => { if (tmdbCb.checked && ownJpeg) { ownJpeg = null; } });
-    tools.append(own, file, tmdbBox);
+    // frame from the video (ffmpeg): several candidates, the clearest first
+    const frameBtn = el("button", "btn-soft small"); frameBtn.type = "button"; frameBtn.append(icon("film"), " " + t("Frame from the video"));
+    frameBtn.title = t("Choose a frame from the video as the poster (needs ffmpeg).");
+    frameBtn.addEventListener("click", async () => {
+      const box = el("div", "fe-frames");
+      const grid = el("div", "fe-frame-grid");
+      const msg = el("p", "muted", t("Reading frames from the video… (on a Pi Zero this can take a minute)"));
+      box.append(msg, grid);
+      let chosen = null, dlg = null;
+      const load = async (shuffle) => {
+        msg.hidden = false; grid.replaceChildren();
+        try {
+          const q = new URLSearchParams({ disk: pane.disk, cat: pane.cat, name: item.name, n: "6", shuffle: shuffle ? "1" : "0" });
+          const r = await api("/api/fm/frames?" + q.toString());
+          msg.hidden = true;
+          r.frames.forEach((fr) => {
+            const b = el("button", "fe-frame"); b.type = "button";
+            const im = document.createElement("img"); im.src = fr.data; im.alt = "";
+            const mm = Math.floor(fr.t / 60), ss = Math.floor(fr.t % 60);
+            b.append(im, el("span", null, `${mm}:${String(ss).padStart(2, "0")}`));
+            b.addEventListener("click", () => { chosen = fr.data; if (dlg) dlg._buttons[2].click(); });
+            grid.appendChild(b);
+          });
+        } catch (e) { msg.hidden = false; msg.textContent = e.message; }
+      };
+      box._onOpen = (d) => { dlg = d; load(false); };
+      const pick = await modal({ title: t("Frame from the video"), body: box, wide: true,
+        buttons: [{ label: t("Cancel"), value: false },
+                  { label: t("Other frames"), value: () => { msg.textContent = t("Reading frames from the video… (on a Pi Zero this can take a minute)"); load(true); return undefined; } },
+                  { label: t("Use"), cls: "btn-accent", value: () => chosen || undefined }] });
+      if (!pick) return;
+      ownJpeg = pick; tmdbCb.checked = false;
+      const img = document.createElement("img"); img.src = pick; pv.replaceChildren(img);
+    });
+    tools.append(own, frameBtn, file, tmdbBox);
     pcol.append(pv, tools);
 
     // ---- name fields

@@ -361,7 +361,7 @@
   const FIELD = {
     plex_autodiscover: () => t("Find Plex servers on the network"), connections_per_file: () => t("Connections per file"),
     max_concurrent: () => t("Downloads at the same time"), max_speed_mbps: () => t("Speed limit (MB/s, 0 = no limit)"),
-    require_mount: () => t("Block disks that are not mounted"), thumbs_mode: () => t("Posters"),
+    require_mount: () => t("Block disks that are not mounted"), thumbs_mode: () => t("Posters"), thumbs_frames: () => t("Posters from video frames"),
     tmdb_api_key: () => t("TMDB key"), language: () => t("Language"), theme: () => t("Theme"),
   };
   const VALUE = { dark: () => t("Dark"), light: () => t("Light"), en: () => "English", pl: () => "Polski",
@@ -484,7 +484,7 @@
     const cmds = [
       [t("Connect from your computer (Terminal / PowerShell)"), `ssh ${cfg.system_user || "pi"}@${cfg.ip || "<raspberry-pi-ip>"}`],
       [t("Update Plex Downloader"), `cd ${dir} && ./update.sh`],
-      [t("Repair menu: update, reinstall, factory reset, server, uninstall"), `cd ${dir} && ./fix.sh`, "fix"],
+      [t("Repair menu: update, reinstall, factory reset, server, additional modules, uninstall"), `cd ${dir} && ./fix.sh`, "fix"],
       [t("Service status"), "systemctl status plex-downloader"],
       [t("Restart the service"), "sudo systemctl restart plex-downloader"],
       [t("Live service logs"), "journalctl -u plex-downloader -f"],
@@ -600,6 +600,9 @@
     tk.placeholder = cfg.tmdb_key_set ? t("Saved key: {mask}", { mask: cfg.tmdb_key_mask }) : t("paste the key from themoviedb.org");
     $("#sTmdbShow").checked = false;
     $$("input[name=thumbs]").forEach((r) => { r.checked = r.value === cfg.thumbs_mode; });
+    $("#sFrames").checked = !!cfg.thumbs_frames;
+    $("#ffmpegState").textContent = cfg.ffmpeg ? t("ffmpeg {v} installed", { v: cfg.ffmpeg })
+      : t("ffmpeg is not installed yet – add it with fix.sh → Additional modules.");
     $("#aUser").value = cfg.username; $("#aCur").value = ""; $("#aNew").value = "";
   }
 
@@ -634,6 +637,7 @@
       max_speed_mbps: $("#sSpeed").value, require_mount: $("#sMount").checked,
       tmdb_api_key: $("#sTmdb").dataset.dirty ? $("#sTmdb").value : null,
       thumbs_mode: ($("input[name=thumbs]:checked") || {}).value || "online",
+      thumbs_frames: $("#sFrames").checked,
     };
     try {
       await api("/api/settings", body);

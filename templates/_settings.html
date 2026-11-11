@@ -74,6 +74,11 @@
         <label class="check"><input type="radio" name="thumbs" value="local"> {{ _("Only posters already saved on the disk") }}</label>
         <label class="check"><input type="radio" name="thumbs" value="off"> {{ _("No posters (fast view, placeholder image)") }}</label>
       </div>
+      <div class="frames-opt">
+        <label class="check"><input type="checkbox" id="sFrames"> {{ _("Generate posters myself from video frames (needs ffmpeg)") }}</label>
+        <button type="button" class="info-i" data-tip="{{ _('For home videos and titles without a TMDB match (or without a TMDB key) the File manager makes a poster from a frame of the video: several frames are checked and the clearest one is used. Needs ffmpeg – installed by setup.sh, or with fix.sh → Additional modules. On a Pi Zero it takes a few seconds per movie (done once).') }}">i</button>
+        <span class="muted small" id="ffmpegState"></span>
+      </div>
       <p class="hint">{{ _("The poster is saved in the movie folder as") }} <code>Title (Year).thumb.jpg</code>. {{ _("Plex does not use it – it has its own posters.") }}</p>
       <div class="thumb-actions">
         <select class="input" id="thumbDisk"></select>

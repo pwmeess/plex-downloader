@@ -12,6 +12,12 @@ All notable changes to Plex Downloader. Stable versions live on the `main` branc
   - **poster:** “Own image…” (any JPG/PNG/WebP, scaled in the browser to a JPEG) or “download the poster from TMDB” (ticked automatically when the TMDB ID changes),
   - every change is written to the activity log.
 - Windows on phones use the full available height (long dialogs were cut in half).
+- **Posters from video frames (ffmpeg):**
+  - Edit window → **Frame from the video**: 6 frames to choose from (the clearest first, “Other frames” takes new random ones); the frame is placed on a blurred copy of itself, so a 16:9 picture fits the 2:3 poster without cutting anything,
+  - **Settings → Preview & posters** and the setup wizard (TMDB step): “Generate posters myself from video frames (needs ffmpeg)”, off by default – for home videos, categories without TMDB and titles TMDB does not know; several frames are checked and the clearest one is used (black screens and fades are skipped),
+  - posters chosen by hand (own image or frame) are kept by “Download again (overwrite)”,
+  - `setup.sh` installs ffmpeg quietly (it never stops the installation).
+- **`fix.sh` → 7 Additional modules** (Uninstall and Cancel moved to 8 and 9): Plex Media Server, Samba (SMB server), SMB client (`cifs-utils`), ffmpeg, Tailscale VPN (recommended) and WireGuard VPN. Each module shows its status first (version, service, autostart and e.g. the Plex Web address, Samba shares, mounted SMB shares, the Tailscale address), then only the actions that make sense: install, update, stop until the next restart / start, restart, uninstall completely. Plex is installed from the official Plex repository; uninstalling it keeps the movies and deletes the Plex database only after a separate question.
 
 ## 1.3.0-beta2 – 2026-11-09 (BETA)
 

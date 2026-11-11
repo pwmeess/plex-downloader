@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Plex Downloader – repair menu: update, reinstall, BETA, server, uninstall.
+# Plex Downloader – repair menu: update, reinstall, BETA, server, additional modules, uninstall.
 # Run as a regular user:  ./fix.sh          (window menu like raspi-config)
 #                         ./fix.sh --text   (plain text menu)
 # Movies and TV shows in the library folders are NEVER touched.
@@ -170,6 +170,211 @@ server_menu() {
   done
 }
 
+# ---------------------------------------------------------------- additional modules (Plex, SMB, ffmpeg, VPN)
+# Each module: status first, then the actions that make sense for that status.
+MODULES="plex samba cifs ffmpeg tailscale wireguard"
+
+pkg_installed() { dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q "install ok installed"; }
+pkg_version()   { dpkg-query -W -f='${Version}' "$1" 2>/dev/null; }
+apt_update()    { c_info "$(L "Refreshing the package list…" "Odświeżam listę pakietów…")"; sudo apt-get update -qq; }
+
+mod_name() {
+  case "$1" in
+    plex)      echo "Plex Media Server" ;;
+    samba)     echo "$(L "Samba – share folders over SMB (server)" "Samba – udostępnianie folderów SMB (serwer)")" ;;
+    cifs)      echo "$(L "SMB client – mount shares (cifs-utils)" "Klient SMB – montowanie udziałów (cifs-utils)")" ;;
+    ffmpeg)    echo "$(L "ffmpeg – posters from video frames" "ffmpeg – plakaty z kadrów filmu")" ;;
+    tailscale) echo "$(L "Tailscale VPN (recommended)" "Tailscale VPN (zalecany)")" ;;
+    wireguard) echo "WireGuard VPN" ;;
+  esac
+}
+mod_pkg() {
+  case "$1" in
+    plex) echo plexmediaserver ;; samba) echo samba ;; cifs) echo cifs-utils ;;
+    ffmpeg) echo ffmpeg ;; tailscale) echo tailscale ;; wireguard) echo wireguard-tools ;;
+  esac
+}
+mod_service() {   # empty = no background service
+  case "$1" in
+    plex) echo plexmediaserver ;; samba) echo smbd ;; tailscale) echo tailscaled ;;
+    wireguard) [ -f /etc/wireguard/wg0.conf ] && echo "wg-quick@wg0" ;;
+  esac
+}
+mod_state() {     # short state for the module list
+  local pkg svc; pkg="$(mod_pkg "$1")"; svc="$(mod_service "$1")"
+  if ! pkg_installed "$pkg"; then L "not installed" "nie zainstalowano"; return; fi
+  if [ -n "$svc" ]; then
+    if systemctl is-active --quiet "$svc"; then L "running" "działa"; else L "stopped" "zatrzymany"; fi
+  else
+    L "installed" "zainstalowano"
+  fi
+}
+
+mod_status() {
+  local m="$1" pkg svc; pkg="$(mod_pkg "$m")"; svc="$(mod_service "$m")"
+  [ "$UI" = "whiptail" ] && { clear 2>/dev/null || true; }
+  echo
+  echo "  $(mod_name "$m")"
+  if pkg_installed "$pkg"; then
+    echo "  $(L "Installed:" "Zainstalowano:") $(pkg_version "$pkg")"
+  else
+    echo "  $(L "Not installed." "Nie zainstalowano.")"
+  fi
+  if [ -n "$svc" ] && pkg_installed "$pkg"; then
+    echo "  $(L "Service:" "Usługa:")   $svc – $(systemctl is-active "$svc" 2>/dev/null || echo unknown)"
+    echo "  $(L "Autostart:" "Autostart:") $(systemctl is-enabled "$svc" 2>/dev/null || echo unknown)"
+  fi
+  local ip; ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
+  case "$m" in
+    plex)
+      pkg_installed "$pkg" && echo "  $(L "Plex Web:" "Plex Web:")  http://${ip:-<raspberry-pi-ip>}:32400/web"
+      echo "  $(L "Plex runs as the user 'plex' – it needs read access to the library folders." "Plex działa jako użytkownik 'plex' – potrzebuje prawa odczytu folderów biblioteki.")" ;;
+    samba)
+      if pkg_installed "$pkg"; then
+        echo "  $(L "Shares:" "Udziały:")"
+        testparm -s 2>/dev/null | grep -E '^\[' | grep -viE '^\[(global|printers|print\$)\]' | sed 's/^/    /' \
+          || echo "    –"
+      fi ;;
+    cifs)
+      echo "  $(L "Mounted SMB shares:" "Zamontowane udziały SMB:")"
+      findmnt -t cifs -n -o TARGET,SOURCE 2>/dev/null | sed 's/^/    /' | grep . || echo "    –" ;;
+    ffmpeg)
+      command -v ffmpeg >/dev/null && echo "  $(ffmpeg -version 2>/dev/null | head -1)"
+      echo "  $(L "Turn it on in the panel: Settings → Preview & posters." "Włączysz w panelu: Ustawienia → Podgląd i plakaty.")" ;;
+    tailscale)
+      if pkg_installed "$pkg"; then
+        echo "  $(L "VPN address:" "Adres w VPN:") $(tailscale ip -4 2>/dev/null || echo "– ($(L "not logged in" "nie zalogowano"))")"
+        tailscale status 2>/dev/null | head -5 | sed 's/^/    /'
+      fi
+      echo "  $(L "Remote access to the panel without opening ports on the router (guide in 1.4)." "Zdalny dostęp do panelu bez otwierania portów na routerze (instrukcja w 1.4).")" ;;
+    wireguard)
+      if pkg_installed "$pkg"; then
+        if [ -f /etc/wireguard/wg0.conf ]; then sudo wg show 2>/dev/null | sed 's/^/    /'
+        else echo "  $(L "No configuration yet (/etc/wireguard/wg0.conf) – keys and peers are set up by hand; Tailscale is simpler." "Brak konfiguracji (/etc/wireguard/wg0.conf) – klucze i połączenia ustawia się ręcznie; Tailscale jest prostszy.")"; fi
+      fi ;;
+  esac
+  echo
+}
+
+mod_install() {
+  local m="$1" pkg; pkg="$(mod_pkg "$m")"
+  case "$m" in
+    plex)
+      sudo apt-get install -y -qq curl gnupg >/dev/null
+      curl -fsSL https://downloads.plex.tv/plex-keys/PlexSign.key | sudo gpg --dearmor --yes -o /usr/share/keyrings/plex.gpg
+      echo "deb [signed-by=/usr/share/keyrings/plex.gpg] https://downloads.plex.tv/repo/deb public main" \
+        | sudo tee /etc/apt/sources.list.d/plexmediaserver.list >/dev/null
+      apt_update && sudo apt-get install -y plexmediaserver ;;
+    tailscale)
+      curl -fsSL https://tailscale.com/install.sh | sh || return 1
+      if ask_yes_no "$(L "Log in to Tailscale now? A link to open in the browser will be shown." "Zalogować się teraz do Tailscale? Pojawi się link do otwarcia w przeglądarce.")"; then
+        sudo tailscale up
+      else
+        echo "  $(L "Log in later with:" "Zalogujesz się później:")  sudo tailscale up"
+      fi ;;
+    wireguard) apt_update && sudo apt-get install -y wireguard-tools ;;
+    *) apt_update && sudo apt-get install -y "$pkg" ;;
+  esac
+  pkg_installed "$pkg" && c_ok "$(mod_name "$m"): $(L "installed" "zainstalowano") $(pkg_version "$pkg")"
+  [ "$m" = "plex" ] && pkg_installed "$pkg" && echo "  $(L "Open:" "Otwórz:") http://$(hostname -I | awk '{print $1}'):32400/web"
+}
+
+mod_update() {
+  local pkg; pkg="$(mod_pkg "$1")"
+  apt_update && sudo apt-get install -y --only-upgrade "$pkg" \
+    && c_ok "$(mod_name "$1"): $(pkg_version "$pkg")"
+  local svc; svc="$(mod_service "$1")"
+  [ -n "$svc" ] && systemctl is-active --quiet "$svc" || true
+}
+
+mod_uninstall() {
+  local m="$1" pkg; pkg="$(mod_pkg "$m")"
+  local extra=""
+  case "$m" in
+    plex) extra="$(L "Movies and TV shows stay. The Plex database (watch history, posters) is removed only if you agree in the next step." "Filmy i seriale zostają. Baza Plexa (historia oglądania, plakaty) zostanie usunięta tylko, jeśli zgodzisz się w następnym kroku.")" ;;
+    samba) extra="$(L "Other devices will no longer see the shares. Files stay; /etc/samba/smb.conf is kept." "Inne urządzenia przestaną widzieć udziały. Pliki zostają; /etc/samba/smb.conf jest zachowany.")" ;;
+    cifs) findmnt -t cifs -n >/dev/null 2>&1 && extra="$(L "Shares are mounted now – they stop working after a restart (remove them from /etc/fstab)." "Udziały są teraz zamontowane – po restarcie przestaną działać (usuń je z /etc/fstab).")" ;;
+    ffmpeg) extra="$(L "Posters from video frames will not be created any more (saved ones stay)." "Plakaty z kadrów nie będą już tworzone (zapisane zostają).")" ;;
+    tailscale) extra="$(L "Remote access over Tailscale stops." "Zdalny dostęp przez Tailscale przestanie działać.")" ;;
+  esac
+  confirm "$(L "Completely uninstall" "Całkowicie odinstalować") $(mod_name "$m")? $extra" || { echo "  $(L "Cancelled." "Anulowano.")"; return 0; }
+  case "$m" in
+    plex)
+      sudo systemctl stop plexmediaserver 2>/dev/null || true
+      sudo apt-get purge -y plexmediaserver
+      sudo rm -f /etc/apt/sources.list.d/plexmediaserver.list /usr/share/keyrings/plex.gpg
+      if [ -d /var/lib/plexmediaserver ] && ask_yes_no "$(L "Also delete the Plex database (/var/lib/plexmediaserver: watch history, metadata, posters)?" "Usunąć też bazę Plexa (/var/lib/plexmediaserver: historia oglądania, metadane, plakaty)?")"; then
+        sudo rm -rf /var/lib/plexmediaserver && c_ok "$(L "Plex database deleted" "Baza Plexa usunięta")"
+      fi ;;
+    samba) sudo apt-get remove -y samba ;;
+    tailscale)
+      sudo tailscale down 2>/dev/null || true
+      sudo apt-get purge -y tailscale
+      sudo rm -f /etc/apt/sources.list.d/tailscale.list ;;
+    wireguard)
+      [ -f /etc/wireguard/wg0.conf ] && sudo systemctl disable --now wg-quick@wg0 2>/dev/null || true
+      sudo apt-get purge -y wireguard-tools wireguard 2>/dev/null || sudo apt-get purge -y wireguard-tools ;;
+    *) sudo apt-get purge -y "$pkg" ;;
+  esac
+  sudo apt-get autoremove -y -qq >/dev/null 2>&1 || true
+  pkg_installed "$pkg" || c_ok "$(mod_name "$m"): $(L "uninstalled" "odinstalowano")"
+  echo "  $(L "Your movies and TV shows were not touched." "Twoje filmy i seriale nie zostały ruszone.")"
+}
+
+module_menu() {
+  local m="$1"
+  mod_status "$m"; pause
+  while true; do
+    local pkg svc; pkg="$(mod_pkg "$m")"; svc="$(mod_service "$m")"
+    local args=() i=1 acts=()
+    add() { args+=("$i" "$2"); acts+=("$1"); i=$((i + 1)); }
+    add status "$(L "Check status" "Sprawdź status")"
+    if ! pkg_installed "$pkg"; then
+      add install "$(L "Install" "Zainstaluj")"
+    else
+      add update "$(L "Update" "Zaktualizuj")"
+      if [ -n "$svc" ]; then
+        if systemctl is-active --quiet "$svc"; then
+          add stop "$(L "Stop (until the next restart – autostart stays on)" "Zatrzymaj (do restartu – autostart bez zmian)")"
+          add restart "$(L "Restart" "Uruchom ponownie (restart)")"
+        else
+          add start "$(L "Start" "Uruchom")"
+        fi
+      fi
+      add uninstall "$(L "Uninstall completely" "Odinstaluj całkowicie")"
+    fi
+    add back "$(L "Back" "Powrót")"
+    local c; c="$(menu "$(mod_name "$m") – $(mod_state "$m")" "${args[@]}")"
+    [ -z "$c" ] && return 0
+    local act="${acts[$((c - 1))]:-back}"
+    [ "$UI" = "whiptail" ] && [ "$act" != "status" ] && [ "$act" != "back" ] && { clear 2>/dev/null || true; }
+    case "$act" in
+      status)    mod_status "$m" ;;
+      install)   mod_install "$m" ;;
+      update)    mod_update "$m" ;;
+      stop)      sudo systemctl stop "$svc" && c_ok "$(L "Stopped – starts again after a restart." "Zatrzymano – wystartuje po restarcie.")" ;;
+      start)     sudo systemctl start "$svc" && sleep 1 && c_ok "$(L "Started:" "Uruchomiono:") $(systemctl is-active "$svc")" ;;
+      restart)   sudo systemctl restart "$svc" && sleep 1 && c_ok "$(L "Restarted:" "Zrestartowano:") $(systemctl is-active "$svc")" ;;
+      uninstall) mod_uninstall "$m" ;;
+      *)         return 0 ;;
+    esac
+    pause
+    [ "$UI" = "text" ] && return 0
+  done
+}
+
+modules_menu() {
+  while true; do
+    local args=() i=1 list=()
+    for m in $MODULES; do args+=("$i" "$(mod_name "$m") – $(mod_state "$m")"); list+=("$m"); i=$((i + 1)); done
+    args+=("$i" "$(L "Back" "Powrót")")
+    local c; c="$(menu "$(L "Additional modules – programs that work with Plex Downloader" "Moduły dodatkowe – programy współpracujące z Plex Downloaderem")" "${args[@]}")"
+    { [ -z "$c" ] || ! [[ "$c" =~ ^[0-9]+$ ]] || [ "$c" -ge "$i" ] || [ "$c" -lt 1 ]; } && return 1
+    module_menu "${list[$((c - 1))]}"
+    [ "$UI" = "text" ] && return 0
+  done
+}
+
 # ---------------------------------------------------------------- main menu
 HEAD_TEXT="$(L "Repair menu" "Menu naprawy") · $CUR"
 [ $ON_BETA -eq 1 ] && HEAD_TEXT="$HEAD_TEXT · $(L "BETA version" "wersja BETA")"
@@ -183,10 +388,15 @@ while true; do
     4 "$(L "Install / update the latest BETA" "Zainstaluj / zaktualizuj najnowszą BETA")" \
     5 "$(L "Leave BETA (back to stable)" "Wyjście z BETA (powrót do stabilnej)")" \
     6 "$(L "Server: status, stop / start, restart" "Serwer: status, wstrzymaj / uruchom, restart")" \
-    7 "$(L "Uninstall" "Odinstaluj")" \
-    8 "$(L "Cancel" "Anuluj")")"
+    7 "$(L "Additional modules: Plex, SMB, ffmpeg, VPN" "Moduły dodatkowe: Plex, SMB, ffmpeg, VPN")" \
+    8 "$(L "Uninstall" "Odinstaluj")" \
+    9 "$(L "Cancel" "Anuluj")")"
   if [ "$opt" = "6" ]; then
     server_menu && exit 0
+    continue
+  fi
+  if [ "$opt" = "7" ]; then
+    modules_menu && exit 0
     continue
   fi
   break
@@ -274,7 +484,7 @@ case "$opt" in
     rm -rf "$SNAP" "$APP_DIR/venv"
     run_setup
     ;;
-  7)
+  8)
     confirm "$(L "The service will be stopped and removed from autostart. Uninstall Plex Downloader?" "Usługa zostanie zatrzymana i usunięta z autostartu. Odinstalować Plex Downloader?")" || { echo "  $(L "Cancelled." "Anulowano.")"; exit 0; }
     sudo systemctl disable --now "$SERVICE" 2>/dev/null || true
     sudo rm -f "$UNIT"

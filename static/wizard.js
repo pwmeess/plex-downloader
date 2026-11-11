@@ -546,6 +546,15 @@
       });
       show.append(scb, document.createTextNode(" " + t("Show key")));
       box.append(inp, show);
+      // posters from video frames (ffmpeg) – for home videos and when there is no TMDB key / no match
+      const fr = el("div", "wz-frames");
+      const fl = el("label", "check"); const fcb = el("input"); fcb.type = "checkbox";
+      fcb.checked = W.opts && "thumbs_frames" in W.opts ? !!W.opts.thumbs_frames : !!S.thumbs_frames;
+      fcb.addEventListener("change", () => { W.opts = W.opts || {}; W.opts.thumbs_frames = fcb.checked; saveW(); });
+      fl.append(fcb, document.createTextNode(" " + t("Generate posters myself from video frames (needs ffmpeg)")));
+      fr.append(fl, info(t("For home videos and titles without a TMDB match (or without a TMDB key) the File manager makes a poster from a frame of the video: several frames are checked and the clearest one is used. Needs ffmpeg – installed by setup.sh, or with fix.sh → Additional modules. On a Pi Zero it takes a few seconds per movie (done once).")));
+      if (!S.ffmpeg) fr.appendChild(el("p", "muted small", t("ffmpeg is not installed yet – add it with fix.sh → Additional modules.")));
+      box.appendChild(fr);
       return box;
     },
     summary() {
@@ -581,6 +590,8 @@
       const dl2 = el("dl", "wz-sum");
       dl2.append(el("dt", null, t("Plex server")), el("dd", null, [W.plexAuto ? t("automatic discovery") : "", ...srv].filter(Boolean).join(" · ") || "—"));
       dl2.append(el("dt", null, t("TMDB key")), el("dd", null, W.tmdbKey ? t("new key entered") : S.tmdb_key_set ? t("saved key kept") : t("none (can be added later)")));
+      const frames = W.opts && "thumbs_frames" in W.opts ? W.opts.thumbs_frames : S.thumbs_frames;
+      dl2.append(el("dt", null, t("Posters from video frames")), el("dd", null, frames ? t("yes") : t("no")));
       box.appendChild(dl2);
       scheduleCheck();
       return box;

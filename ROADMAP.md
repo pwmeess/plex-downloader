@@ -83,6 +83,8 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
 - [x] `1.3.0-beta2`: settings export / import, SD-card template.
 - [ ] `1.3.0-beta3`: EN/PL guides (HTML in the app + PDF).
   - [x] File manager: edit name and poster (pen icon on the card).
+  - [x] Posters from video frames (ffmpeg): in the Edit window and automatically (Settings / wizard, off by default).
+  - [x] `fix.sh` → Additional modules: Plex Media Server, Samba, SMB client, ffmpeg, Tailscale, WireGuard (status, install, update, stop / start, restart, uninstall).
 - [ ] `1.3.0-beta4`: "Install another version" in `fix.sh`.
 - [ ] `1.3.0`: stable release.
 
@@ -102,7 +104,7 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
 
 The VPN preview (Settings tab and header badge) is visible only in BETA; it returns to stable together with the working feature.
 
-- [ ] `setup-vpn.sh`: installs Tailscale and prints the sign-in link.
+- [x] Installing Tailscale with the sign-in link (and WireGuard): `fix.sh` → Additional modules (1.3.0-beta3, instead of a separate `setup-vpn.sh`).
 - [ ] VPN tab: "home network only" or "home network + VPN", panel port, VPN status and address, QR code for phones.
 - [ ] No open ports on the router.
 - [ ] EN/PL guide (Tailscale on the Pi, phone and computer).

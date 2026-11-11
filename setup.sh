@@ -41,6 +41,8 @@ echo
 c_info "$(L "Installing system packages (aria2, python3-venv, git)…" "Instaluję pakiety systemowe (aria2, python3-venv, git)…")"
 sudo apt-get update -qq
 sudo apt-get install -y -qq aria2 python3 python3-venv python3-pip git >/dev/null
+# ffmpeg: posters from video frames (optional; often already there with Plex) – quietly, never stops the setup
+sudo apt-get install -y -qq ffmpeg >/dev/null 2>&1 || true
 c_ok "aria2c $(aria2c --version | head -1 | awk '{print $3}')"
 
 c_info "$(L "Creating the Python environment (venv)…" "Tworzę środowisko Pythona (venv)…")"

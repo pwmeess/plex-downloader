@@ -97,8 +97,9 @@ The menu opens in a window like `raspi-config` (arrow keys + Enter). On a very s
 4. **Install / update the latest BETA**,
 5. **Leave BETA** – back to stable, experimental settings removed (no extra questions),
 6. **Server** – check status (service, autostart, panel address, last log lines), stop the server (autostart stays on) or start it again without restarting the Pi, restart the server process,
-7. **Uninstall** – removes the service from autostart, optionally also the app folder,
-8. **Cancel**.
+7. **Additional modules** (BETA 1.3.0-beta3) – programs that work with Plex Downloader: **Plex Media Server**, **Samba** (sharing folders over SMB), **SMB client** (`cifs-utils`, mounting shares), **ffmpeg** (posters from video frames), **Tailscale VPN** (recommended) and **WireGuard VPN**. Choosing a module shows its status first, then only the actions that make sense: install, update, stop (until the next restart, autostart stays on) / start, restart, uninstall completely. Uninstalling Plex keeps your movies; the Plex database is deleted only if you agree.
+8. **Uninstall** – removes the service from autostart, optionally also the app folder,
+9. **Cancel**.
 
 Movies and TV shows on the disks are never touched.
 

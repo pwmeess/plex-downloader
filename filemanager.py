@@ -20,6 +20,7 @@ import actlog
 import config
 import movieinfo
 import naming
+import thumbgen
 from downloader import TMP_DIRNAME, disk_status
 from i18n import _
 
@@ -201,7 +202,7 @@ def list_items(disk_id, cat_id, busy=()):
     st = disk_status(d)
     return {"disk": d["id"], "disk_label": d["label"], "category": cat["id"], "kind": cat["kind"],
             "category_label": cat["label"], "path": base, "free": st["free"], "total": st["total"],
-            "thumbs_mode": config.get().get("thumbs_mode", "online"),
+            "thumbs_mode": config.get().get("thumbs_mode", "online"), "frames": frames_enabled(),
             "tmdb": movieinfo.configured() and cat.get("tmdb", True), "items": items}
 
 
@@ -631,6 +632,12 @@ class Ops:
             if op["cancel"]:
                 break
             op["current"] = name
+            th = find_thumb(base, name, is_dir)
+            if th and _is_own(th):        # chosen by hand (own image or a frame) – keep it
+                op["log"].append({"name": name, "ok": True, "note": "own"})
+                op["items_done"] += 1
+                op["done"] += 1
+                continue
             try:
                 fetch_thumb(cat["kind"], base, name, is_dir, force=True)
                 op["log"].append({"name": name, "ok": True})
@@ -845,13 +852,25 @@ def rename_item(disk_id, cat_id, name, title, year=None, tmdb=None, edition="", 
     return out
 
 
-def save_thumb(disk_id, cat_id, name, data):
-    """Własny plakat (JPEG przygotowany w przeglądarce) zamiast okładki z TMDB."""
-    _d, cat, base = location(disk_id, cat_id)
-    path = item_path(base, name)
-    if not data or data[:3] != b"\xff\xd8\xff" or len(data) > 4 * 1024 * 1024:
-        raise FMError(_("The image must be a JPEG up to 4 MB."))
-    stem = thumb_base(base, name, os.path.isdir(path))
+OWN_MARK = b"plexdl-own"
+
+
+def _mark(data, tag):
+    """JPEG comment (COM) right after SOI – lets „Refresh posters” skip posters chosen by hand."""
+    seg = b"\xff\xfe" + (len(tag) + 2).to_bytes(2, "big") + tag
+    return data[:2] + seg + data[2:]
+
+
+def _is_own(path):
+    try:
+        with open(path, "rb") as f:
+            return OWN_MARK in f.read(64)
+    except OSError:
+        return False
+
+
+def _write_thumb(base, name, is_dir, data):
+    stem = thumb_base(base, name, is_dir)
     for ext in THUMB_EXTS:
         if os.path.exists(stem + ext):
             os.remove(stem + ext)
@@ -863,6 +882,49 @@ def save_thumb(disk_id, cat_id, name, data):
         os.chmod(out, 0o664)
     except OSError:
         pass
+    return out
+
+
+def frames_enabled():
+    return bool(config.get().get("thumbs_frames")) and thumbgen.available()
+
+
+def frame_thumb(base, name, is_dir):
+    """Automatic poster from a video frame (categories without TMDB, or nothing found in TMDB)."""
+    key = os.path.join(base, name)
+    lock = _thumb_locks.setdefault(key, threading.Lock())
+    with lock:
+        existing = find_thumb(base, name, is_dir)
+        if existing:
+            return existing
+        if time.time() - _thumb_fail.get(key + "#frame", 0) < FAIL_TTL:
+            raise FMError("no frame")
+        try:
+            data = thumbgen.best(thumbgen.first_video(key, _is_video))
+        except thumbgen.FrameError as e:
+            _thumb_fail[key + "#frame"] = time.time()
+            raise FMError(str(e))
+        return _write_thumb(base, name, is_dir, data)
+
+
+def frame_candidates(disk_id, cat_id, name, n=6, shuffle=False):
+    import base64
+    _d, _cat, base = location(disk_id, cat_id)
+    path = item_path(base, name)
+    try:
+        frames = thumbgen.candidates(thumbgen.first_video(path, _is_video), n, shuffle)
+    except thumbgen.FrameError as e:
+        raise FMError(str(e))
+    return {"frames": [{"t": t, "data": "data:image/jpeg;base64," + base64.b64encode(d).decode()} for t, d in frames]}
+
+
+def save_thumb(disk_id, cat_id, name, data):
+    """Własny plakat (JPEG przygotowany w przeglądarce) zamiast okładki z TMDB."""
+    _d, cat, base = location(disk_id, cat_id)
+    path = item_path(base, name)
+    if not data or data[:3] != b"\xff\xd8\xff" or len(data) > 4 * 1024 * 1024:
+        raise FMError(_("The image must be a JPEG up to 4 MB."))
+    _write_thumb(base, name, os.path.isdir(path), _mark(data, OWN_MARK))
     actlog.write("POSTERS", "own poster: %s (%s)" % (name, cat["label"]))
     return {"ok": True}
 
@@ -930,9 +992,17 @@ def get_thumb(disk_id, cat_id, name):
     if existing:
         return existing
     mode = config.get().get("thumbs_mode", "online")
-    if mode != "online" or not movieinfo.configured() or not cat.get("tmdb", True):
+    if mode != "online":       # „only saved posters” / „no posters”: nothing new is created
         raise FMError("no poster")
-    return fetch_thumb(cat["kind"], base, name, is_dir)
+    if mode == "online" and movieinfo.configured() and cat.get("tmdb", True):
+        try:
+            return fetch_thumb(cat["kind"], base, name, is_dir)
+        except FMError:
+            if not frames_enabled():
+                raise
+    if frames_enabled():
+        return frame_thumb(base, name, is_dir)
+    raise FMError("no poster")
 
 
 def delete_thumbs(disk_id):

@@ -42,6 +42,7 @@ DEFAULTS = {
     "plex_servers": [],          # [{"id","name","host","port"}] – dodane ręcznie
     "plex_autodiscover": True,   # wykrywanie serwerów Plex w sieci (GDM) + localhost
     "thumbs_mode": "online",     # online | local | off
+    "thumbs_frames": False,      # posters from video frames (ffmpeg) when TMDB has none / is off
     "language": "",              # "" = jeszcze nie wybrano (ekran wyboru przy logowaniu)
     "theme": "dark",             # dark | light
     "wizard_done": False,        # kreator pierwszego uruchomienia zakończony
