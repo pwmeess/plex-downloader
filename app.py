@@ -1063,6 +1063,13 @@ def set_password():
     config.load()
     cfg = config.get()
     print(_("Plex Downloader login setup"))
+    # keys pressed while the installation was running (e.g. Enter) would answer this question at once
+    try:
+        import termios
+        if sys.stdin.isatty():
+            termios.tcflush(sys.stdin, termios.TCIFLUSH)
+    except (ImportError, OSError):
+        pass
     user = input(_("Username [%s]: ") % cfg.get("username", "admin")).strip() or cfg.get("username", "admin")
     while True:
         p1 = getpass.getpass(_("Password (min. 6 characters): "))
