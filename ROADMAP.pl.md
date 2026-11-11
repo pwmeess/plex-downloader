@@ -48,7 +48,7 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
 ## Strona demo (Netlify)
 
 - [x] Demo (najpierw 1.2.5, potem 1.2.6, teraz **1.3.0**): prawdziwy interfejs z symulacją w przeglądarce, EN/PL, okno powitalne, dane max 24 h, wylogowanie czyści wszystko, linki zewnętrzne zablokowane, zmyślone nazwy, IP i klucze, generowane okładki.
-- [ ] Publikacja na Netlify (Piotr) i link do demo w README.
+- [x] Opublikowane pod https://plexdownloader.netlify.app, link w README.
 - [ ] Źródła demo (`demo.js`, skrypt budujący) w repozytorium, w folderze `demo/`, żeby po każdym wydaniu stabilnym dało się je odświeżyć jednym poleceniem.
 - [x] Od 1.3: link do instrukcji w oknie powitalnym prowadzi do instrukcji EN/PL (HTML i PDF).
 
