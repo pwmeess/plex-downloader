@@ -10,7 +10,11 @@ All notable changes to Plex Downloader. Stable versions live on the `main` branc
   - **Change** asks for a confirmation with the full list of changes; then the folder, the video files, subtitles and the poster are renamed together (subfolders with extras stay as they are); if anything fails, the changes made so far are undone,
   - TV shows: the folder and optionally the episode files (`Show - S01E01…`) get the new name,
   - **poster:** “Own image…” (any JPG/PNG/WebP, scaled in the browser to a JPEG) or “download the poster from TMDB” (ticked automatically when the TMDB ID changes),
-  - every change is written to the activity log.
+  - every change is written to the activity log,
+  - files are renamed only after a name field was edited – changing just the poster never renames anything (before, a folder with freely named files, e.g. home videos, blocked even the poster change with “Two files would get the same name”),
+  - files with their own names (e.g. `Film komunijny.mp4`, `Skrót film.mp4`) keep that name as the version, so they do not clash,
+  - every file in the folder has a **type**: Movie (version) or a Plex extra – Trailer, Behind the scenes, Deleted scene, Featurette, Interview, Other extra; an extra gets the Plex name `Description-trailer.mp4`, stays in the folder and is shown by Plex under Extras,
+  - the empty TMDB ID field shows “e.g. 19995” (it looked like a filled-in ID).
 - Windows on phones use the full available height (long dialogs were cut in half).
 - **Posters from video frames (ffmpeg):**
   - Edit window → **Frame from the video**: 6 frames to choose from (the clearest first, “Generate others” takes new random ones); the frame is placed on a blurred copy of itself, so a 16:9 picture fits the 2:3 poster without cutting anything,

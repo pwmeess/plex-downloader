@@ -543,7 +543,7 @@
     f.appendChild(r1);
 
     const idw = el("div");
-    const tmdb = el("input", "input mono"); tmdb.value = info.tmdb || ""; tmdb.inputMode = "numeric"; tmdb.placeholder = "19995";
+    const tmdb = el("input", "input mono"); tmdb.value = info.tmdb || ""; tmdb.inputMode = "numeric"; tmdb.placeholder = t("e.g. 19995");
     const row2 = el("div", "fe-row2"); row2.appendChild(tmdb);
     const res = el("div", "fe-res");
     if (info.tmdb_enabled) {
@@ -565,7 +565,7 @@
             b.addEventListener("click", () => {
               tmdb.value = x.id; if (x.year) year.value = x.year;
               if (!title.value.trim()) title.value = x.title || x.original_title || "";
-              res.replaceChildren(); onTmdb(); preview();
+              res.replaceChildren(); onTmdb(); changed();
             });
             return b;
           }));
@@ -596,11 +596,11 @@
       const r = el("div", "ed-row");
       const i = el("input", "input"); i.maxLength = 32; i.value = val || ""; i.setAttribute("list", "feEditions");
       i.placeholder = t("e.g. Director's Cut");
-      i.addEventListener("input", () => { edUpd(); preview(); });
+      i.addEventListener("input", () => { edUpd(); changed(); });
       r.appendChild(i);
       if (removable) {
         const x = el("button", "icon-btn"); x.type = "button"; x.title = t("Remove"); x.appendChild(icon("x"));
-        x.addEventListener("click", () => { r.remove(); edUpd(); preview(); });
+        x.addEventListener("click", () => { r.remove(); edUpd(); changed(); });
         r.appendChild(x);
       }
       edBox.appendChild(r);
@@ -617,20 +617,30 @@
     }
 
     // ---- versions of the video files
-    const verInputs = {};
+    const verInputs = {}, kindSel = {};
+    const KINDS = [["", t("Movie (version)")], ["trailer", t("Trailer")], ["behindthescenes", t("Behind the scenes")],
+                   ["deleted", t("Deleted scene")], ["featurette", t("Featurette")], ["interview", t("Interview")], ["other", t("Other extra")]];
     if (!isTv && info.files.length) {
       const vDl = el("datalist"); vDl.id = "feVersions";
       (info.versions || []).forEach((v) => { const o = el("option"); o.value = v; vDl.appendChild(o); });
       const w = el("div");
-      w.append(lbl(info.files.length > 1 ? t("File versions") : t("File version"), t("Version label of the same movie, e.g. 4K, 1080p, Polish voice-over. Added to the file name only – Plex merges several versions in one folder into a single item with a version choice.")), vDl);
+      w.append(lbl(info.files.length > 1 ? t("Files in the folder") : t("File version"), t("Version label of the same movie, e.g. 4K, 1080p, Polish voice-over. Added to the file name only – Plex merges several versions in one folder into a single item with a version choice.\n\nA shorter cut or a trailer can be marked as a Plex extra (Trailer, Behind the scenes…): it gets the name “Description-trailer.mp4”, stays in the folder and is shown by Plex under Extras, not as a version.")), vDl);
       const fl = el("div", "fe-files");
       info.files.forEach((x) => {
         const r = el("div", "fe-file");
         const i = el("input", "input"); i.value = x.version; i.maxLength = 40; i.setAttribute("list", "feVersions"); i.placeholder = t("e.g. 1080p");
-        i.addEventListener("input", preview);
+        i.addEventListener("input", changed);
         verInputs[x.name] = i;
+        const sel = el("select", "input");
+        KINDS.forEach(([v, label]) => { const o = el("option", null, label); o.value = v; sel.appendChild(o); });
+        sel.addEventListener("change", () => {
+          i.placeholder = sel.value ? t("description, e.g. Short cut") : t("e.g. 1080p");
+          if (sel.value) i.removeAttribute("list"); else i.setAttribute("list", "feVersions");
+          changed();
+        });
+        kindSel[x.name] = sel;
         const n = el("span", null, x.name); n.title = x.name;
-        r.append(n, i); fl.appendChild(r);
+        r.append(n, sel, i); fl.appendChild(r);
       });
       w.appendChild(fl); f.appendChild(w);
     }
@@ -638,7 +648,7 @@
     if (isTv) {
       const l = el("label", "check"); epCb = el("input"); epCb.type = "checkbox"; epCb.checked = true;
       l.append(epCb, " " + t("also rename the episode files (Show - S01E01…)"));
-      epCb.addEventListener("change", preview);
+      epCb.addEventListener("change", changed);
       f.appendChild(l);
     }
     const nw = el("div");
@@ -652,11 +662,15 @@
       disk: pane.disk, cat: pane.cat, name: info.name, title: title.value.trim(), year: year.value.trim(),
       tmdb: tmdb.value.trim(), edition: isTv ? "" : edValue(), dry,
       versions: Object.fromEntries(Object.entries(verInputs).map(([k, i]) => [k, i.value.trim()])),
+      extras: Object.fromEntries(Object.entries(kindSel).filter(([, sl]) => sl.value).map(([k, sl]) => [k, sl.value])),
       episodes: epCb ? epCb.checked : true,
     });
-    let timer = null, last = null;
+    let timer = null, last = null, touched = false;
+    // the name is changed only after a field was edited – a poster alone never renames files
+    function changed() { touched = true; preview(); }
     function preview() {
       clearTimeout(timer);
+      if (!touched) { newName.className = "fe-new muted"; newName.textContent = t("no change – edit the fields above to rename"); return; }
       timer = setTimeout(async () => {
         try {
           last = await api("/api/fm/rename", payload(true));
@@ -665,14 +679,15 @@
         } catch (e) { last = null; newName.className = "fe-new bad"; newName.textContent = e.message; }
       }, 250);
     }
-    [title, year, tmdb].forEach((i) => i.addEventListener("input", preview));
+    [title, year, tmdb].forEach((i) => i.addEventListener("input", changed));
     preview();
     body._onOpen = () => { title.focus(); };
 
     const apply = async () => {
       if (edValue().length > 32) { toast(t("The edition can have max. 32 characters."), true); return undefined; }
       let plan;
-      try { plan = await api("/api/fm/rename", payload(true)); } catch (e) { toast(e.message, true); return undefined; }
+      if (!touched) plan = { changes: [], new_name: info.name };
+      else { try { plan = await api("/api/fm/rename", payload(true)); } catch (e) { toast(e.message, true); return undefined; } }
       const poster = ownJpeg ? "own" : tmdbCb.checked ? "tmdb" : "";
       if (!plan.changes.length && !poster) { toast(t("Nothing to change.")); return undefined; }
       const cb = el("div");

@@ -633,7 +633,6 @@
  "Edit name and poster": "Edytuj nazwę i plakat",
  "Edit “{name}”": "Edycja „{name}”",
  "Enter the title.": "Wpisz tytuł.",
- "File versions": "Wersje plików",
  "Find in TMDB": "Szukaj w TMDB",
  "Invalid year.": "Nieprawidłowy rok.",
  "New name": "Nowa nazwa",
@@ -683,5 +682,16 @@
  "Error – check the time you entered or try again.": "Błąd – sprawdź wpisany czas lub spróbuj ponownie.",
  "For home videos and titles without a TMDB match (or without a TMDB key) the File manager makes a poster from a frame of the video: several frames are checked and the clearest one is used. Needs ffmpeg – installed by setup.sh, or with fix.sh → Additional modules.\n\nNot recommended to switch on right away: it takes about 10–15 s per movie on a Pi 4 / Pi 400 (longer on a Pi Zero), so the first opening of a large category is slow.\n\nYou can always make a poster from a frame for a single movie: File manager → pen icon (Edit) → Frame from the video.": "Dla domowych nagrań i tytułów, których nie ma w TMDB (albo bez klucza TMDB), Menedżer plików zrobi plakat z kadru filmu: sprawdza kilka kadrów i wybiera najwyraźniejszy. Wymaga ffmpeg – instaluje go setup.sh albo fix.sh → Moduły dodatkowe.\n\nNie zalecamy włączania od razu: na Pi 4 / Pi 400 trwa to ok. 10–15 s na film (na Pi Zero dłużej), więc pierwsze otwarcie dużej kategorii będzie wolne.\n\nPlakat z kadru możesz zawsze zrobić dla pojedynczego filmu: Menedżer plików → ikona długopisu (Edytuj) → Kadr z filmu.",
  "+10 s": "+10 s",
- "The same search 10 seconds later": "To samo wyszukiwanie 10 sekund później"
+ "The same search 10 seconds later": "To samo wyszukiwanie 10 sekund później",
+ "Behind the scenes": "Za kulisami",
+ "Deleted scene": "Scena usunięta",
+ "Featurette": "Materiał dodatkowy (featurette)",
+ "Files in the folder": "Pliki w folderze",
+ "Interview": "Wywiad",
+ "Movie (version)": "Film (wersja)",
+ "Other extra": "Inny dodatek",
+ "Version label of the same movie, e.g. 4K, 1080p, Polish voice-over. Added to the file name only – Plex merges several versions in one folder into a single item with a version choice.\n\nA shorter cut or a trailer can be marked as a Plex extra (Trailer, Behind the scenes…): it gets the name “Description-trailer.mp4”, stays in the folder and is shown by Plex under Extras, not as a version.": "Oznaczenie wersji tego samego filmu, np. 4K, 1080p, lektor PL. Dodawane tylko do nazwy pliku – Plex łączy kilka wersji w jednym folderze w jedną pozycję z wyborem wersji.\n\nKrótszą wersję albo zwiastun możesz oznaczyć jako dodatek Plexa (Zwiastun, Za kulisami…): dostanie nazwę „Opis-trailer.mp4”, zostanie w folderze, a Plex pokaże go w Dodatkach, a nie jako wersję.",
+ "description, e.g. Short cut": "opis, np. Skrót",
+ "e.g. 19995": "np. 19995",
+ "no change – edit the fields above to rename": "bez zmian – zmień pola powyżej, aby zmienić nazwę"
 }

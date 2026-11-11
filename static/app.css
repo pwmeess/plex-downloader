@@ -904,3 +904,6 @@ dialog.window.modal .win-foot { flex-wrap: wrap; }
 .fe-secs { font-family: var(--mono); font-size: 12.5px; margin-left: auto; }
 .fe-time-btns { display: flex; gap: 8px; }
 .fe-time-btns [hidden] { display: none; }
+.fe-file { grid-template-columns: minmax(0, 1fr) 150px 150px; }
+.fe-new.muted { color: var(--muted); font-family: inherit; }
+@media (max-width: 640px) { .fe-file { grid-template-columns: 1fr 1fr; } .fe-file span { grid-column: 1 / -1; } }

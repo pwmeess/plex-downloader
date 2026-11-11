@@ -698,6 +698,26 @@ def _version_of(stem, bases):
     return m.group(1).strip() if m else ""
 
 
+EXTRA_KINDS = ("trailer", "behindthescenes", "deleted", "featurette", "interview", "scene", "short", "other")
+
+
+def _default_versions(files, bases):
+    """Versions read from the names; files with their own names (e.g. „Film komunijny.mp4”,
+    „Skrót film.mp4”) keep that name as the version when the plain name would repeat."""
+    out = {f: _version_of(naming.split_ext(f)[0], bases) for f in files}
+    if len(files) > 1:
+        seen = {}
+        for f, v in out.items():
+            seen.setdefault(v, []).append(f)
+        for v, group in seen.items():
+            if len(group) > 1:
+                for f in group:
+                    stem = naming.strip_tags(naming.split_ext(f)[0])
+                    if not any(stem == b or stem.startswith(b + " - ") for b in bases):
+                        out[f] = naming.clean_tag(stem, 40)
+    return out
+
+
 def _main_videos(path):
     try:
         names = sorted(os.listdir(path))
@@ -716,15 +736,16 @@ def item_details(disk_id, cat_id, name):
     bases = [naming.strip_tags(label)]
     files = []
     if cat["kind"] != "tv":
-        for f in (_main_videos(path) if is_dir else [name]):
-            files.append({"name": f, "version": _version_of(naming.split_ext(f)[0], bases)})
+        names = _main_videos(path) if is_dir else [name]
+        vers = _default_versions(names, bases)
+        files = [{"name": f, "version": vers[f]} for f in names]
     return {"name": name, "kind": cat["kind"], "is_dir": is_dir, "title": p["title"] or label, "year": p["year"],
             "edition": p["edition"], "tmdb": p["tmdb"], "files": files,
             "tmdb_enabled": movieinfo.configured() and cat.get("tmdb", True),
             "thumb": bool(find_thumb(base, name, is_dir))}
 
 
-def _rename_plan(base, name, kind, title, year, tmdb, edition, versions, episodes):
+def _rename_plan(base, name, kind, title, year, tmdb, edition, versions, episodes, extras=None):
     path = item_path(base, name)
     is_dir = os.path.isdir(path)
     title = naming.sanitize(naming.strip_tags(title or ""))
@@ -749,10 +770,18 @@ def _rename_plan(base, name, kind, title, year, tmdb, edition, versions, episode
     inner = []    # (stara nazwa, nowa nazwa) w folderze filmu / ścieżki względne w serialu
     if is_dir and kind != "tv":
         taken = {}
-        for f in _main_videos(path):
+        mains = _main_videos(path)
+        defaults = _default_versions(mains, [naming.strip_tags(name)])
+        for f in mains:
             stem, ext = naming.split_ext(f)
-            ver = naming.clean_tag((versions or {}).get(f, _version_of(stem, [naming.strip_tags(name)])), 40)
-            new_stem = new_root + (" - " + ver if ver else "")
+            ver = naming.clean_tag((versions or {}).get(f, defaults[f]), 40)
+            kind_x = (extras or {}).get(f)
+            if kind_x in EXTRA_KINDS:
+                # Plex extra in the movie folder: „Description-trailer.mp4” (not a version of the movie)
+                label = naming.clean_tag(ver or naming.strip_tags(stem), 60).rstrip(" -") or "Extra"
+                new_stem = "%s-%s" % (label, kind_x)
+            else:
+                new_stem = new_root + (" - " + ver if ver else "")
             if new_stem + ext in taken.values():
                 raise FMError(_("Two files would get the same name: %s") % (new_stem + ext))
             taken[f] = new_stem + ext
@@ -814,10 +843,10 @@ def _ren(src, dst):
 
 
 def rename_item(disk_id, cat_id, name, title, year=None, tmdb=None, edition="", versions=None,
-                episodes=True, dry=False, busy=()):
+                episodes=True, dry=False, busy=(), extras=None):
     """Zmienia nazwę filmu/serialu wg zasad Plex: folder, pliki wideo, napisy i plakat."""
     d, cat, base = location(disk_id, cat_id)
-    plan = _rename_plan(base, name, cat["kind"], title, year, tmdb, edition, versions, episodes)
+    plan = _rename_plan(base, name, cat["kind"], title, year, tmdb, edition, versions, episodes, extras)
     path, new_name, inner = plan["path"], plan["new_name"], plan["inner"]
     if is_busy(path, busy):
         raise FMError(_("a download into this folder is in progress"))

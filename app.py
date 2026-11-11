@@ -920,7 +920,8 @@ def api_fm_rename():
     d = request.get_json(silent=True) or {}
     return fm_call(fm.rename_item, d.get("disk"), d.get("cat"), d.get("name", ""), d.get("title", ""),
                    d.get("year"), d.get("tmdb"), d.get("edition", ""), d.get("versions") or {},
-                   bool(d.get("episodes", True)), bool(d.get("dry")), manager.busy_paths())
+                   bool(d.get("episodes", True)), bool(d.get("dry")), manager.busy_paths(),
+                   d.get("extras") if isinstance(d.get("extras"), dict) else {})
 
 
 @app.route("/api/fm/thumb/upload", methods=["POST"])

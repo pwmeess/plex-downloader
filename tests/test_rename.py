@@ -65,6 +65,23 @@ class RenameTests(unittest.TestCase):
         self.fm.rename_item("a", "movies", new, "Avatar", 2009, "", "", {})
         self.assertIn("Avatar (2009) - 4K.mkv", os.listdir(os.path.join(self.m, "Avatar (2009)")))
 
+    def test_own_file_names_and_trailer(self):
+        """Home video folder with free file names: no conflict, one file can become a Plex trailer."""
+        old = "Komunia (2024)"
+        d = os.path.join(self.m, old)
+        touch(os.path.join(d, "Film komunijny.mp4"))
+        touch(os.path.join(d, "Skrót film.mp4"))
+        info = self.fm.item_details("a", "movies", old)
+        self.assertEqual({f["name"]: f["version"] for f in info["files"]},
+                         {"Film komunijny.mp4": "Film komunijny", "Skrót film.mp4": "Skrót film"})
+        dry = self.fm.rename_item("a", "movies", old, "Komunia", 2024, dry=True)
+        self.assertIn({"from": "Skrót film.mp4", "to": "Komunia (2024) - Skrót film.mp4"}, dry["changes"])
+        self.fm.rename_item("a", "movies", old, "Komunia", 2024, versions={"Film komunijny.mp4": ""},
+                            extras={"Skrót film.mp4": "trailer"})
+        self.assertEqual(sorted(os.listdir(d)), ["Komunia (2024).mp4", "Skrót film-trailer.mp4"])
+        # the trailer is now an extra, not a movie version
+        self.assertEqual([f["name"] for f in self.fm.item_details("a", "movies", old)["files"]], ["Komunia (2024).mp4"])
+
     def test_conflict_and_bad_input(self):
         touch(os.path.join(self.m, "One (2001)", "One (2001).mkv"))
         touch(os.path.join(self.m, "Two (2002)", "Two (2002).mkv"))
