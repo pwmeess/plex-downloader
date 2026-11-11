@@ -256,8 +256,9 @@ cd ~/plex-downloader && ./fix.sh
 5. **Wyjście z BETA**,
 6. **Serwer** – status, wstrzymanie / uruchomienie, restart,
 7. **Moduły dodatkowe** – Plex Media Server, Samba, klient SMB, ffmpeg, Tailscale VPN (zalecany), WireGuard VPN: status, instalacja, aktualizacja, zatrzymanie do restartu, restart, odinstalowanie,
-8. **Odinstaluj**,
-9. **Anuluj**.
+8. **Zainstaluj inną wersję** – lista wersji stabilnych od 1.2.5 z opisem; ustawienia zostają (kopia trafia do `.version-snapshots`), powrót do najnowszej: opcja 1 albo `./update.sh`,
+9. **Odinstaluj**,
+10. **Anuluj**.
 
 Twoje filmy i seriale nigdy nie są ruszane.
 

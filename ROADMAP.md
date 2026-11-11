@@ -2,7 +2,7 @@
 
 🇬🇧 **English** · 🇵🇱 [Polski](ROADMAP.pl.md) · Changelog: [CHANGELOG.md](CHANGELOG.md)
 
-Last updated: 11 November 2026 · stable: **1.2.7** · BETA: **1.3.0-beta3**
+Last updated: 11 November 2026 · stable: **1.2.7** · BETA: **1.3.0-beta4**
 
 ## Ground rules (checked for every release)
 
@@ -38,6 +38,7 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 | 1.3.0-beta1 | Setup wizard (three installation types, disk and folder detection, network share commands) |
 | 1.3.0-beta2 | Settings export / import with a preview of changes, “SD card (not recommended)” disk template |
 | 1.3.0-beta3 | EN/PL guides (in the app + PDF); File manager: edit the Plex name, file types (versions / extras) and the poster (own image, video frame, TMDB); `fix.sh` Additional modules; wizard improvements after tests on a Pi Zero |
+| 1.3.0-beta4 | `fix.sh` → Install another version; the wizard also starts after switching a fresh stable installation to BETA |
 
 ## To fix
 
@@ -85,7 +86,7 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
   - [x] File manager: edit name and poster (pen icon on the card).
   - [x] Posters from video frames (ffmpeg): in the Edit window and automatically (Settings / wizard, off by default).
   - [x] `fix.sh` → Additional modules: Plex Media Server, Samba, SMB client, ffmpeg, Tailscale, WireGuard (status, install, update, stop / start, restart, uninstall).
-- [ ] `1.3.0-beta4`: "Install another version" in `fix.sh`.
+- [x] `1.3.0-beta4`: "Install another version" in `fix.sh`; the wizard also starts after switching a fresh stable installation to BETA.
 - [ ] `1.3.0`: stable release.
 
 **`fix.sh` – server submenu**
@@ -96,9 +97,9 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
 - [x] Stable (`main`) and BETA (`beta`) lines; installing and leaving BETA in `fix.sh` (since 1.2.5 / 1.2.6-beta).
 - [x] `CHANGELOG.md` (since 1.2.6).
 - [ ] Every release since **1.2.5** has a git tag `vX.Y.Z` and a GitHub release with notes.
-- [ ] New `fix.sh` option "Install another version": list of stable versions since 1.2.5 with a short description; backs up `config.json`, switches to the chosen tag, rebuilds the environment and restarts the service.
-- [ ] Panel and `update.sh` know when an older (pinned) version is installed; one step back to the latest.
-- [ ] Settings compatibility: newer versions migrate `config.json` automatically; going back restores a settings backup from that time if one exists. Covered by tests.
+- [x] New `fix.sh` option 8 "Install another version": list of stable versions since 1.2.5 with a short description (`releases.txt`, so it works without tags); copies `config.json` and the backups to `.version-snapshots`, switches the code, rebuilds the environment and restarts the service.
+- [x] Panel and `update.sh` know when an older (pinned) version is installed; one step back to the latest. (the `fix.sh` header shows “older version”, the panel announces the newest stable, `update.sh` / option 1 go back).
+- [x] Settings compatibility: newer versions migrate `config.json` automatically, older versions keep unknown keys; going back keeps the current settings, a copy from before the switch is in `.version-snapshots`.
 
 ## 1.4 – remote access over VPN
 

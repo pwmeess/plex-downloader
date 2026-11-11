@@ -2,6 +2,12 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
+## 1.3.0-beta4 – 2026-11-11 (BETA)
+
+- **`fix.sh` → 8 Install another version** (Uninstall and Cancel moved to 9 and 10): a list of the stable versions since 1.2.5 with a short description (from `releases.txt`, so it works without GitHub tags), the installed one marked. Before switching, `config.json` and the backups are copied to `.version-snapshots/<date>-<version>`; the settings themselves are kept (older versions ignore newer settings). The menu header shows “older version (newest: option 1)”; option 1 or `./update.sh` brings you back to the newest version. Leaving BETA this way keeps the current settings.
+- **Setup wizard after switching to BETA:** a fresh stable installation switched to BETA (only the example paths, no existing library folder) now gets the wizard after the next login; installations with existing library folders are not affected.
+- Guides and README: `fix.sh` options 8–10.
+
 ## 1.3.0-beta3 – 2026-11-11 (BETA)
 
 - **Guides in English and Polish** – in the app at `/guide` (chapters, language switch, works on phones) and as a **PDF** to download: how it works and the three setups, installing Plex Media Server (disks in fstab, permissions, SD-card test setup), installing Plex Downloader and the wizard, two devices (Samba share, mounting over SMB, different paths and folder names), everyday use (downloading, File manager, editing names and posters, backups, export / import, activity log), updating, `fix.sh` and Raspberry Pi diagnostics, SSH keys, home network security. Built from `docs/guide.<lang>.md` with `tools/build_guides.py`.

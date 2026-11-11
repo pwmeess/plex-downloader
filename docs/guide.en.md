@@ -256,8 +256,9 @@ cd ~/plex-downloader && ./fix.sh
 5. **Leave BETA**,
 6. **Server** – status, stop / start, restart,
 7. **Additional modules** – Plex Media Server, Samba, SMB client, ffmpeg, Tailscale VPN (recommended), WireGuard VPN: status, install, update, stop until the next restart, restart, uninstall,
-8. **Uninstall**,
-9. **Cancel**.
+8. **Install another version** – the stable versions since 1.2.5 with a short description; settings are kept (a copy goes to `.version-snapshots`), back to the newest: option 1 or `./update.sh`,
+9. **Uninstall**,
+10. **Cancel**.
 
 Your movies and TV shows are never touched.
 

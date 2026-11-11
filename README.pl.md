@@ -104,8 +104,9 @@ Menu otwiera się w oknie jak `raspi-config` (strzałki + Enter). Na bardzo mał
 5. **Leave BETA** – powrót do wersji stabilnej z usunięciem ustawień eksperymentalnych (bez dodatkowych pytań),
 6. **Server** – status (usługa, autostart, adres panelu, ostatnie wpisy logu), wstrzymanie serwera (autostart bez zmian) albo ponowne uruchomienie bez restartu Pi, restart procesu serwera,
 7. **Moduły dodatkowe** (BETA 1.3.0-beta3) – programy współpracujące z Plex Downloaderem: **Plex Media Server**, **Samba** (udostępnianie folderów przez SMB), **klient SMB** (`cifs-utils`, montowanie udziałów), **ffmpeg** (plakaty z kadrów filmu), **Tailscale VPN** (zalecany) i **WireGuard VPN**. Po wybraniu modułu najpierw widać jego status, potem tylko sensowne opcje: zainstaluj, zaktualizuj, zatrzymaj (do restartu, autostart bez zmian) / uruchom, uruchom ponownie, odinstaluj całkowicie. Odinstalowanie Plexa zostawia filmy; baza Plexa jest usuwana tylko po Twojej zgodzie.
-8. **Uninstall** – usuwa usługę z autostartu, opcjonalnie także folder aplikacji,
-9. **Cancel**.
+8. **Zainstaluj inną wersję** (BETA 1.3.0-beta4) – wybór wersji stabilnej od 1.2.5 z listy z krótkim opisem; ustawienia zostają (najpierw kopia do `.version-snapshots`), nagłówek menu pokazuje, że zainstalowana jest starsza wersja, a opcja 1 albo `./update.sh` wraca do najnowszej,
+9. **Uninstall** – usuwa usługę z autostartu, opcjonalnie także folder aplikacji,
+10. **Cancel**.
 
 Filmy i seriale na dyskach nigdy nie są ruszane.
 

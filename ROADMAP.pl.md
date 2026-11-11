@@ -2,7 +2,7 @@
 
 🇬🇧 [English](ROADMAP.md) · 🇵🇱 **Polski** · Historia zmian: [CHANGELOG.md](CHANGELOG.md)
 
-Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.2.7** · BETA: **1.3.0-beta3**
+Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.2.7** · BETA: **1.3.0-beta4**
 
 ## Stałe zasady (sprawdzać przy każdej wersji)
 
@@ -36,6 +36,7 @@ Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.2.7** · BETA: **1.3.0
 | 1.3.0-beta1 | Kreator konfiguracji (trzy sposoby instalacji, wykrywanie dysków i folderów, komendy do udziału sieciowego) |
 | 1.3.0-beta2 | Eksport i import ustawień z podglądem zmian, szablon dysku „Karta SD (niezalecane)” |
 | 1.3.0-beta3 | Instrukcje EN/PL (w aplikacji + PDF); Menedżer plików: edycja nazwy Plex, rodzaje plików (wersje / dodatki) i plakaty (własny obrazek, kadr z filmu, TMDB); `fix.sh` Moduły dodatkowe; poprawki kreatora po testach na Pi Zero |
+| 1.3.0-beta4 | `fix.sh` → Zainstaluj inną wersję; kreator startuje też po przełączeniu świeżej instalacji stabilnej na BETA |
 
 ## Do poprawy
 
@@ -83,7 +84,7 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
   - [x] Menedżer plików: edycja nazwy i plakatu (ikona długopisu na kafelku).
   - [x] Plakaty z kadrów filmu (ffmpeg): w oknie edycji i automatycznie (Ustawienia / kreator, domyślnie wyłączone).
   - [x] `fix.sh` → Moduły dodatkowe: Plex Media Server, Samba, klient SMB, ffmpeg, Tailscale, WireGuard (status, instalacja, aktualizacja, zatrzymaj / uruchom, restart, odinstalowanie).
-- [ ] `1.3.0-beta4`: „Zainstaluj inną wersję” w `fix.sh`.
+- [x] `1.3.0-beta4`: „Zainstaluj inną wersję” w `fix.sh`; kreator startuje też po przełączeniu świeżej instalacji stabilnej na BETA.
 - [ ] `1.3.0`: wydanie stabilne.
 
 **`fix.sh` – podmenu serwera**
@@ -94,9 +95,9 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
 - [x] Linie stabilna (`main`) i BETA (`beta`), instalacja i wyjście z BETA w `fix.sh` (od 1.2.5 / 1.2.6-beta).
 - [ ] Każde wydanie od **1.2.5** ma tag git `vX.Y.Z` i wydanie na GitHubie z listą zmian.
 - [x] Plik `CHANGELOG.md` z historią wersji (od 1.2.6).
-- [ ] Nowa opcja w `fix.sh`: „Zainstaluj inną wersję”. Pokazuje listę stabilnych wersji od 1.2.5 z krótkim opisem. Przed zmianą tworzy kopię `config.json`, potem przełącza kod na wybrany tag, odbudowuje środowisko i restartuje usługę.
-- [ ] Panel i `update.sh` wiedzą, że zainstalowana jest wersja przypięta (starsza). Dostępny jest powrót do najnowszej.
-- [ ] Zgodność ustawień: nowsze wersje migrują `config.json` automatycznie. Przy cofnięciu do starszej wersji przywracana jest kopia ustawień z tamtego okresu, jeśli istnieje. Zachowanie sprawdzić w testach.
+- [x] Nowa opcja 8 w `fix.sh`: „Zainstaluj inną wersję” – lista stabilnych wersji od 1.2.5 z krótkim opisem (`releases.txt`, działa bez tagów); kopia `config.json` i kopii zapasowych do `.version-snapshots`, przełączenie kodu, odbudowa środowiska i restart usługi.
+- [x] Panel i `update.sh` wiedzą, że zainstalowana jest wersja przypięta (starsza). Dostępny jest powrót do najnowszej. (nagłówek `fix.sh` pokazuje „starsza wersja”, panel informuje o najnowszej stabilnej, `update.sh` / opcja 1 wracają).
+- [x] Zgodność ustawień: nowsze wersje migrują `config.json` automatycznie, starsze zachowują nieznane klucze; przy cofnięciu ustawienia zostają, a kopia sprzed zmiany jest w `.version-snapshots`.
 
 ## 1.4 – dostęp zdalny przez VPN
 

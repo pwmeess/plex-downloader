@@ -8,6 +8,27 @@ import wizard  # noqa: E402
 
 
 class WizardTests(unittest.TestCase):
+    def test_wizard_done_for_older_configs(self):
+        """A config from before 1.3 (no wizard_done): set up only when one of its library folders exists here."""
+        import json
+        import config
+        saved = (config.CONFIG_PATH, config.BACKUP_DIR, config._config)
+        tmp = tempfile.mkdtemp()
+        try:
+            config.CONFIG_PATH = os.path.join(tmp, "config.json")
+            config.BACKUP_DIR = os.path.join(tmp, "backups")
+            lib = os.path.join(tmp, "Movies")
+            for paths, expected in (({"movies": "/plex_media/Plex/Movies"}, False), ({"movies": lib}, True)):
+                os.makedirs(lib, exist_ok=True)
+                with open(config.CONFIG_PATH, "w") as f:
+                    json.dump({"disks": [{"id": "a", "label": "A", "mount": "/", "paths": paths}]}, f)
+                config._config = None
+                self.assertEqual(config.load()["wizard_done"], expected)
+        finally:
+            config.CONFIG_PATH, config.BACKUP_DIR, config._config = saved
+            import shutil
+            shutil.rmtree(tmp, ignore_errors=True)
+
     def test_mounts_parsing(self):
         tmp = tempfile.mkdtemp(dir=wizard.home_dir())  # not under /tmp (skipped as a system folder)
         disk = os.path.join(tmp, "ssd 1T")
