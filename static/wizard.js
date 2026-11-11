@@ -2,8 +2,12 @@
 (() => {
   "use strict";
   const { $, $$, t, LANG, api, fmtSize, el, icon, toast, copyText, modal } = window.PD;
-  const REPO = "https://github.com/pwmeess/plex-downloader";
-  const GUIDE = { en: REPO + "#installation", pl: REPO + "/blob/main/README.pl.md#instalacja" };
+  // the guide is part of the app (/guide, EN/PL, also as PDF); every step links to its chapter
+  const guideFor = (id) => {
+    const anchor = { language: "wizard", theme: "wizard", type: "scenarios", plex: "wizard", tmdb: "tmdb", summary: "wizard",
+      disks: W && W.type === "network" ? "two-devices" : W && W.type === "sd" ? "plex-sd" : "wizard-disks" }[id] || "downloader";
+    return `/guide?lang=${LANG === "pl" ? "pl" : "en"}#${anchor}`;
+  };
   const STEPS = [
     { id: "language", label: () => t("Language") },
     { id: "theme", label: () => t("Theme") },
@@ -705,7 +709,7 @@
     const next = $("#wzNext");
     updateNext();
     next.hidden = step.id === "language";
-    const g = $("#wzGuide"); g.href = GUIDE[LANG] || GUIDE.en; g.textContent = t("Installation guide") + " ↗";
+    const g = $("#wzGuide"); g.href = guideFor(step.id); g.textContent = t("Installation guide") + " ↗";
     window.scrollTo({ top: 0 });
   }
   // „Skip” only when there is no key at all (nothing saved, nothing typed)

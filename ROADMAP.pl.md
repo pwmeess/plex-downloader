@@ -35,7 +35,7 @@ Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.2.7** · BETA: **1.3.0
 | 1.2.9-beta | 1.2.7 + zapowiedzi VPN, `fix.sh` w oknie z podmenu Serwer |
 | 1.3.0-beta1 | Kreator konfiguracji (trzy sposoby instalacji, wykrywanie dysków i folderów, komendy do udziału sieciowego) |
 | 1.3.0-beta2 | Eksport i import ustawień z podglądem zmian, szablon dysku „Karta SD (niezalecane)” |
-| 1.3.0-beta3 (w toku) | Menedżer plików: edycja nazwy Plex (tytuł, rok, TMDB ID, wydanie, wersje) i plakatu (własny obrazek lub TMDB) |
+| 1.3.0-beta3 | Instrukcje EN/PL (w aplikacji + PDF); Menedżer plików: edycja nazwy Plex, rodzaje plików (wersje / dodatki) i plakaty (własny obrazek, kadr z filmu, TMDB); `fix.sh` Moduły dodatkowe; poprawki kreatora po testach na Pi Zero |
 
 ## Do poprawy
 
@@ -59,7 +59,7 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
   - [x] „Plex na innym urządzeniu”: adres IP serwera Plex, sprawdzenie połączenia, wskazanie zamontowanego udziału sieciowego, test zapisu. Uwaga w ⓘ, że Plex i Downloader muszą widzieć te same pliki (ścieżki mogą się różnić).
 - [x] Sprawdzenie uprawnień do zapisu i wolnego miejsca na każdym folderze.
 - [x] Tworzenie brakujących folderów na żądanie.
-- [ ] W każdym kroku linki do instrukcji: HTML w nowym oknie i PDF do pobrania (na razie link prowadzi do README; instrukcje HTML/PDF w beta3).
+- [x] W każdym kroku linki do instrukcji: rozdział dla danego kroku otwiera się w nowym oknie (HTML, z pobieraniem PDF).
 - [x] Ponowne uruchomienie kreatora z Ustawień.
 
 **Ustawienia**
@@ -67,19 +67,19 @@ Wszystkie poprawki z poprzedniej listy weszły do 1.2.6 / 1.2.8-beta (szczegół
 - [x] Gotowy szablon „Biblioteka na karcie SD (niezalecana)” w zakładce Dyski.
 
 **Instrukcje (EN i PL, HTML w aplikacji + PDF)**
-- [ ] Instalacja serwera Plex na Raspberry Pi, w tym:
-  - [ ] wariant z dyskami zewnętrznymi (fstab, uprawnienia),
-  - [ ] wariant testowy z biblioteką na karcie SD (niezalecany): tworzenie folderu, udostępnienie przez SMB, ograniczenia.
-- [ ] Instalacja Plex Downloadera (`setup.sh`, pierwsze logowanie, kreator).
-- [ ] Konfiguracja na dwóch urządzeniach: stałe IP, udział SMB/NFS montowany w fstab, ręczne dodanie serwera Plex w Ustawieniach.
-  - [ ] Przykład (już w README): jeden dysk, dwie ścieżki (`/media/ssd1` na Pi z Plexem, `/mnt/ssd1` na Pi z Downloaderem), „Aktualizuj ścieżki” po imporcie, jedna kategoria z różnymi nazwami folderów na dwóch dyskach (`Concerts` / `Live`) i oba foldery w jednej bibliotece Plex, hasło ze znakiem `\` w `.smbcredentials`.
-- [ ] Obsługa: Menedżer plików, kopie ustawień, dziennik, `update.sh`, `fix.sh`, przywracanie ustawień fabrycznych.
-- [ ] Bezpieczeństwo sieci domowej (bez DMZ i przekierowania portu 8800, mocne hasła, Samba z `valid users`).
+- [x] Instalacja serwera Plex na Raspberry Pi, w tym:
+  - [x] wariant z dyskami zewnętrznymi (fstab, uprawnienia),
+  - [x] wariant testowy z biblioteką na karcie SD (niezalecany): tworzenie folderu, udostępnienie przez SMB, ograniczenia.
+- [x] Instalacja Plex Downloadera (`setup.sh`, pierwsze logowanie, kreator).
+- [x] Konfiguracja na dwóch urządzeniach: stałe IP, udział SMB/NFS montowany w fstab, ręczne dodanie serwera Plex w Ustawieniach.
+  - [x] Przykład (już w README): jeden dysk, dwie ścieżki (`/media/ssd1` na Pi z Plexem, `/mnt/ssd1` na Pi z Downloaderem), „Aktualizuj ścieżki” po imporcie, jedna kategoria z różnymi nazwami folderów na dwóch dyskach (`Concerts` / `Live`) i oba foldery w jednej bibliotece Plex, hasło ze znakiem `\` w `.smbcredentials`.
+- [x] Obsługa: Menedżer plików, kopie ustawień, dziennik, `update.sh`, `fix.sh`, przywracanie ustawień fabrycznych.
+- [x] Bezpieczeństwo sieci domowej (bez DMZ i przekierowania portu 8800, mocne hasła, Samba z `valid users`).
 
 **Kolejne kroki wydań**
 - [x] `1.3.0-beta1`: kreator pierwszego uruchomienia (podmenu serwera w `fix.sh` weszło już do 1.2.9-beta).
 - [x] `1.3.0-beta2`: eksport i import ustawień, szablon „Karta SD”.
-- [ ] `1.3.0-beta3`: instrukcje EN/PL (HTML w aplikacji + PDF).
+- [x] `1.3.0-beta3`: instrukcje EN/PL (HTML w aplikacji + PDF).
   - [x] Menedżer plików: edycja nazwy i plakatu (ikona długopisu na kafelku).
   - [x] Plakaty z kadrów filmu (ffmpeg): w oknie edycji i automatycznie (Ustawienia / kreator, domyślnie wyłączone).
   - [x] `fix.sh` → Moduły dodatkowe: Plex Media Server, Samba, klient SMB, ffmpeg, Tailscale, WireGuard (status, instalacja, aktualizacja, zatrzymaj / uruchom, restart, odinstalowanie).

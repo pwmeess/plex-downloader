@@ -8,7 +8,7 @@ A lightweight download manager for the Raspberry Pi. Paste a direct link to a vi
 - **TV shows:** `…/TV Shows/Show/Season 01/Show - S01E02.mkv`
 - **Kids and custom categories:** `…/Kids/Title (YYYY)/…`, `…/Concerts/…` and so on
 
-Changelog: [CHANGELOG.md](CHANGELOG.md) · Roadmap: [ROADMAP.md](ROADMAP.md)
+Changelog: [CHANGELOG.md](CHANGELOG.md) · Roadmap: [ROADMAP.md](ROADMAP.md) · **Guide:** [English](docs/guide.en.md) · [PDF](static/guide/plex-downloader-guide-en.pdf) (in the app: `/guide`, BETA 1.3.0-beta3)
 
 ## Features
 

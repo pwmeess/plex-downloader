@@ -699,5 +699,9 @@
  "Folders found next to your library folders that do not match a category. Click one to add it as a new category with this folder (e.g. Movies02 as “Movies 2”). Music and photo folders are skipped.": "Foldery obok folderów biblioteki, które nie pasują do żadnej kategorii. Kliknij, aby dodać nową kategorię z tym folderem (np. Movies02 jako „Filmy 2”). Foldery z muzyką i zdjęciami są pomijane.",
  "No Movies or TV Shows folder was found. Tick “Create missing folders”, enter a folder by hand – or use “Skip – set up disks later”.": "Nie znaleziono folderu Filmy ani Seriale. Zaznacz „Utwórz brakujące foldery”, wpisz folder ręcznie albo użyj „Pomiń – skonfiguruję dyski później”.",
  "Other folders on this disk:": "Inne foldery na tym dysku:",
- "does not exist – left out": "nie istnieje – zostanie pominięty"
+ "does not exist – left out": "nie istnieje – zostanie pominięty",
+ "Guide": "Instrukcja",
+ "Back to the panel": "Powrót do panelu",
+ "The guide is not available.": "Instrukcja jest niedostępna.",
+ "Guide (HTML / PDF)": "Instrukcja (HTML / PDF)"
 }

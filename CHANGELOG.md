@@ -2,7 +2,10 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
-## 1.3.0-beta3 – 2026-11-11 (BETA, in progress – the EN/PL guides follow)
+## 1.3.0-beta3 – 2026-11-11 (BETA)
+
+- **Guides in English and Polish** – in the app at `/guide` (chapters, language switch, works on phones) and as a **PDF** to download: how it works and the three setups, installing Plex Media Server (disks in fstab, permissions, SD-card test setup), installing Plex Downloader and the wizard, two devices (Samba share, mounting over SMB, different paths and folder names), everyday use (downloading, File manager, editing names and posters, backups, export / import, activity log), updating, `fix.sh` and Raspberry Pi diagnostics, SSH keys, home network security. Built from `docs/guide.<lang>.md` with `tools/build_guides.py`.
+- “Installation guide” in every wizard step opens the chapter for that step; **Settings → Account → Guide (HTML / PDF)**.
 
 - **File manager – edit name and poster:** a pen icon above the trash icon on every movie / TV show card opens a window:
   - title, year and **TMDB ID** (with “Find in TMDB” by title and year), **edition** (up to 3 tags, like when downloading) and the **version** of every video file (e.g. 1080p, 4K),

@@ -37,7 +37,7 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 | 1.2.9-beta | 1.2.7 + VPN preview, `fix.sh` in a window with the Server submenu |
 | 1.3.0-beta1 | Setup wizard (three installation types, disk and folder detection, network share commands) |
 | 1.3.0-beta2 | Settings export / import with a preview of changes, “SD card (not recommended)” disk template |
-| 1.3.0-beta3 (in progress) | File manager: edit the Plex name (title, year, TMDB ID, edition, versions) and the poster (own image or TMDB) |
+| 1.3.0-beta3 | EN/PL guides (in the app + PDF); File manager: edit the Plex name, file types (versions / extras) and the poster (own image, video frame, TMDB); `fix.sh` Additional modules; wizard improvements after tests on a Pi Zero |
 
 ## To fix
 
@@ -61,7 +61,7 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
   - [x] "Plex on another device": Plex server IP, connection check, mounted network share, write test. ⓘ note that Plex and Downloader must see the same files (paths may differ).
 - [x] Check write permissions and free space for every folder.
 - [x] Create missing folders on request.
-- [ ] Links to the guides in every step: HTML in a new window and PDF to download (for now the link opens the README; HTML/PDF guides come in beta3).
+- [x] Links to the guides in every step: the guide chapter for that step opens in a new window (HTML, with PDF download).
 - [x] Re-run the wizard from Settings.
 
 **Settings**
@@ -69,19 +69,19 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
 - [x] Ready-made "Library on the SD card (not recommended)" template in the Disks tab.
 
 **Guides (EN and PL, HTML in the app + PDF)**
-- [ ] Installing Plex Media Server on a Raspberry Pi:
-  - [ ] with external disks (fstab, permissions),
-  - [ ] test setup with the library on the SD card (not recommended): folder, SMB share, limitations.
-- [ ] Installing Plex Downloader (`setup.sh`, first login, wizard).
-- [ ] Two-device setup: fixed IPs, SMB/NFS share in fstab, adding the Plex server manually.
-  - [ ] Example (already in the README): one disk with two paths (`/media/ssd1` on the Plex Pi, `/mnt/ssd1` on the Downloader Pi), "Update paths" after an import, one category with different folder names on two disks (`Concerts` / `Live`) and both folders in one Plex library, a password with `\` in `.smbcredentials`.
-- [ ] Everyday use: File manager, settings backups, activity log, `update.sh`, `fix.sh`, factory reset.
-- [ ] Home network security (no DMZ, no port forwarding for 8800, strong passwords, Samba with `valid users`).
+- [x] Installing Plex Media Server on a Raspberry Pi:
+  - [x] with external disks (fstab, permissions),
+  - [x] test setup with the library on the SD card (not recommended): folder, SMB share, limitations.
+- [x] Installing Plex Downloader (`setup.sh`, first login, wizard).
+- [x] Two-device setup: fixed IPs, SMB/NFS share in fstab, adding the Plex server manually.
+  - [x] Example (already in the README): one disk with two paths (`/media/ssd1` on the Plex Pi, `/mnt/ssd1` on the Downloader Pi), "Update paths" after an import, one category with different folder names on two disks (`Concerts` / `Live`) and both folders in one Plex library, a password with `\` in `.smbcredentials`.
+- [x] Everyday use: File manager, settings backups, activity log, `update.sh`, `fix.sh`, factory reset.
+- [x] Home network security (no DMZ, no port forwarding for 8800, strong passwords, Samba with `valid users`).
 
 **Release steps**
 - [x] `1.3.0-beta1`: first-run wizard (the `fix.sh` server submenu already shipped in 1.2.9-beta).
 - [x] `1.3.0-beta2`: settings export / import, SD-card template.
-- [ ] `1.3.0-beta3`: EN/PL guides (HTML in the app + PDF).
+- [x] `1.3.0-beta3`: EN/PL guides (HTML in the app + PDF).
   - [x] File manager: edit name and poster (pen icon on the card).
   - [x] Posters from video frames (ffmpeg): in the Edit window and automatically (Settings / wizard, off by default).
   - [x] `fix.sh` → Additional modules: Plex Media Server, Samba, SMB client, ffmpeg, Tailscale, WireGuard (status, install, update, stop / start, restart, uninstall).

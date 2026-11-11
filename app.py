@@ -132,6 +132,21 @@ def index():
     return render_template("index.html", version=VERSION, user=session.get("user"), page="home")
 
 
+@app.route("/guide")
+def guide():
+    """EN/PL guide (also before logging in – linked from the setup wizard); built by tools/build_guides.py."""
+    from markupsafe import Markup
+    glang = request.args.get("lang") or i18n.current() or "en"
+    if glang not in ("en", "pl"):
+        glang = "en"
+    try:
+        with open(os.path.join(BASE_DIR, "static", "guide", "guide.%s.html" % glang), encoding="utf-8") as f:
+            content = Markup(f.read())
+    except OSError:
+        content = Markup("<p>%s</p>") % _("The guide is not available.")
+    return render_template("guide.html", version=VERSION, user=session.get("user"), glang=glang, content=content)
+
+
 @app.route("/setup")
 @login_required
 def setup_wizard():

@@ -142,7 +142,8 @@
         <span class="muted" id="logInfo"></span></div>
 
       <h3>{{ _("Setup wizard") }} <button type="button" class="info-i" data-tip="{{ _('Runs the first-run wizard again: disks and folders, Plex server and TMDB key. Nothing changes until you click Finish, and your current settings are kept as a restore point.') }}">i</button></h3>
-      <div class="log-row"><a class="btn-soft" href="/setup?fresh=1"><svg class="i"><use href="#i-retry"/></svg>{{ _("Run setup wizard") }}</a></div>
+      <div class="log-row"><a class="btn-soft" href="/setup?fresh=1"><svg class="i"><use href="#i-retry"/></svg>{{ _("Run setup wizard") }}</a>
+        <a class="btn-soft" href="/guide" target="_blank" rel="noopener"><svg class="i"><use href="#i-folder"/></svg>{{ _("Guide (HTML / PDF)") }}</a></div>
 
       <h3 class="fold-h"><button type="button" class="fold" id="cmdToggle" aria-expanded="false"><svg class="i"><use href="#i-chev-r"/></svg>{{ _("Terminal commands (SSH)") }}</button> <button type="button" class="info-i" data-tip="{{ _('Log in to the Raspberry Pi over SSH (Terminal on Mac, PowerShell on Windows), then copy a command with the button on the right and paste it into the terminal.') }}">i</button></h3>
       <div id="cmdList" class="cmd-list" hidden></div>
