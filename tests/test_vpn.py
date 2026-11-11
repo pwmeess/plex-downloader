@@ -189,5 +189,52 @@ class TestCli(unittest.TestCase):
         self.assertFalse(vpn.via_tailscale_proxy("192.168.1.20", {"Host": "x.ts.net"}))
 
 
+IP_FAKE = r"""#!/bin/sh
+# imitates `ip` on a Raspberry Pi with one WireGuard connection (wg0) – a synthetic test, no real WireGuard
+case "$*" in
+  "-o link show type wireguard") printf '5: wg0: <POINTOPOINT,NOARP,UP,LOWER_UP> mtu 1420 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000\\    link/none \n' ;;
+  "-o addr show dev wg0") printf '5: wg0    inet 10.8.0.1/24 scope global wg0\\       valid_lft forever preferred_lft forever\n5: wg0    inet6 fd00:8::1/64 scope global\n' ;;
+esac
+"""
+SYSTEMCTL_FAKE = "#!/bin/sh\n[ \"$3\" = \"wg-quick@wg0\" ] && exit 0\nexit 3\n"
+
+
+class TestWireGuard(unittest.TestCase):
+    """Synthetic: fake `ip`, `systemctl` and `wg` commands imitate a Raspberry Pi with WireGuard."""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.path = os.environ.get("PATH", "")
+
+    def tearDown(self):
+        os.environ["PATH"] = self.path
+        self.tmp.cleanup()
+
+    def fake(self, name, body):
+        exe = os.path.join(self.tmp.name, name)
+        with open(exe, "w") as f:
+            f.write(body)
+        os.chmod(exe, 0o755)
+
+    def test_interface(self):
+        self.fake("ip", IP_FAKE)
+        self.fake("systemctl", SYSTEMCTL_FAKE)
+        self.fake("wg", "#!/bin/sh\nexit 0\n")
+        os.environ["PATH"] = self.tmp.name + os.pathsep + self.path
+        w = vpn.wireguard_status()
+        self.assertTrue(w["installed"])
+        self.assertEqual(w["interfaces"], [{"name": "wg0", "addresses": ["10.8.0.1/24", "fd00:8::1/64"], "service": True}])
+
+    def test_installed_without_connection(self):
+        self.fake("ip", "#!/bin/sh\nexit 0\n")
+        self.fake("wg", "#!/bin/sh\nexit 0\n")
+        os.environ["PATH"] = self.tmp.name + os.pathsep + self.path
+        self.assertEqual(vpn.wireguard_status(), {"installed": True, "interfaces": []})
+
+    def test_not_installed(self):
+        self.fake("ip", "#!/bin/sh\nexit 0\n")
+        os.environ["PATH"] = self.tmp.name
+        self.assertEqual(vpn.wireguard_status(), {"installed": False, "interfaces": []})
+
+
 if __name__ == "__main__":
     unittest.main()

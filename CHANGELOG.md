@@ -2,6 +2,12 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
+## 1.4.0-beta3 – 2026-11-11 (BETA)
+
+- **Guides (EN/PL, HTML and PDF): new chapter 8 “Access from outside your home (VPN)”** – installing Tailscale (also with a broken Raspbian mirror), logging in from the panel, phone and computer, HTTPS in the VPN and Funnel, where the panel is available, what the VPN tab shows, autostart, WireGuard, troubleshooting. Security is now chapter 9.
+- **WireGuard:** status checked in synthetic tests (simulated system commands, no real WireGuard connection) – marked so in the guide.
+- VPN tab: link to the VPN chapter of the guide instead of the “Next in BETA” list.
+
 ## 1.4.0-beta2 – 2026-11-11 (BETA)
 
 - **HTTPS in the VPN (SSL):** Settings → VPN → “Switch HTTPS on”. Tailscale issues a real certificate for the panel's name in your VPN (`https://<name>.<tailnet>.ts.net`, no port number), so the browser shows a padlock instead of “Not secure”. Only your devices in Tailscale can open it; nothing is opened on the internet. If HTTPS certificates are not allowed in the Tailscale account yet, the panel shows the link to allow them. The HTTPS address is first in the list and in the QR code. In the home network the panel stays at its usual http address.

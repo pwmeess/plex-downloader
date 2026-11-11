@@ -688,7 +688,6 @@
  "Back to the panel": "Powrót do panelu",
  "The guide is not available.": "Instrukcja jest niedostępna.",
  "Guide (HTML / PDF)": "Instrukcja (HTML / PDF)",
- "A VPN chapter in the guide (English and Polish).": "Rozdział o VPN w poradniku (po polsku i angielsku).",
  "After logging in, this tab updates by itself within a few seconds.": "Po zalogowaniu ta zakładka sama się odświeży w ciągu kilku sekund.",
  "Approve it in the Tailscale admin console (Machines), then click Refresh.": "Zatwierdź go w konsoli administracyjnej Tailscale (Machines), a potem kliknij Odśwież.",
  "Checking…": "Sprawdzam…",
@@ -701,7 +700,6 @@
  "Install the Tailscale app on your phone or computer and log in to the same account.": "Zainstaluj aplikację Tailscale na telefonie lub komputerze i zaloguj się na to samo konto.",
  "Log in on your phone": "Zaloguj się na telefonie",
  "Name in the VPN": "Nazwa w VPN",
- "Next in BETA": "Następnie w BETA",
  "No other devices yet – install the Tailscale app on your phone and log in to the same account.": "Nie ma jeszcze innych urządzeń – zainstaluj aplikację Tailscale na telefonie i zaloguj się na to samo konto.",
  "Nothing to encode.": "Brak tekstu do zakodowania.",
  "On the Raspberry Pi run the repair menu and choose Additional modules → Tailscale VPN → Install. At the end it asks whether to log in – you can do that here as well.": "Na Raspberry Pi uruchom menu naprawy i wybierz Moduły dodatkowe → Tailscale VPN → Zainstaluj. Na końcu padnie pytanie o logowanie – możesz to zrobić także tutaj.",
@@ -785,5 +783,6 @@
  "out of date": "nieaktualna",
  "security update": "pilna aktualizacja",
  "current: {v}": "aktualna to: {v}",
- "Update on the Raspberry Pi: fix.sh → Additional modules → Tailscale → Update, or:": "Zaktualizuj na Raspberry Pi: fix.sh → Moduły dodatkowe → Tailscale → Zaktualizuj, albo:"
+ "Update on the Raspberry Pi: fix.sh → Additional modules → Tailscale → Update, or:": "Zaktualizuj na Raspberry Pi: fix.sh → Moduły dodatkowe → Tailscale → Zaktualizuj, albo:",
+ "Guide: access from outside your home (VPN)": "Poradnik: dostęp spoza domu (VPN)"
 }
