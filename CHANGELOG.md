@@ -2,6 +2,18 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
+## 1.4.0 – 2026-11-11 (stable)
+
+Everything from 1.4.0-beta1 … beta3 (details below) and 1.3.1:
+
+- **Remote access over VPN (Tailscale) – Settings → VPN:** status, the panel's address and name in your VPN with a QR code for the phone, devices in your VPN, Tailscale version check (up to date / out of date / security update), log in and log out / change account from the panel, VPN badge in the header.
+- **HTTPS in the VPN** with Tailscale's own certificate; a warning if Tailscale Funnel would publish the panel on the internet.
+- **Home network only / home network + VPN.**
+- **WireGuard status** (checked in synthetic tests only).
+- `fix.sh` → Additional modules: autostart on / off; the main Raspbian archive when a mirror fails.
+- **Guides (EN/PL):** new chapter 8 “Access from outside your home (VPN)”.
+- File manager: the SHA-256 step is struck through when verification is skipped; phones: settings and dialogs use the full screen width.
+
 ## 1.4.0-beta3 – 2026-11-11 (BETA)
 
 - **Guides (EN/PL, HTML and PDF): new chapter 8 “Access from outside your home (VPN)”** – installing Tailscale (also with a broken Raspbian mirror), logging in from the panel, phone and computer, HTTPS in the VPN and Funnel, where the panel is available, what the VPN tab shows, autostart, WireGuard, troubleshooting. Security is now chapter 9.
