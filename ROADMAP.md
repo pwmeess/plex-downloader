@@ -50,7 +50,7 @@ All items from the previous list shipped in 1.2.6 / 1.2.8-beta. Remaining:
 ## Demo website (Netlify)
 
 - [x] Demo (first 1.2.5, then 1.2.6, now **1.3.0**): the real interface with an in-browser simulation, EN/PL, welcome window, data kept for max. 24 h, log out wipes everything, external links blocked, made-up names, IPs and keys, generated posters.
-- [ ] Publish on Netlify and link the demo from the README.
+- [x] Published at https://plexdownloader.netlify.app and linked from the README.
 - [ ] Demo sources (`demo.js`, build script) in the repository under `demo/`, so it can be rebuilt with one command after each stable release.
 - [x] Since 1.3: the guide link in the welcome window opens the EN/PL guide (HTML and PDF).
 

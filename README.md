@@ -8,6 +8,8 @@ A lightweight download manager for the Raspberry Pi. Paste a direct link to a vi
 - **TV shows:** `…/TV Shows/Show/Season 01/Show - S01E02.mkv`
 - **Kids and custom categories:** `…/Kids/Title (YYYY)/…`, `…/Concerts/…` and so on
 
+**Live demo:** [plexdownloader.netlify.app](https://plexdownloader.netlify.app) (runs only in your browser)
+
 Changelog: [CHANGELOG.md](CHANGELOG.md) · Roadmap: [ROADMAP.md](ROADMAP.md) · **Guide:** [English](docs/guide.en.md) · [PDF](static/guide/plex-downloader-guide-en.pdf) (in the app: `/guide`)
 
 ## Features

@@ -8,6 +8,8 @@ Lekki menedżer pobierania dla Raspberry Pi. Wklejasz bezpośredni link do pliku
 - **Seriale:** `…/TV Shows/Serial/Season 01/Serial - S01E02.mkv`
 - **Dla dzieci i własne kategorie:** `…/Kids/Tytuł (YYYY)/…`, `…/Concerts/…` itd.
 
+**Demo online:** [plexdownloader.netlify.app](https://plexdownloader.netlify.app) (działa tylko w Twojej przeglądarce)
+
 Historia zmian: [CHANGELOG.md](CHANGELOG.md) · Plan kolejnych wersji: [ROADMAP.pl.md](ROADMAP.pl.md). · **Instrukcja:** [po polsku](docs/guide.pl.md) · [PDF](static/guide/plex-downloader-guide-pl.pdf) (w aplikacji: `/guide`)
 
 ## Funkcje
