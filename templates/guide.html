@@ -20,6 +20,26 @@
 <main class="guide-wrap">
 {{ content }}
 </main>
+<script>
+  // a Copy button on every command block (works on http in the home network too)
+  (() => {
+    const label = {{ (_("Copy"))|tojson }}, done = {{ (_("Copied"))|tojson }};
+    const copy = async (text) => {
+      try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* not a secure context */ }
+      const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      ta.remove(); return ok;
+    };
+    document.querySelectorAll(".guide-body pre").forEach((pre) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "guide-copy"; b.textContent = label;
+      b.addEventListener("click", async () => {
+        const ok = await copy(pre.querySelector("code") ? pre.querySelector("code").innerText : pre.innerText);
+        b.textContent = ok ? done : "✕"; setTimeout(() => { b.textContent = label; }, 1500);
+      });
+      pre.appendChild(b);
+    });
+  })();
+</script>
 <div class="foot-ver">Plex Downloader · {{ _("version") }} {{ version }}</div>
 </body>
 </html>

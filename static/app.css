@@ -965,7 +965,9 @@ dialog.window.modal .win-foot { flex-wrap: wrap; }
 .guide-wrap { display: grid; grid-template-columns: 240px minmax(0, 760px); gap: 36px; justify-content: center; padding: 28px 24px 40px; }
 .guide-toc { position: sticky; top: 84px; align-self: start; font-size: 14px; }
 .guide-toc b { display: block; margin-bottom: 8px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
-.guide-toc ol { margin: 0; padding-left: 20px; line-height: 1.9; }
+.guide-toc ol, .guide-toc ul { margin: 0; padding-left: 0; list-style: none; line-height: 1.45; }
+.guide-toc li { margin: 0 0 9px; }
+.guide-toc .st { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; color: var(--accent); }
 .guide-toc a { color: var(--text); text-decoration: none; }
 .guide-toc a:hover { color: var(--accent); }
 .guide-body { line-height: 1.65; font-size: 15px; min-width: 0; }
@@ -996,3 +998,17 @@ dialog.window.modal .win-foot { flex-wrap: wrap; }
 }
 /* move window: “Skip SHA-256 verification” strikes the verification step through */
 .plan-how.skip .sha { text-decoration: line-through; opacity: .55; }
+/* guide: stage badges, callouts, contents table, copy buttons */
+.guide-body .kicker { color: var(--accent); font-weight: 700; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.guide-body p.lead { color: var(--muted); font-size: 16px; padding-bottom: 14px; border-bottom: 2px solid var(--line); }
+.guide-body p.toc-title { font-weight: 700; margin: 18px 0 6px; }
+.guide-body h2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.guide-body h2 .stage { background: var(--text); color: var(--bg); font-size: 11px; font-weight: 700; letter-spacing: .05em; padding: 3px 8px; border-radius: 4px; }
+.guide-body blockquote { margin: 14px 0; padding: 10px 14px; border-left: 3px solid #5b8fd6; background: rgba(91,143,214,.10); border-radius: 0 8px 8px 0; }
+.guide-body blockquote.warn { border-left-color: var(--warn); background: rgba(232,176,74,.12); }
+.guide-body blockquote.tip { border-left-color: var(--ok); background: rgba(80,180,110,.10); }
+.guide-body blockquote p { margin: 4px 0; }
+.guide-body pre { position: relative; padding-right: 74px; }
+.guide-body .guide-copy { position: absolute; top: 6px; right: 6px; font: inherit; font-size: 12px; padding: 3px 9px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; }
+.guide-body .guide-copy:hover { border-color: var(--accent); color: var(--accent); }
