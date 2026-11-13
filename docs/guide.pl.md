@@ -340,11 +340,17 @@ chmod +x setup.sh update.sh fix.sh
 
 Instalator przeprowadzi Cię przez 5 kroków:
 
-1. Zapyta o język — wpisz `2` (polski) i naciśnij **Enter**.
-2. Zainstaluje narzędzia systemowe (`aria2`, Python, `ffmpeg`). Na Pi Zero może to potrwać 5–15 minut.
-3. Przygotuje środowisko Pythona. Przy słabym Wi-Fi komunikaty `Retrying…` są normalne. Gdyby instalacja przerwała się z braku sieci, uruchom ponownie `./setup.sh` — nic nie przepadnie.
-4. Poprosi o **nazwę użytkownika i hasło do panelu** (hasło min. 6 znaków, wpisywane „na ślepo”).
-5. Uruchomi usługę w tle i wyświetli adres panelu, np. `http://192.168.1.10:8800` (port **8800**, nie 8080).
+1. **Zapyta o język** — wpisz `2` (polski) i naciśnij **Enter**.
+2. **Zainstaluje narzędzia systemowe** (`aria2`, Python, `ffmpeg`). Na Pi Zero może to potrwać 5–15 minut — **nie przerywaj, nawet jeśli przez dłuższą chwilę na ekranie nic się nie zmienia**.
+3. **Przygotuje środowisko Pythona.** Przy słabym Wi-Fi komunikaty `Retrying…` są normalne. Gdyby instalacja przerwała się z braku sieci, **wklej polecenie** (całe, razem z przejściem do folderu programu):
+
+   ```bash
+   cd ~/plex-downloader && ./setup.sh
+   ```
+
+   **Instalacja ruszy ponownie — nie stracisz postępu:** to, co już zostało zainstalowane, zostaje, a instalator dokończy resztę.
+4. **Poprosi o utworzenie konta administratora panelu** — podaj **nową** nazwę użytkownika i **nowe hasło** do panelu w przeglądarce (hasło min. 6 znaków, wpisujesz je dwa razy). To konto tylko do panelu — nie musi być takie samo jak login do Raspberry Pi. Sam **Enter** przy nazwie użytkownika przyjmie podpowiedź `admin`. **Pamiętaj:** hasło wpisujesz „na ślepo” — **na ekranie nie pojawiają się żadne kropki ani gwiazdki**. Zapisz je.
+5. **Uruchomi usługę w tle i wyświetli adres panelu**, np. `http://192.168.1.10:8800` — zwróć uwagę na port **8800** (nie 8080). Ten adres wpiszesz w przeglądarce w kroku 3.3.
 
 ### 3.2. Instalacja Plex Media Server {#plex-install}
 
@@ -392,7 +398,7 @@ Ten etap dotyczy sytuacji, gdy masz dwa urządzenia: np. **Pi 4 z dyskami i Plex
 
 ### 4.1. Na Pi z Plexem: udostępnienie dysku (Samba) {#samba}
 
-Zainstaluj serwer plików Samba: `./fix.sh` → **7 Moduły dodatkowe → Samba → Zainstaluj** (albo `sudo apt install -y samba`). Otwórz plik konfiguracyjny:
+Zainstaluj serwer plików Samba: `cd ~/plex-downloader && ./fix.sh` → **7 Moduły dodatkowe → Samba → Zainstaluj** (albo `sudo apt install -y samba`). Otwórz plik konfiguracyjny:
 
 ```bash
 sudo nano /etc/samba/smb.conf
@@ -425,7 +431,7 @@ sudo systemctl restart smbd
 
 ### 4.2. Na Pi z Downloaderem: podpięcie udziału {#cifs}
 
-Zainstaluj obsługę udziałów sieciowych i utwórz punkt montowania (albo `./fix.sh` → **7 → Klient SMB – montowanie udziałów (cifs-utils)**):
+Zainstaluj obsługę udziałów sieciowych i utwórz punkt montowania (albo `cd ~/plex-downloader && ./fix.sh` → **7 → Klient SMB – montowanie udziałów (cifs-utils)**):
 
 ```bash
 sudo apt update
@@ -562,8 +568,8 @@ Ruch w Tailscale jest zawsze szyfrowany, ale przy adresie `http://` przeglądark
 - **Gdzie dostępny jest panel:** **Sieć domowa + VPN** (domyślnie) albo **Tylko sieć domowa** — wtedy panel przez VPN jest zablokowany, a Tailscale działa dalej np. dla SSH i Plexa. Z powrotem przełączysz tylko z domu.
 - **Wersja Tailscale** ma znaczek **aktualna** / **nieaktualna** (czerwony **pilna aktualizacja** = poprawka bezpieczeństwa). Aktualizacja: `fix.sh` → 7 → Tailscale → **Zaktualizuj**.
 - **Wyloguj / zmień konto** — Raspberry Pi opuszcza sieć Tailscale; potem **Zaloguj** daje nowy link.
-- **Autostart:** `./fix.sh` → 7 → Tailscale → **Autostart: włączony → wyłącz** (nie wystartuje po restarcie). Rozłączenie na chwilę: `sudo tailscale down`, z powrotem: `sudo tailscale up` albo **Połącz** w panelu.
-- **WireGuard** — dla osób z własnym serwerem WireGuard (wymaga przekierowania portu UDP 51820 na routerze i ręcznej konfiguracji `/etc/wireguard/wg0.conf`). Narzędzia: `./fix.sh` → 7 → **WireGuard VPN**. Zakładka VPN pokazuje aktywne połączenia i adresy.
+- **Autostart:** `cd ~/plex-downloader && ./fix.sh` → 7 → Tailscale → **Autostart: włączony → wyłącz** (nie wystartuje po restarcie). Rozłączenie na chwilę: `sudo tailscale down`, z powrotem: `sudo tailscale up` albo **Połącz** w panelu.
+- **WireGuard** — dla osób z własnym serwerem WireGuard (wymaga przekierowania portu UDP 51820 na routerze i ręcznej konfiguracji `/etc/wireguard/wg0.conf`). Narzędzia: `cd ~/plex-downloader && ./fix.sh` → 7 → **WireGuard VPN**. Zakładka VPN pokazuje aktywne połączenia i adresy.
 
 > [!INFO] Obsługę WireGuard sprawdzono wyłącznie w **testach syntetycznych** (symulowane polecenia systemowe, bez prawdziwego połączenia). Jeśli u Ciebie coś działa inaczej, zgłoś to na GitHubie (Issues).
 
@@ -647,7 +653,7 @@ Po kolejnym restarcie `journalctl -b -1` pokaże zdarzenia z chwili tuż przed a
 
 | Objaw | Co sprawdzić |
 |---|---|
-| Panel się nie otwiera (`http://…:8800`) | Czy Raspberry Pi jest włączone i ma ten sam adres (`hostname -I`)? Stan usługi: `./fix.sh` → **6 Serwer**. Dziennik: `journalctl -u plex-downloader -n 50 --no-pager`. |
+| Panel się nie otwiera (`http://…:8800`) | Czy Raspberry Pi jest włączone i ma ten sam adres (`hostname -I`)? Stan usługi: `cd ~/plex-downloader && ./fix.sh` → **6 Serwer**. Dziennik: `journalctl -u plex-downloader -n 50 --no-pager`. |
 | Nie mogę się połączyć przez SSH | Czy SSH było włączone w Raspberry Pi Imager (Etap 0)? Czy adres IP się nie zmienił? Spróbuj `ssh pi@raspberrypi.local`. |
 | Po restarcie nie ma dysku | Czy linia w `/etc/fstab` ma `nofail` i poprawny UUID? Sprawdź `lsblk -o NAME,FSTYPE,UUID` i `sudo mount -a`. |
 | Plex nie widzi nowego filmu | W Plexie: biblioteka → menu **…** → **Skanuj pliki biblioteki**. Sprawdź, czy film leży w folderze przypisanym do tej biblioteki. |
