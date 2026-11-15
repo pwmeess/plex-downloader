@@ -2,6 +2,12 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
+## 1.5.0-beta2 – 2026-11-15 (BETA)
+
+- **New guides (EN/PL, in the panel and as PDF):** rewritten step by step for people who have never used a terminal – stages 0–7 in the order you do things: preparing the SD card (Raspberry Pi Imager), SSH and SSH keys, the drive (new from the shop as ext4, with data from Windows/Mac, formatting on a computer with Windows Explorer or macOS Disk Utility), permanent mounting with a complete fstab line for ext4 / NTFS / exFAT and every field explained, installing Plex Downloader and Plex, the wizard, a free TMDB key step by step, two devices (Samba / CIFS), everyday use (incl. Where to watch), VPN, updates, diagnostics; FAQ and a glossary.
+- Every command block is complete and ready to paste; in the panel each block has a **Copy** button.
+- New look: stage badges, contents table, coloured info / warning / tip boxes.
+
 ## 1.5.0-beta1 – 2026-11-15 (BETA)
 
 - **Where to watch:** the movie / TV show preview shows where the title can be watched in your country – **Subscription**, **Free** (also with ads), **Rent** and **Buy** – with the services' logos; a click opens the offers page. It comes in the same TMDB request as the description (no extra request). Works also when you only type a title, without a link.

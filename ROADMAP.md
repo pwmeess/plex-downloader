@@ -2,7 +2,7 @@
 
 🇬🇧 **English** · 🇵🇱 [Polski](ROADMAP.pl.md) · Changelog: [CHANGELOG.md](CHANGELOG.md)
 
-Last updated: 11 November 2026 · stable: **1.4.0** · BETA: **1.5.0-beta1**
+Last updated: 11 November 2026 · stable: **1.4.0** · BETA: **1.5.0-beta2**
 
 ## Ground rules (checked for every release)
 
@@ -48,6 +48,7 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 | 1.4.0 (stable) | Everything from 1.4.0-beta1…beta3: remote access over VPN (Tailscale status, QR code, login, HTTPS in the VPN, home network only / + VPN, WireGuard status), VPN chapter in the guides |
 | 1.5.0-beta0 | 1.4.0 with a new version number; base for 1.5 (no new features) |
 | 1.5.0-beta1 | Where to watch (streaming availability by country, TMDB + JustWatch) |
+| 1.5.0-beta2 | New step-by-step guides (EN/PL), Copy buttons in the panel guide |
 
 ## To fix
 
@@ -125,7 +126,7 @@ The VPN preview (Settings tab and header badge) is visible only in BETA; it retu
 
 ## 1.5 – TV shows, adding files from a computer and a USB stick
 
-Release steps: `1.5.0-beta0` (= 1.4.0, done) → `1.5.0-beta1` (where to watch, done) → … → `1.5.0`.
+Release steps: `1.5.0-beta0` (= 1.4.0, done) → `1.5.0-beta1` (where to watch, done) → `1.5.0-beta2` (guides, done) → … → `1.5.0`.
 
 - [x] Where to watch: streaming availability in the movie preview (subscription / free / rent / buy), country in Settings → Account; data TMDB, availability JustWatch (1.5.0-beta1).
 

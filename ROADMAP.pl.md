@@ -2,7 +2,7 @@
 
 🇬🇧 [English](ROADMAP.md) · 🇵🇱 **Polski** · Historia zmian: [CHANGELOG.md](CHANGELOG.md)
 
-Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.4.0** · BETA: **1.5.0-beta1**
+Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.4.0** · BETA: **1.5.0-beta2**
 
 ## Stałe zasady (sprawdzać przy każdej wersji)
 
@@ -46,6 +46,7 @@ Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.4.0** · BETA: **1.5.0
 | 1.4.0 (stabilna) | Wszystko z 1.4.0-beta1…beta3: dostęp zdalny przez VPN (status Tailscale, kod QR, logowanie, HTTPS w VPN, tylko sieć domowa / + VPN, status WireGuard), rozdział o VPN w poradnikach |
 | 1.5.0-beta0 | 1.4.0 z nowym numerem wersji; baza dla 1.5 (bez nowych funkcji) |
 | 1.5.0-beta1 | Gdzie obejrzeć (dostępność w serwisach streamingowych wg kraju, TMDB + JustWatch) |
+| 1.5.0-beta2 | Nowe poradniki krok po kroku (EN/PL), przyciski Kopiuj w poradniku w panelu |
 
 ## Do poprawy
 
@@ -123,7 +124,7 @@ Zapowiedzi VPN (zakładka i przycisk w nagłówku) są widoczne tylko w BETA; w 
 
 ## 1.5 – seriale, dodawanie plików z komputera i z pendrive'a
 
-Kolejne kroki: `1.5.0-beta0` (= 1.4.0, gotowe) → `1.5.0-beta1` (gdzie obejrzeć, gotowe) → … → `1.5.0`.
+Kolejne kroki: `1.5.0-beta0` (= 1.4.0, gotowe) → `1.5.0-beta1` (gdzie obejrzeć, gotowe) → `1.5.0-beta2` (poradniki, gotowe) → … → `1.5.0`.
 
 - [x] Gdzie obejrzeć: dostępność w serwisach streamingowych w podglądzie filmu (abonament / za darmo / wypożyczenie / kupno), kraj w Ustawienia → Konto; dane TMDB, dostępność JustWatch (1.5.0-beta1).
 
