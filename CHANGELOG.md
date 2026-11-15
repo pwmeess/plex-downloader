@@ -2,6 +2,12 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
+## 1.5.0-beta1 – 2026-11-15 (BETA)
+
+- **Where to watch:** the movie / TV show preview shows where the title can be watched in your country – **Subscription**, **Free** (also with ads), **Rent** and **Buy** – with the services' logos; a click opens the offers page. It comes in the same TMDB request as the description (no extra request). Works also when you only type a title, without a link.
+- Country: **Settings → Account → Where to watch – country** (Automatic = by the interface language: Polish → Poland, English → United States); also included in settings export / import.
+- Source shown under the list: “Data: TMDB · availability: JustWatch”.
+
 ## 1.5.0-beta0 – 2026-11-11 (BETA)
 
 - Same as 1.4.0 (stable) with a new version number – the base for version 1.5 (TV shows: episodes and conflicts, local moves, USB stick, fixes). No new features yet.

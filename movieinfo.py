@@ -129,9 +129,45 @@ def search(kind, title, year=None):
     return items[:6]
 
 
+# ---------------------------------------------------------------- "Where to watch" (TMDB watch/providers = JustWatch data)
+WATCH_GROUPS = ("flatrate", "free", "ads", "rent", "buy")
+
+
+def watch_country():
+    """Country for streaming availability: Settings → Account, otherwise by the interface language."""
+    c = (config.get().get("watch_country") or "").strip().upper()
+    if re.fullmatch(r"[A-Z]{2}", c):
+        return c
+    lang = (tmdb_language() or "").split("-")[0]
+    return "PL" if lang == "pl" else "US"
+
+
+def _watch(d, country):
+    """Providers for one country from the details response: subscription / free / rent / buy."""
+    res = ((d.get("watch/providers") or {}).get("results") or {}).get(country) or {}
+    out = {"country": country, "link": res.get("link") or ""}
+    for g in WATCH_GROUPS:
+        items = sorted(res.get(g) or [], key=lambda p: p.get("display_priority", 999))
+        out[g] = [{"id": p.get("provider_id"), "name": p.get("provider_name") or "?",
+                   "logo": IMG + "w92" + p["logo_path"] if p.get("logo_path") else None} for p in items]
+    # "free" and "with ads" are shown together
+    seen = {p["id"] for p in out["free"]}
+    out["free"] += [p for p in out.pop("ads") if p["id"] not in seen]
+    out["any"] = any(out[g] for g in ("flatrate", "free", "rent", "buy"))
+    return out
+
+
+def regions():
+    """Countries TMDB has streaming data for: ["PL", "US", …] (names are shown by the browser)."""
+    data = _get("/watch/providers/regions", language="en-US")
+    return sorted({r.get("iso_3166_1") for r in data.get("results") or [] if r.get("iso_3166_1")})
+
+
 def details(kind, item_id, season=None, episode=None):
     kind = "tv" if kind == "tv" else "movie"
-    d = _get("/%s/%d" % (kind, int(item_id)), language=tmdb_language(), append_to_response="credits,external_ids")
+    # one request: description, cast, IMDb id and streaming availability ("Where to watch")
+    d = _get("/%s/%d" % (kind, int(item_id)), language=tmdb_language(),
+             append_to_response="credits,external_ids,watch/providers")
     overview = d.get("overview") or ""
     if not overview and tmdb_language() != "en-US":  # brak opisu w języku interfejsu → angielski
         try:
@@ -164,6 +200,7 @@ def details(kind, item_id, season=None, episode=None):
         "filmweb_url": "https://www.filmweb.pl/search#/?query=" + urllib.parse.quote(
             "%s %s" % (title or original or "", year or "")).strip(),
         "episode": None,
+        "watch": _watch(d, watch_country()),
     }
     if kind == "tv" and season is not None and episode is not None:
         try:

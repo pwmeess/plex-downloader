@@ -364,6 +364,7 @@
     max_concurrent: () => t("Downloads at the same time"), max_speed_mbps: () => t("Speed limit (MB/s, 0 = no limit)"),
     require_mount: () => t("Block disks that are not mounted"), thumbs_mode: () => t("Posters"), thumbs_frames: () => t("Posters from video frames"),
     tmdb_api_key: () => t("TMDB key"), language: () => t("Language"), theme: () => t("Theme"),
+    watch_country: () => t("Where to watch – country"),
   };
   const VALUE = { dark: () => t("Dark"), light: () => t("Light"), en: () => "English", pl: () => "Polski",
                   online: () => t("from TMDB"), local: () => t("only saved"), off: () => t("none") };
@@ -478,7 +479,34 @@
     api("/api/interface", { theme: th }).catch((e) => toast(e.message, true));
   }));
 
+  // "Where to watch" country – names come from the browser (Intl), the list from TMDB
+  let watchLoaded = false;
+  async function loadWatchCountries() {
+    if (watchLoaded) return;
+    const sel = $("#uiWatch");
+    let r;
+    try { r = await api("/api/tmdb/regions"); } catch (e) { return; }
+    watchLoaded = true;
+    let names = null;
+    try { names = new Intl.DisplayNames([LOCALE], { type: "region" }); } catch (e) { names = null; }
+    const nm = (c) => { try { return (names && names.of(c)) || c; } catch (e) { return c; } };
+    const opts = [el("option", null, t("Automatic") + " – " + nm(r.auto))];
+    opts[0].value = "";
+    const codes = (r.regions || []).slice();
+    if (r.current && !codes.includes(r.current)) codes.push(r.current);
+    codes.map((c) => [c, nm(c)]).sort((a, b) => a[1].localeCompare(b[1], LOCALE)).forEach(([c, n]) => {
+      const o = el("option", null, n); o.value = c; opts.push(o);
+    });
+    sel.replaceChildren(...opts);
+    sel.value = r.current || "";
+  }
+  $("#uiWatch").addEventListener("change", async (e) => {
+    try { await api("/api/interface", { watch_country: e.target.value }); toast(t("Saved.")); }
+    catch (er) { toast(er.message, true); }
+  });
+
   function renderAccount() {
+    loadWatchCountries();
     const li = cfg.log || { size: 0, limit: 1048576, backups: [] };
     $("#logInfo").textContent = t("{size} of {limit}", { size: fmtSize(li.size), limit: fmtSize(li.limit) }) +
       (li.backups.length ? " · " + t("log backups: {n}", { n: li.backups.length }) : "");

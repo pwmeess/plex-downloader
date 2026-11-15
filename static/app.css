@@ -996,3 +996,16 @@ dialog.window.modal .win-foot { flex-wrap: wrap; }
 }
 /* move window: “Skip SHA-256 verification” strikes the verification step through */
 .plan-how.skip .sha { text-decoration: line-through; opacity: .55; }
+/* "Where to watch" in the movie preview (TMDB watch providers, data by JustWatch) */
+.info-watch { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; }
+.watch-row { display: grid; grid-template-columns: 110px 1fr; gap: 10px; align-items: center; }
+.watch-label { color: var(--muted); }
+.watch-logos { display: flex; flex-wrap: wrap; gap: 6px; }
+.watch-p { display: inline-flex; width: 34px; height: 34px; border-radius: 8px; overflow: hidden; background: var(--card-2); border: 1px solid var(--line); align-items: center; justify-content: center; }
+.watch-p img { width: 100%; height: 100%; object-fit: cover; display: block; }
+a.watch-p:hover { border-color: var(--accent); }
+.watch-name { font-size: 10px; padding: 2px; text-align: center; line-height: 1.1; }
+.watch-src { font-size: 11.5px; color: var(--muted); }
+.watch-src a { color: var(--muted); text-decoration: underline; }
+@media (max-width: 560px) { .watch-row { grid-template-columns: 1fr; gap: 4px; } }
+

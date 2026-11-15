@@ -366,6 +366,19 @@ def api_info():
     return jsonify(data)
 
 
+@app.route("/api/tmdb/regions")
+@login_required
+def api_tmdb_regions():
+    """Countries for "Where to watch" (Settings → Account)."""
+    if not movieinfo.configured():
+        return jsonify(regions=[], current=config.get().get("watch_country", ""), auto=movieinfo.watch_country())
+    try:
+        regs = movieinfo.regions()
+    except movieinfo.InfoError as e:
+        return jsonify(regions=[], error=str(e), current=config.get().get("watch_country", ""), auto=movieinfo.watch_country())
+    return jsonify(regions=regs, current=config.get().get("watch_country", ""), auto=movieinfo.watch_country())
+
+
 @app.route("/api/jobs", methods=["POST"])
 @login_required
 def api_add():
@@ -452,6 +465,7 @@ def api_settings_get():
                    thumbs_mode=cfg.get("thumbs_mode", "online"),
                    thumbs_frames=bool(cfg.get("thumbs_frames")), ffmpeg=thumbgen.version(),
                    port=cfg.get("port", 8800), language=i18n.current(), theme=cfg.get("theme", "dark"),
+                   watch_country=cfg.get("watch_country", ""),
                    app_dir=BASE_DIR, system_user=getpass.getuser(), ip=plexservers.lan_ip(),
                    home=wizard.home_dir(), log=actlog.info())
 
@@ -568,14 +582,14 @@ def api_settings_post():
 
 # ---------------------------------------------------------------- eksport / import ustawień
 EXPORT_KEYS = ("categories", "disks", "plex_servers", "plex_autodiscover", "connections_per_file", "max_concurrent",
-               "max_speed_mbps", "require_mount", "thumbs_mode", "thumbs_frames", "language", "theme")
+               "max_speed_mbps", "require_mount", "thumbs_mode", "thumbs_frames", "language", "theme", "watch_country")
 IMPORT_SECTIONS = {
     "disks": ("disks",),
     "categories": ("categories",),
     "plex": ("plex_servers", "plex_autodiscover"),
     "downloads": ("connections_per_file", "max_concurrent", "max_speed_mbps", "require_mount"),
     "preview": ("thumbs_mode", "thumbs_frames", "tmdb_api_key"),
-    "interface": ("language", "theme"),
+    "interface": ("language", "theme", "watch_country"),
 }
 
 
@@ -668,6 +682,9 @@ def _import_clean(data):
         out["language"] = data["language"]
     if data.get("theme") in ("dark", "light"):
         out["theme"] = data["theme"]
+    wc = data.get("watch_country")
+    if isinstance(wc, str) and (wc == "" or re.fullmatch(r"[A-Za-z]{2}", wc)):
+        out["watch_country"] = wc.upper()
     return out
 
 
@@ -912,6 +929,11 @@ def api_interface():
     theme = data.get("theme")
     if theme in ("dark", "light") and theme != cfg.get("theme"):
         config.update(note="Theme changed", theme=theme)
+    if "watch_country" in data:
+        wc = (data.get("watch_country") or "").strip().upper()
+        if (wc == "" or re.fullmatch(r"[A-Z]{2}", wc)) and wc != cfg.get("watch_country", ""):
+            config.update(note="Where to watch: country changed", watch_country=wc)
+            actlog.write("SETTINGS", "watch_country = %s" % (wc or "auto"))
     return jsonify(ok=True)
 
 

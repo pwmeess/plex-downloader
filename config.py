@@ -45,6 +45,7 @@ DEFAULTS = {
     "thumbs_frames": False,      # posters from video frames (ffmpeg) when TMDB has none / is off
     "language": "",              # "" = jeszcze nie wybrano (ekran wyboru przy logowaniu)
     "theme": "dark",             # dark | light
+    "watch_country": "",         # "Where to watch": ISO country (PL, US…); "" = by the interface language
     "wizard_done": False,        # kreator pierwszego uruchomienia zakończony
     "vpn": {"enabled": False, "provider": "tailscale", "listen": "lan"},  # zarezerwowane (wkrótce)
     "vpn_lan_only": False,       # True = the panel refuses requests that come through the VPN

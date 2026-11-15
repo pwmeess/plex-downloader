@@ -786,5 +786,17 @@
  "Choose a disk and category in each column. Select movies and drag them to the other column (or use the Move button). On the same disk the move is instant. Between disks files are copied, verified with a SHA-256 checksum, and the original is removed only after a correct copy. The verification can be skipped in the move window (faster, for files you can download again).": "Wybierz dysk i kategorię w każdej kolumnie. Zaznacz filmy i przeciągnij je do drugiej kolumny (albo użyj przycisku Przenieś). Na tym samym dysku przeniesienie jest natychmiastowe. Między dyskami pliki są kopiowane, sprawdzane sumą SHA-256, a oryginał jest usuwany dopiero po poprawnej kopii. Weryfikację można pominąć w oknie przenoszenia (szybciej, dla plików, które możesz pobrać ponownie).",
  "copy": "kopia",
  "the original is removed only after a correct copy. Large files may take a few minutes.": "oryginał jest usuwany dopiero po poprawnej kopii. Duże pliki mogą zająć kilka minut.",
- "verification with SHA-256": "weryfikacja SHA-256"
+ "verification with SHA-256": "weryfikacja SHA-256",
+ "Automatic": "Automatycznie",
+ "Buy": "Kupno",
+ "Data:": "Dane:",
+ "Free": "Za darmo",
+ "Not available on streaming services in this country.": "Niedostępny w serwisach streamingowych w tym kraju.",
+ "Rent": "Wypożyczenie",
+ "Subscription": "Abonament",
+ "The movie preview shows where the title can be watched in this country: on a streaming subscription, free, to rent or to buy. Data: TMDB, availability: JustWatch. Automatic = by the interface language (Polish → Poland, English → United States).": "Podgląd filmu pokazuje, gdzie można go obejrzeć w tym kraju: w abonamencie serwisu streamingowego, za darmo, do wypożyczenia albo do kupienia. Dane: TMDB, dostępność: JustWatch. Automatycznie = według języka interfejsu (polski → Polska, angielski → Stany Zjednoczone).",
+ "Where to watch": "Gdzie obejrzeć",
+ "Where to watch – country": "Gdzie obejrzeć – kraj",
+ "Where to watch: country changed": "Gdzie obejrzeć: zmiana kraju",
+ "availability:": "dostępność:"
 }

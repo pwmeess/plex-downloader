@@ -127,6 +127,8 @@
             <button type="button" data-theme-set="dark" class="{{ 'on' if theme == 'dark' else '' }}">{{ _("Dark") }}</button>
             <button type="button" data-theme-set="light" class="{{ 'on' if theme == 'light' else '' }}">{{ _("Light") }}</button>
           </div></div>
+        <div><label class="small-label" for="uiWatch">{{ _("Where to watch – country") }} <button type="button" class="info-i" data-tip="{{ _('The movie preview shows where the title can be watched in this country: on a streaming subscription, free, to rent or to buy. Data: TMDB, availability: JustWatch. Automatic = by the interface language (Polish → Poland, English → United States).') }}">i</button></label>
+          <select class="input" id="uiWatch"><option value="">{{ _("Automatic") }}</option></select></div>
       </div>
 
       <h3>{{ _("Account") }}</h3>

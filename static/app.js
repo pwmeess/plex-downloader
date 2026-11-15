@@ -329,6 +329,8 @@
     link("https://www.google.com/search?q=" + encodeURIComponent(q + " " + (it.kind === "tv" ? t("TV series") : t("film"))), "Google", "google", "search");
     link("https://www.youtube.com/results?search_query=" + encodeURIComponent(qOrig + " trailer"), t("Trailer"), "youtube", "youtube");
 
+    renderWatch(it);
+
     const alts = $("#infoAlts");
     const others = info.results.filter((r) => r.id !== it.id);
     alts.replaceChildren();
@@ -344,6 +346,51 @@
       alts.hidden = false;
     } else alts.hidden = true;
     updatePreviewSoft();
+  }
+
+  // ---- "Where to watch": streaming availability in the chosen country (TMDB watch/providers = JustWatch data)
+  function countryName(code) {
+    try { return new Intl.DisplayNames([LOCALE], { type: "region" }).of(code) || code; } catch (e) { return code; }
+  }
+  function renderWatch(it) {
+    const box = $("#infoWatch");
+    const w = it.watch;
+    box.replaceChildren();
+    if (!w) { box.hidden = true; return; }
+    box.hidden = false;
+    const head = el("div", "watch-head");
+    head.append(el("b", null, t("Where to watch")), el("span", "muted", " · " + countryName(w.country)));
+    box.appendChild(head);
+    const groups = [["flatrate", t("Subscription")], ["free", t("Free")], ["rent", t("Rent")], ["buy", t("Buy")]];
+    let any = false;
+    groups.forEach(([g, label]) => {
+      const list = w[g] || [];
+      if (!list.length) return;
+      any = true;
+      const row = el("div", "watch-row");
+      row.appendChild(el("span", "watch-label", label));
+      const logos = el("div", "watch-logos");
+      list.forEach((p) => {
+        const a = el(w.link ? "a" : "span", "watch-p");
+        if (w.link) { a.href = w.link; a.target = "_blank"; a.rel = "noopener noreferrer"; }
+        a.title = p.name;
+        if (p.logo) {
+          const img = document.createElement("img");
+          img.src = p.logo; img.alt = p.name; img.loading = "lazy"; img.referrerPolicy = "no-referrer";
+          a.appendChild(img);
+        } else a.appendChild(el("span", "watch-name", p.name));
+        logos.appendChild(a);
+      });
+      row.appendChild(logos);
+      box.appendChild(row);
+    });
+    if (!any) box.appendChild(el("div", "muted watch-none",
+      t("Not available on streaming services in this country.")));
+    const src = el("div", "watch-src");
+    const ln = (href, text) => { const a = el("a", null, text); a.href = href; a.target = "_blank"; a.rel = "noopener noreferrer"; return a; };
+    src.append(t("Data:") + " ", ln("https://www.themoviedb.org/", "TMDB"), " · " + t("availability:") + " ",
+      ln("https://www.justwatch.com/", "JustWatch"));
+    box.appendChild(src);
   }
 
   // ---- sprawdzanie linku
