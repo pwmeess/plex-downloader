@@ -124,7 +124,7 @@ Klucz jest zapisywany wyłącznie lokalnie w `config.json`. Bez klucza aplikacja
 
 ## Własne dyski
 
-Aplikacja **nie wykrywa dysków automatycznie**. Ścieżki w `config.example.json` to tylko przykład – kreator przy pierwszym logowaniu zastąpi je Twoimi dyskami.
+Ścieżki w `config.example.json` to tylko przykład – kreator przy pierwszym logowaniu zastąpi je Twoimi dyskami.
 
 1. Sprawdź, gdzie są zamontowane Twoje dyski, poleceniem `df -h`. Zobaczysz np. `/mnt/dysk1`.
 2. W panelu wejdź w **Ustawienia → Dyski** i dla każdego dysku wpisz:
