@@ -14,7 +14,7 @@ _FORBIDDEN = ("/bin", "/boot", "/dev", "/etc", "/lib", "/proc", "/root", "/run",
 
 
 def _unescape(path):
-    # /proc/mounts encodes spaces etc. as octal: "Plex\0401T" → "Plex 1T"
+    # /proc/mounts encodes spaces etc. as octal: "My\040Disk" → "My Disk"
     return path.replace("\\040", " ").replace("\\011", "\t").replace("\\012", "\n").replace("\\134", "\\")
 
 

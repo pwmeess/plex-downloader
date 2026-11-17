@@ -1,4 +1,4 @@
-"""Konfiguracja aplikacji (config.json, wykluczony z repozytorium) + punkty przywracania."""
+"""App configuration (config.json, excluded from the repository) + restore points."""
 import copy
 import json
 import os
@@ -15,8 +15,8 @@ BACKUP_DIR = os.environ.get("PLEXDL_BACKUPS",
 BACKUP_DAYS = 30
 BACKUP_MAX = 300
 
-# Kategorie domyślne. "kind" decyduje o nazewnictwie: movie → Tytuł (Rok)/…, tv → Serial/Season 01/…
-# kind: movie → Tytuł (Rok)/…, tv → Serial/Season 01/…, other → nazwa bez zmian (np. nagrania domowe)
+# Default categories. "kind" decides the naming: movie → Title (Year)/…, tv → Show/Season 01/…
+# kind: movie → Title (Year)/…, tv → Show/Season 01/…, other → name unchanged (e.g. home videos)
 DEFAULT_CATEGORIES = [
     {"id": "movies", "label": "Movies", "kind": "movie", "folder": "Movies", "tmdb": True},
     {"id": "tv", "label": "TV Shows", "kind": "tv", "folder": "TV Shows", "tmdb": True},
@@ -39,19 +39,19 @@ DEFAULTS = {
     "tmdb_api_key": "",
     "categories": DEFAULT_CATEGORIES,
     "disks": [],
-    "plex_servers": [],          # [{"id","name","host","port"}] – dodane ręcznie
-    "plex_autodiscover": True,   # wykrywanie serwerów Plex w sieci (GDM) + localhost
+    "plex_servers": [],          # [{"id","name","host","port"}] – added manually
+    "plex_autodiscover": True,   # Plex server discovery on the network (GDM) + localhost
     "thumbs_mode": "online",     # online | local | off
     "thumbs_frames": False,      # posters from video frames (ffmpeg) when TMDB has none / is off
-    "language": "",              # "" = jeszcze nie wybrano (ekran wyboru przy logowaniu)
+    "language": "",              # "" = not chosen yet (choice screen at login)
     "theme": "dark",             # dark | light
     "watch_country": "",         # "Where to watch": ISO country (PL, US…); "" = by the interface language
-    "wizard_done": False,        # kreator pierwszego uruchomienia zakończony
-    "vpn": {"enabled": False, "provider": "tailscale", "listen": "lan"},  # zarezerwowane (wkrótce)
+    "wizard_done": False,        # first-run wizard finished
+    "vpn": {"enabled": False, "provider": "tailscale", "listen": "lan"},  # reserved (coming soon)
     "vpn_lan_only": False,       # True = the panel refuses requests that come through the VPN
 }
 
-# Klucze, których przywrócenie kopii NIE nadpisuje (konto i sekrety bieżącej instalacji)
+# Keys that restoring a backup does NOT overwrite (account and secrets of this installation)
 KEEP_ON_RESTORE = ("username", "password_hash", "secret_key", "aria2_secret")
 
 _lock = threading.RLock()
@@ -69,7 +69,7 @@ def _slug(text, fallback):
 
 
 def normalize(cfg):
-    """Migracja starszych konfiguracji (1.0/1.1: disks.movies/tv) do kategorii (1.2)."""
+    """Migrates older configurations (1.0/1.1: disks.movies/tv) to categories (1.2)."""
     cats = cfg.get("categories")
     if not isinstance(cats, list) or not cats:
         cats = copy.deepcopy(DEFAULT_CATEGORIES)
@@ -94,7 +94,7 @@ def normalize(cfg):
                 paths["movies"] = d["movies"]
             if d.get("tv"):
                 paths["tv"] = d["tv"]
-        # Kategoria bez ścieżki: podpowiedź „folder obok Movies”, jeśli taki istnieje na dysku
+        # Category without a path: suggest “the folder next to Movies” if it exists on the disk
         root = os.path.dirname((paths.get("movies") or "").rstrip("/"))
         for c in clean:
             if not paths.get(c["id"]) and root and c.get("folder"):
@@ -185,13 +185,13 @@ def category(cat_id):
     return None
 
 
-# ------------------------------------------------------------------ punkty przywracania
+# ------------------------------------------------------------------ restore points
 _NAME = re.compile(r"^config-(\d{8}-\d{6})(?:-\d+)?\.json$")
 
 
 def backup(note="", note_args=None):
-    """Zapisuje migawkę konfiguracji po każdej zmianie; usuwa kopie starsze niż 30 dni
-    (ostatnia kopia zostaje zawsze)."""
+    """Saves a configuration snapshot after every change; removes backups older than 30 days
+    (the latest backup always stays)."""
     try:
         os.makedirs(BACKUP_DIR, mode=0o700, exist_ok=True)
         files = list_backups()
@@ -199,7 +199,7 @@ def backup(note="", note_args=None):
             try:
                 last = _read(os.path.join(BACKUP_DIR, files[0]["name"]))
                 if last.get("config") == _config:
-                    return  # brak faktycznej zmiany
+                    return  # nothing actually changed
             except (OSError, ValueError):
                 pass
         stamp = time.strftime("%Y%m%d-%H%M%S")
@@ -216,7 +216,7 @@ def backup(note="", note_args=None):
         os.chmod(path, 0o600)
         prune()
     except OSError:
-        pass  # kopia zapasowa nigdy nie może zablokować zapisu ustawień
+        pass  # a backup must never block saving the settings
 
 
 def list_backups():
@@ -251,7 +251,7 @@ def describe_backups():
 
 
 def delete_backups(names):
-    """Usuwa wybrane kopie. Najnowsza (bieżąca) kopia nie może zostać usunięta."""
+    """Deletes the selected backups. The newest (current) backup cannot be deleted."""
     files = list_backups()
     newest = files[0]["name"] if files else None
     removed = 0
@@ -271,7 +271,7 @@ def prune():
     limit = time.time() - BACKUP_DAYS * 86400
     for i, b in enumerate(files):
         if i == 0:
-            continue  # najnowsza kopia zostaje zawsze
+            continue  # the newest backup always stays
         if b["mtime"] < limit or i >= BACKUP_MAX:
             try:
                 os.remove(os.path.join(BACKUP_DIR, b["name"]))
@@ -301,7 +301,7 @@ def restore(name):
 
 
 def set_language(code):
-    """Zmienia język i tłumaczy nazwy wbudowanych kategorii, jeśli użytkownik ich nie zmienił."""
+    """Changes the language and translates the built-in category names if the user has not changed them."""
     from i18n import gettext, available
     known = {}
     for cid, en in BUILTIN_LABELS.items():

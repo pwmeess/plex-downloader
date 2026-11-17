@@ -18,7 +18,7 @@ class WizardTests(unittest.TestCase):
             config.CONFIG_PATH = os.path.join(tmp, "config.json")
             config.BACKUP_DIR = os.path.join(tmp, "backups")
             lib = os.path.join(tmp, "Movies")
-            for paths, expected in (({"movies": "/plex_media/Plex/Movies"}, False), ({"movies": lib}, True)):
+            for paths, expected in (({"movies": "/mnt/no-such-disk/Plex/Movies"}, False), ({"movies": lib}, True)):
                 os.makedirs(lib, exist_ok=True)
                 with open(config.CONFIG_PATH, "w") as f:
                     json.dump({"disks": [{"id": "a", "label": "A", "mount": "/", "paths": paths}]}, f)

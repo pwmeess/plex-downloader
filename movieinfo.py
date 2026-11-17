@@ -1,6 +1,6 @@
-"""Poglądowe informacje o filmie/serialu z TMDB (The Movie Database) – tylko do wyświetlenia.
+"""Preview information about a movie / TV show from TMDB (The Movie Database) – display only.
 
-Nic nie jest zapisywane do plików ani na dysk; Plex i tak pobiera własne metadane.
+Nothing is written to files or to disk; Plex fetches its own metadata anyway.
 """
 import json
 import os
@@ -36,7 +36,7 @@ def _get(path, **params):
     if not key:
         raise InfoError(_("No TMDB API key."))
     headers = {"Accept": "application/json", "User-Agent": UA}
-    if len(key) > 40:  # „API Read Access Token” (v4) – przekazywany jako Bearer
+    if len(key) > 40:  # “API Read Access Token” (v4) – sent as Bearer
         headers["Authorization"] = "Bearer " + key
     else:              # klasyczny „API Key” (v3)
         params["api_key"] = key
@@ -90,7 +90,7 @@ def check_key(key):
 
 
 def split_title(text):
-    """„Milczenie owiec (1991)” → („Milczenie owiec”, 1991)."""
+    """“The Silence of the Lambs (1991)” → (“The Silence of the Lambs”, 1991)."""
     text = (text or "").strip()
     m = re.match(r"^(.*?)\s*\((\d{4})\)\s*$", text)
     if m:
@@ -107,7 +107,7 @@ def _poster(path, size="w342"):
 
 
 def search(kind, title, year=None):
-    """Zwraca listę do 6 trafień: id, tytuł, rok, oryginalny tytuł."""
+    """Returns a list of up to 6 matches: id, title, year, original title."""
     if not title:
         return []
     if kind == "tv":
@@ -119,7 +119,7 @@ def search(kind, title, year=None):
                   "poster": _poster(r.get("poster_path"), "w92")} for r in res.get("results", [])]
     else:
         res = _get("/search/movie", query=title, primary_release_year=year, language=tmdb_language())
-        if year and not res.get("results"):  # rok z nazwy pliku bywa rokiem premiery DVD itp.
+        if year and not res.get("results"):  # the year in a file name may be the DVD release year etc.
             res = _get("/search/movie", query=title, year=year, language=tmdb_language())
         if year and not res.get("results"):
             res = _get("/search/movie", query=title, language=tmdb_language())
@@ -169,7 +169,7 @@ def details(kind, item_id, season=None, episode=None):
     d = _get("/%s/%d" % (kind, int(item_id)), language=tmdb_language(),
              append_to_response="credits,external_ids,watch/providers")
     overview = d.get("overview") or ""
-    if not overview and tmdb_language() != "en-US":  # brak opisu w języku interfejsu → angielski
+    if not overview and tmdb_language() != "en-US":  # no overview in the interface language → English
         try:
             overview = _get("/%s/%d" % (kind, int(item_id)), language="en-US").get("overview") or ""
         except InfoError:
@@ -223,7 +223,7 @@ def lookup(kind, title, year=None, item_id=None, season=None, episode=None):
 
 
 def poster_url(kind, title, year=None, tmdb_id=None, size="w342"):
-    """Adres plakatu do miniatury w menedżerze plików (None, gdy brak)."""
+    """Poster URL for the file manager thumbnail (None if there is none)."""
     kind = "tv" if kind == "tv" else "movie"
     path = None
     if tmdb_id:

@@ -68,7 +68,7 @@ def _parse(raw):
         "urgent": bool((raw.get("ClientVersion") or {}).get("UrgentSecurityUpdate")),
         "ip": next((x for x in ips if ":" not in x), ""),
         "ip6": next((x for x in ips if ":" in x), ""),
-        # the name given in the Tailscale console (e.g. raspi400), not the system hostname (raspberrypi)
+        # the name given in the Tailscale console (e.g. plexpi), not the system hostname (raspberrypi)
         "hostname": (self_.get("DNSName") or "").split(".")[0] or self_.get("HostName") or "",
         "dns_name": (self_.get("DNSName") or "").rstrip("."),
         "magic_dns": bool(tailnet.get("MagicDNSEnabled", bool(raw.get("MagicDNSSuffix")))),

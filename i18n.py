@@ -1,8 +1,8 @@
-"""Tłumaczenia interfejsu.
+"""Interface translations.
 
-Teksty w kodzie są po angielsku. Plik locales/<kod>.json zawiera:
-  {"_meta": {"name": "Polski", "code": "pl"}, "English text": "Tłumaczenie", ...}
-Nowy język = nowy plik w locales/ (np. de.json) – pojawi się automatycznie w Ustawieniach.
+Texts in the code are in English. The file locales/<code>.json contains:
+  {"_meta": {"name": "Polski", "code": "pl"}, "English text": "Translation", ...}
+A new language = a new file in locales/ (e.g. de.json) – it appears in Settings automatically.
 """
 import json
 import os

@@ -1,8 +1,8 @@
-"""Dziennik operacji użytkownika (pobrania, przeniesienia, usunięcia, zmiany ustawień).
+"""Activity log of user operations (downloads, moves, deletions, settings changes).
 
-Plik logs/plexdl.log, limit 1 MB. Po przekroczeniu bieżący plik trafia do
-logs/bcup01.log (kolejne: bcup02.log, …), a dziennik zaczyna się od nowa.
-Dziennik jest lokalny – nie trafia do kopii zapasowych ustawień ani do repozytorium.
+File logs/plexdl.log, 1 MB limit. When exceeded, the current file becomes
+logs/bcup01.log (then bcup02.log, …) and the log starts again.
+The log is local – it never goes into settings backups or the repository.
 """
 import os
 import re
@@ -55,7 +55,7 @@ def write(action, message):
                 f.write(line)
             os.chmod(p, 0o600)
     except OSError:
-        pass  # dziennik nigdy nie może zatrzymać właściwej operacji
+        pass  # the log must never stop the actual operation
 
 
 def read(max_bytes=LIMIT):

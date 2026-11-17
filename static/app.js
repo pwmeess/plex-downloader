@@ -1,4 +1,4 @@
-/* Plex Downloader – strona główna: formularz pobierania, kolejka, podgląd filmu */
+/* Plex Downloader – main page: download form, queue, movie preview */
 (() => {
   "use strict";
   const { $, $$, store, t, LOCALE, api, fmtSize, fmtSpeed, fmtEta, el, icon, catIcon, toast } = window.PD;
@@ -17,7 +17,7 @@
     disks: [],
     jobs: [],
     probe: null,
-    dirty: {},          // pola edytowane ręcznie – nie nadpisujemy ich podpowiedzią
+    dirty: {},          // fields edited by hand – not overwritten by a suggestion
     catTouched: false,
     infoItem: null,
     detectedEdition: "",
@@ -37,7 +37,7 @@
     return e;
   }
 
-  // ------------------------------------------------------------------ formularz
+  // ------------------------------------------------------------------ form
   const urlIn = $("#url"), nameIn = $("#name"), showIn = $("#show"), seasonIn = $("#season"),
     epIn = $("#episode"), epTitleIn = $("#epTitle"), extMovie = $("#extMovie"), extTv = $("#extTv");
   const advOn = $("#advOn"), advEdition = $("#advEdition"), advVersion = $("#advVersion"), advId = $("#advId");
@@ -176,7 +176,7 @@
     box.replaceChildren(document.createTextNode(p.base + "/"), el("b", null, p.dir + "/" + p.file));
   }
 
-  // ---- podgląd filmu z TMDB (tylko poglądowo, nic nie zapisujemy)
+  // ---- movie preview from TMDB (display only, nothing is saved)
   const info = { timer: null, key: "", seq: 0, pickId: null, results: [] };
 
   function infoQuery() {
@@ -194,7 +194,7 @@
     const card = $("#infoCard");
     if (!q) { clearTimeout(info.timer); card.hidden = true; info.key = ""; info.pickId = null; info.seq++; st.infoItem = null; return; }
     const key = JSON.stringify(q);
-    if (!force && key === info.key) return; // bez zmian – nie kasujemy zaplanowanego zapytania
+    if (!force && key === info.key) return; // unchanged – keep the scheduled request
     clearTimeout(info.timer);
     const titleOnly = JSON.stringify([q.kind, q.title]);
     if (info.titleKey !== titleOnly) { info.pickId = null; }
@@ -257,7 +257,7 @@
     updatePreviewSoft();
   }
   function updatePreviewSoft() {
-    // odświeża podgląd ścieżki bez ponownego zapytania do TMDB
+    // refreshes the path preview without asking TMDB again
     const k = info.key; updatePreview(); info.key = k;
   }
 
@@ -393,7 +393,7 @@
     box.appendChild(src);
   }
 
-  // ---- sprawdzanie linku
+  // ---- link check
   let probeTimer = null, probeSeq = 0;
   urlIn.addEventListener("input", () => {
     clearTimeout(probeTimer);
@@ -449,7 +449,7 @@
     const g = r.guess || {};
     if (!st.dirty.ext && r.ext) setExt(r.ext);
     if (!st.catTouched && g.kind) {
-      // serial → pierwsza kategoria serialowa; film → zostajemy w bieżącej kategorii filmowej/innej (np. Dla dzieci)
+      // show → first TV category; movie → stay in the current movie/other category (e.g. Kids)
       if (g.kind === "tv" && !isTv()) { const c = st.categories.find((x) => x.kind === "tv"); if (c) setCat(c.id, false); }
       if (g.kind === "movie" && isTv()) {
         const c = st.categories.find((x) => x.id === "movies") || st.categories.find((x) => x.kind === "movie");
@@ -479,7 +479,7 @@
   }
   $("#clearBtn").addEventListener("click", () => { resetForm(); urlIn.focus(); });
 
-  // ---- dyski
+  // ---- disks
   function renderDisks() {
     const box = $("#disks");
     box.replaceChildren();
@@ -489,7 +489,7 @@
       if (first) st.diskId = first.id;
     }
     if (!st.disks.length) {
-      // brak dysków (np. „Pomiń” w kreatorze): podpowiedź zamiast kafelków
+      // no disks (e.g. “Skip” in the wizard): a hint instead of tiles
       const n = el("div", "panel-note no-disks");
       n.append(icon("drive"), el("span", null, t("No disk yet – add one to start downloading.")));
       const a = el("button", "linklike", t("Settings → Disks") + " →"); a.type = "button";
@@ -524,7 +524,7 @@
     });
   }
 
-  // ---- wysyłka
+  // ---- submit
   $("#addForm").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const msg = $("#formMsg");
@@ -550,7 +550,7 @@
       resetForm();
       msg.className = "form-msg ok";
       msg.textContent = t("Added to the queue: {f}", { f: r.job.filename });
-      if (wasTv) { // przy serialach zostawiamy nazwę i sezon – wygodne przy kolejnych odcinkach
+      if (wasTv) { // for shows keep the name and season – handy for the next episodes
         showIn.value = body.show; seasonIn.value = body.season; epIn.value = (parseInt(body.episode, 10) || 0) + 1;
         st.dirty = { show: true, season: true, episode: true };
         updatePreview();
@@ -564,7 +564,7 @@
     }
   });
 
-  // ------------------------------------------------------------------ lista zadań
+  // ------------------------------------------------------------------ task list
   const jobEls = new Map();
 
   function jobAction(id, action) {
@@ -670,7 +670,7 @@
   }
   $("#clearDone").addEventListener("click", () => api("/api/jobs/clear", {}).then(() => refresh(true)));
 
-  // ------------------------------------------------------------------ odświeżanie
+  // ------------------------------------------------------------------ refreshing
   let timer = null, lastDisks = "", lastCats = "";
   async function refresh() {
     clearTimeout(timer);

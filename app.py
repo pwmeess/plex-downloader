@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plex Downloader – webowy menedżer pobierania do biblioteki Plex (Raspberry Pi)."""
+"""Plex Downloader – web download manager for a Plex library (Raspberry Pi)."""
 import argparse
 import getpass
 import logging
@@ -50,9 +50,9 @@ manager = None
 _failed_logins = {}
 
 
-# ---------------------------------------------------------------- autoryzacja
+# ---------------------------------------------------------------- authentication
 def _same_origin():
-    """Zwykły formularz HTML (bez nagłówka X-PlexDL): Origin/Referer musi wskazywać ten sam host.
+    """A plain HTML form (no X-PlexDL header): Origin/Referer must point to the same host.
     Behind `tailscale serve` (HTTPS in the VPN) the browser's host may arrive as X-Forwarded-Host."""
     src = request.headers.get("Origin") or request.headers.get("Referer") or ""
     if not src:
@@ -87,7 +87,7 @@ def login_required(view):
             return redirect(url_for("login"))
         if request.method == "POST" and request.headers.get("X-PlexDL") != "1" and not (
                 getattr(view, "form_post", False) and _same_origin()):
-            return jsonify(error=_("Missing request header.")), 400  # ochrona przed CSRF
+            return jsonify(error=_("Missing request header.")), 400  # CSRF protection
         return view(*args, **kwargs)
     return wrapper
 
@@ -101,7 +101,7 @@ def login():
         ip = client_ip()
         fails = _failed_logins.get(ip, 0)
         if fails >= 3:
-            time.sleep(min(10, fails))  # spowolnienie zgadywania hasła
+            time.sleep(min(10, fails))  # slows down password guessing
         user = request.form.get("username", "").strip()
         pwd = request.form.get("password", "")
         if user == cfg.get("username") and check_password_hash(cfg["password_hash"], pwd):
@@ -130,7 +130,7 @@ def inject_i18n():
 
 
 def _welcome():
-    """Wybór języka przy pierwszym logowaniu."""
+    """Language choice at the first login."""
     if request.method == "POST":
         code = request.form.get("language", "en")
         if code in {l["code"] for l in i18n.available()}:
@@ -174,7 +174,7 @@ def guide():
 @app.route("/setup")
 @login_required
 def setup_wizard():
-    """Kreator pierwszego uruchomienia (także ponownie z Ustawień)."""
+    """First-run wizard (also started again from Settings)."""
     return render_template("wizard.html", version=VERSION, user=session.get("user"), page="wizard")
 
 
@@ -205,7 +205,7 @@ def api_state():
 @app.route("/api/status")
 @login_required
 def api_status():
-    """Dane do paska nagłówka: adres Downloadera, serwery Plex, operacje, VPN."""
+    """Header bar data: Downloader address, Plex servers, operations, VPN."""
     cfg = config.get()
     return jsonify(server={"ip": plexservers.lan_ip(), "port": int(cfg.get("port", 8800)),
                            "hostname": plexservers.socket.gethostname()},
@@ -343,7 +343,7 @@ def api_probe():
 @app.route("/api/info")
 @login_required
 def api_info():
-    """Poglądowe dane o filmie/serialu z TMDB (nic nie jest zapisywane)."""
+    """Preview data about a movie / TV show from TMDB (nothing is saved)."""
     if not movieinfo.configured():
         return jsonify(configured=False)
     a = request.args
@@ -457,7 +457,7 @@ def api_settings_get():
                    max_concurrent=cfg.get("max_concurrent"),
                    max_speed_mbps=cfg.get("max_speed_mbps"),
                    require_mount=cfg.get("require_mount"),
-                   # klucz TMDB nie trafia do przeglądarki – tylko maska (pełny: /api/settings/tmdb-key)
+                   # the TMDB key is not sent to the browser – only a mask (full key: /api/settings/tmdb-key)
                    tmdb_key_set=bool(cfg.get("tmdb_api_key")),
                    tmdb_key_mask=_mask_key(cfg.get("tmdb_api_key", "")),
                    plex_servers=cfg.get("plex_servers", []),
@@ -489,7 +489,7 @@ def api_tmdb_check():
 @app.route("/api/settings/tmdb-key")
 @login_required
 def api_tmdb_key():
-    """Pełny klucz – tylko na żądanie (pole „Pokaż klucz”)."""
+    """The full key – only on request (the “Show key” option)."""
     return jsonify(key=config.get().get("tmdb_api_key", ""))
 
 
@@ -524,7 +524,7 @@ def api_settings_post():
                          "tmdb": bool(raw.get("tmdb", True)) and kind != "other"})
         if not cats:
             raise ValueError(_("At least one category must remain."))
-        # mapowanie identyfikatorów nowych kategorii (klient używa tymczasowych „new-…”)
+        # maps the ids of new categories (the client uses temporary “new-…” ids)
         idmap = {}
         for raw, c in zip(data.get("categories") or [], cats):
             idmap[(raw.get("id") or raw.get("tmp") or "").strip()] = c["id"]
@@ -564,7 +564,7 @@ def api_settings_post():
         speed = max(0.0, float(data.get("max_speed_mbps") or 0))
     except (TypeError, ValueError) as e:
         return err(str(e) if isinstance(e, ValueError) and str(e) else _("Invalid values."))
-    # None = pole nie było zmieniane → zostaje zapisany klucz
+    # None = the field was not changed → the saved key stays
     raw_key = data.get("tmdb_api_key")
     tmdb_key = config.get().get("tmdb_api_key", "") if raw_key is None else re.sub(r"\s+", "", raw_key)
     mode = data.get("thumbs_mode") if data.get("thumbs_mode") in ("online", "local", "off") else "online"
@@ -580,7 +580,7 @@ def api_settings_post():
     return jsonify(ok=True)
 
 
-# ---------------------------------------------------------------- eksport / import ustawień
+# ---------------------------------------------------------------- settings export / import
 EXPORT_KEYS = ("categories", "disks", "plex_servers", "plex_autodiscover", "connections_per_file", "max_concurrent",
                "max_speed_mbps", "require_mount", "thumbs_mode", "thumbs_frames", "language", "theme", "watch_country")
 IMPORT_SECTIONS = {
@@ -596,7 +596,7 @@ IMPORT_SECTIONS = {
 @app.route("/api/settings/export")
 @login_required
 def api_settings_export():
-    """Plik JSON z ustawieniami – bez loginu, hasła i kluczy sesji (klucz TMDB tylko na życzenie)."""
+    """JSON file with the settings – without login, password and session keys (TMDB key only on request)."""
     from flask import Response
     import json as _json
     cfg = config.get()
@@ -612,7 +612,7 @@ def api_settings_export():
 
 
 def _import_clean(data):
-    """Sprawdza plik importu; zwraca słownik gotowych wartości (tylko klucze, które są w pliku)."""
+    """Checks an import file; returns a dict of ready values (only the keys present in the file)."""
     if not isinstance(data, dict) or not isinstance(data.get("_plexdl"), dict):
         raise ValueError(_("This is not a Plex Downloader settings file."))
     out = {}
@@ -706,7 +706,7 @@ def api_settings_import_preview():
                     "new": new[k] if k != "tmdb_api_key" else True}
                    for k in present if (cfg.get(k) != new[k])]
         sections[sec] = {"changes": changes}
-    # dyski: czy foldery z pliku istnieją na tym urządzeniu
+    # disks: do the folders from the file exist on this device
     if "disks" in new:
         paths = [p for d in new["disks"] for p in d["paths"].values()]
         status = {x["path"]: x for x in wizard.check(paths)}
@@ -738,7 +738,7 @@ def api_settings_import():
     return jsonify(ok=True, reload=bool(lang) or "theme" in changes)
 
 
-# ---------------------------------------------------------------- dyski: kolejność i nazwa (strona główna, Menedżer plików)
+# ---------------------------------------------------------------- disks: order and name (main page, File manager)
 DISK_LABEL_MAX = 16
 
 
@@ -750,7 +750,7 @@ def api_disks_order():
     pos = {i: n for n, i in enumerate(ids)}
     ordered = sorted(disks, key=lambda d: pos.get(d.get("id"), len(pos)))
     if [d["id"] for d in ordered] != [d["id"] for d in disks]:
-        config.update(make_backup=False, disks=ordered)   # kolejność – bez punktu przywracania
+        config.update(make_backup=False, disks=ordered)   # order only – no restore point
     return jsonify(ok=True)
 
 
@@ -771,7 +771,7 @@ def api_disks_rename():
     return jsonify(ok=True, label=label)
 
 
-# ---------------------------------------------------------------- kreator
+# ---------------------------------------------------------------- wizard
 @app.route("/api/wizard/state")
 @login_required
 def api_wizard_state():
@@ -792,7 +792,7 @@ def api_wizard_scan():
     cats = [c for c in (d.get("categories") or config.get()["categories"]) if isinstance(c, dict) and c.get("id")]
     mount = d.get("mount", "")
     # disks from an imported settings file: their folder names are searched for, and their paths
-    # are moved onto this mount point (/plex_media_1024/Plex 1T/Movies → /mnt/plex_1024/Plex 1T/Movies)
+    # are moved onto this mount point (/media/disk1/Plex/Movies → /mnt/ssd1/Plex/Movies)
     hints = [h for h in d.get("hints") or [] if isinstance(h, dict) and isinstance(h.get("paths"), dict)]
     for c in cats:
         c["names"] = [os.path.basename(str(h["paths"].get(c["id"]) or "").rstrip("/")) for h in hints]
@@ -856,7 +856,7 @@ def api_wizard_finish():
     try:
         cats = None
         if isinstance(data.get("categories"), list):
-            # kategorie zmienione w kreatorze (nowa nazwa, nowa kategoria, np. Koncerty)
+            # categories changed in the wizard (new name, new category, e.g. Concerts)
             cats = _import_clean({"_plexdl": {}, "categories": data["categories"]}).get("categories")
             if not cats:
                 raise ValueError(_("At least one category must remain."))
@@ -879,8 +879,8 @@ def api_wizard_finish():
         if not disks and not data.get("skip_disks"):
             raise ValueError(_("At least one disk must remain."))
         if data.get("skip_disks"):
-            # „Pomiń”: przy pierwszym uruchomieniu bez dysków (przykładowe ścieżki znikają),
-            # przy ponownym kreatorze dotychczasowe dyski zostają
+            # “Skip”: on the first run no disks (the example paths are removed),
+            # when the wizard runs again the existing disks stay
             disks = cfg.get("disks", []) if cfg.get("wizard_done") else []
         servers = []
         for raw in data.get("plex_servers") or []:
@@ -973,7 +973,7 @@ def api_disks_scan():
     d = request.get_json(silent=True) or {}
     try:
         cats = [c for c in d.get("categories") or [] if isinstance(c, dict) and c.get("id")]
-        # nazwy folderów tej kategorii z innych dysków (np. „Home Video” zamiast „Domowe wideo”)
+        # folder names of this category on other disks (e.g. “Home Video” instead of “Home Movies”)
         current = d.get("paths") or {}
         for c in cats:
             names = {os.path.basename(str(p).rstrip("/")) for disk in config.get().get("disks", [])
@@ -1024,7 +1024,7 @@ def api_plex_discover():
     return jsonify(found=found, status=plexservers.monitor.snapshot())
 
 
-# ---------------------------------------------------------------- menedżer plików
+# ---------------------------------------------------------------- file manager
 def fm_call(fn, *args):
     try:
         return jsonify(fn(*args))
@@ -1195,7 +1195,7 @@ _version_cache = {"t": 0, "data": None}
 @app.route("/api/version")
 @login_required
 def api_version():
-    """Sprawdza (najwyżej co 10 min), czy w repozytorium GitHub są nowsze commity."""
+    """Checks (at most every 10 min) whether the GitHub repository has newer commits."""
     if _version_cache["data"] and time.time() - _version_cache["t"] < 600 and not request.args.get("force"):
         return jsonify(_version_cache["data"])
     resp = _api_version()
@@ -1209,7 +1209,7 @@ def _ver_tuple(v):
 
 
 def _api_version():
-    """Sprawdza tylko linię stabilną (gałąź main na GitHubie) – wersje beta nie są ogłaszane."""
+    """Checks the stable line only (main branch on GitHub) – beta versions are not announced."""
     def git(*args):
         return subprocess.run(["git", "-C", BASE_DIR] + list(args), capture_output=True,
                               text=True, timeout=25)
@@ -1258,10 +1258,10 @@ def set_password():
 
 
 def check_folders():
-    """Raport dla setup.sh: czy foldery kategorii istnieją i można w nich zapisywać."""
+    """Report for setup.sh: do the category folders exist and are they writable."""
     cfg = config.load()
     if not cfg.get("wizard_done"):
-        # nowa instalacja: przykładowe ścieżki z config.example.json nie mają tu znaczenia
+        # fresh installation: the example paths from config.example.json do not matter here
         print("  \033[36m%s\033[0m" % _("Disks and folders are set in the setup wizard after the first login."))
         return
     if not cfg.get("disks"):
@@ -1285,7 +1285,7 @@ _instance_lock = None
 
 
 def single_instance():
-    """Blokada: tylko jedna instancja może sterować aria2 i bazą zadań."""
+    """Lock: only one instance may control aria2 and the task database."""
     global _instance_lock
     import fcntl
     _instance_lock = open(DB_PATH + ".lock", "w")

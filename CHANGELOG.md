@@ -135,16 +135,16 @@ Everything from 1.3.0-beta1 … beta4 (details below), without the BETA-only VPN
   - Invalid values in the file (relative paths, unknown options, numbers out of range, unsafe host names) are ignored or limited.
 - **“+ SD card (not recommended)”** in Settings → Disks: adds a disk with the mount point `/` and folders in the home folder (`~/Plex/Movies`…) for every category, and offers to create missing folders. ⓘ explains why the SD card is not recommended.
 - After the first tests:
-  - **“Create” next to an empty category folder** in Settings → Disks: a small yellow button opens a helper with the proposed path (next to the other folders of that disk, e.g. `/plex_media/Plex/Red`); the folder name can be changed (e.g. `reddot`), the folder is created and linked to the category – then Save.
+  - **“Create” next to an empty category folder** in Settings → Disks: a small yellow button opens a helper with the proposed path (next to the other folders of that disk, e.g. `/mnt/ssd1/Plex/Concerts`); the folder name can be changed (e.g. `Live`), the folder is created and linked to the category – then Save.
   - Import: disks from another device (none of them mounted here) are unticked by default.
-  - **Update paths** fixes paths copied from another device: `/plex_media_1024/Plex 1T/Home Video` (path on the Plex Pi) becomes `/mnt/plex_1024/Plex 1T/Home Video` when that folder exists under this mount point. Folder names a category uses on other disks (e.g. `Home Video`, `reddot`) are also searched for.
+  - **Update paths** fixes paths copied from another device: `/media/ssd1/Plex/Home Video` (path on the Plex Pi) becomes `/mnt/ssd1/Plex/Home Video` when that folder exists under this mount point. Folder names a category uses on other disks (e.g. `Home Video`, `Live`) are also searched for.
   - **Setup wizard – categories on the disk step:**
     - when a disk has no category folders yet, the folders are suggested inside its `Plex` folder (e.g. `/mnt/disk/Plex/Movies`, `…/TV Shows`) and marked “will be created”,
     - gear next to a category: rename it and change its folder and type (e.g. Kids → Concerts); folders that do not exist yet get the new name,
     - ✕: the category is not used on this disk (↺ brings it back with a suggested folder); “+ Add category” adds a new one,
     - every such change ticks and highlights “Create missing folders when finishing”; when folders are missing and the box is unticked, it is highlighted too,
     - two categories with the same name or the same folder on one disk are reported before continuing.
-  - **Setup wizard – “I have a settings file – load it”** on the first step (optional, ⓘ explains when it helps): fills in categories, Plex servers, download and poster options, language, theme and the TMDB key (if exported) from a file made with Export settings. Disks from the file are listed in the disks step and matched to this device: folders are found by name and paths are moved onto the local mount point (e.g. `/plex_media_1024/Plex 1T/Movies` → `/mnt/plex_1024/Plex 1T/Movies`); the button name comes from the matching disk. Nothing is saved until Finish; “Do not use the file” starts over.
+  - **Setup wizard – “I have a settings file – load it”** on the first step (optional, ⓘ explains when it helps): fills in categories, Plex servers, download and poster options, language, theme and the TMDB key (if exported) from a file made with Export settings. Disks from the file are listed in the disks step and matched to this device: folders are found by name and paths are moved onto the local mount point (e.g. `/media/ssd1/Plex/Movies` → `/mnt/ssd1/Plex/Movies`); the button name comes from the matching disk. Nothing is saved until Finish; “Do not use the file” starts over.
   - ⓘ tooltips can have several paragraphs.
 
 ## 1.3.0-beta1 – 2026-11-09 (BETA)
@@ -159,7 +159,7 @@ Everything from 1.3.0-beta1 … beta4 (details below), without the BETA-only VPN
   - Nothing is saved until Finish; the previous settings are kept as a restore point.
   - **“Skip – set up disks later”** in the disks step: the wizard can be finished without a disk (on a new installation the example paths are removed; when the wizard is run again, the current disks stay). The download page and the File manager then show where to add a disk, and Settings can be saved without disks.
   - `setup.sh` on a new installation no longer lists the example folders as missing – it says that disks are set in the wizard.
-  - After the first tests: ⓘ explaining “Create missing folders when finishing”; a note (with ⓘ) that downloads are slower when the library is on another device; network shares get the share name as the button name; missing folders are suggested next to the ones found (e.g. `Plex 1T/Kids`); note that category and folder names can be changed in Settings → Categories.
+  - After the first tests: ⓘ explaining “Create missing folders when finishing”; a note (with ⓘ) that downloads are slower when the library is on another device; network shares get the share name as the button name; missing folders are suggested next to the ones found (e.g. `Media/Kids`); note that category and folder names can be changed in Settings → Categories.
   - TMDB step: “Show key” now shows the saved key, and the button switches between “Skip” and “Next” as you type (fixed after the first tests).
 - README (EN/PL): new section "Library on another computer (network share)" with the mount commands.
 

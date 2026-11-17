@@ -1,15 +1,15 @@
-/* Plex Downloader – wspólne narzędzia: tłumaczenia, API, formatowanie, nagłówek, okna, podpowiedzi ⓘ */
+/* Plex Downloader – shared helpers: translations, API, formatting, header, windows, ⓘ tooltips */
 (() => {
   "use strict";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
-    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* tryb prywatny */ } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } },
   };
   const CAT = window.I18N || {};
   const LANG = window.LANG || "en";
-  // t("Removed: {n}", {n: 3}) – tekst źródłowy po angielsku, tłumaczenie z locales/<lang>.json
+  // t("Removed: {n}", {n: 3}) – English source text, translation from locales/<lang>.json
   function t(s, vars) {
     let out = CAT[s] || s;
     if (vars) out = out.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
@@ -26,7 +26,7 @@
     const res = await fetch(path, Object.assign({ credentials: "same-origin" }, opt));
     if (res.status === 401) { location.href = "/login"; throw new Error("auth"); }
     let data = {};
-    try { data = await res.json(); } catch (e) { /* brak treści */ }
+    try { data = await res.json(); } catch (e) { /* no body */ }
     if (!res.ok) throw new Error(data.error || (t("Error") + " " + res.status));
     return data;
   }
@@ -68,11 +68,11 @@
     return "cat";
   }
 
-  // kopiowanie do schowka – działa także na zwykłym http (bez HTTPS) w sieci domowej
+  // copy to clipboard – works on plain http (no HTTPS) in a home network too
   async function copyText(text) {
     try {
       if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
-    } catch (e) { /* spróbujemy niżej */ }
+    } catch (e) { /* try the fallback below */ }
     const ta = el("textarea"); ta.value = text; ta.setAttribute("readonly", "");
     ta.style.cssText = "position:fixed;top:-1000px;opacity:0";
     (document.querySelector("dialog[open]") || document.body).appendChild(ta);
@@ -83,7 +83,7 @@
     return ok;
   }
 
-  // ------------------------------------------------------------------ przeciąganie okien
+  // ------------------------------------------------------------------ dragging windows
   function makeDraggable(win) {
     const head = win.querySelector("[data-drag]");
     if (!head) return;
@@ -109,7 +109,7 @@
   }
   function centerWindow(win) {
     if (window.innerWidth < 560 && !win.classList.contains("modal")) {
-      win.style.left = win.style.top = win.style.transform = ""; return; // telefon: pełny ekran z CSS
+      win.style.left = win.style.top = win.style.transform = ""; return; // phone: full screen from CSS
     }
     win.style.left = "50%"; win.style.top = "50%"; win.style.transform = "translate(-50%, -50%)";
   }
@@ -135,7 +135,7 @@
     return run;
   }
 
-  // ------------------------------------------------------------------ okno potwierdzenia
+  // ------------------------------------------------------------------ confirmation window
   function modal({ title, body, buttons, danger, wide }) {
     return new Promise((resolve) => {
       const d = el("dialog", "window modal" + (wide ? " wide" : ""));
@@ -176,7 +176,7 @@
     });
   }
 
-  // powiadomienia – w „top layer” (popover), więc są widoczne także nad otwartym oknem Ustawień
+  // notifications – in the “top layer” (popover), so they show above an open Settings window too
   function toast(msg, bad) {
     let box = $("#toasts");
     if (!box) {
@@ -192,7 +192,7 @@
     setTimeout(() => { n.remove(); if (!box.childElementCount && box.hidePopover) { try { box.hidePopover(); } catch (e) { /* */ } } }, 4300);
   }
 
-  // ------------------------------------------------------------------ podpowiedzi ⓘ
+  // ------------------------------------------------------------------ ⓘ tooltips
   let tip = null;
   function closeTip() { if (tip) { tip.remove(); tip = null; } }
   document.addEventListener("click", (e) => {
@@ -216,7 +216,7 @@
     (b.closest("dialog") || document.body).appendChild(tip);
     const r = b.getBoundingClientRect();
     const host = b.closest("dialog");
-    // granice: okno dialogowe (ma overflow: hidden) albo cała strona
+    // bounds: the dialog window (it has overflow: hidden) or the whole page
     const box = host ? host.getBoundingClientRect() : { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight, width: window.innerWidth };
     const w = Math.min(320, box.width - 24);
     tip.style.width = w + "px";
@@ -228,7 +228,7 @@
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeTip(); });
 
-  // ------------------------------------------------------------------ nagłówek: statusy
+  // ------------------------------------------------------------------ header: statuses
   let statusTimer = null;
   async function refreshStatus() {
     clearTimeout(statusTimer);

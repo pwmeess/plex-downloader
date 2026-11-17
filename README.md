@@ -40,7 +40,7 @@ Changelog: [CHANGELOG.md](CHANGELOG.md) · Roadmap: [ROADMAP.md](ROADMAP.md) · 
 - **Hidden TMDB key (1.2.6):** the key field is masked like a password, with "Show key" on demand; the panel does not send the key to the browser until you ask for it.
 - **Terminal commands** with a copy button in Settings → Account.
 - **Setup wizard (1.3):** first-run guide for disks and folders, Plex server and TMDB key; can be run again from Settings.
-- **Remote access over VPN (1.4):** Settings → VPN shows the Tailscale status, the panel's address in your VPN with a QR code for the phone, the devices in your VPN and whether Tailscale is up to date; log in or change the account from the panel, **HTTPS in the VPN** with Tailscale's own certificate (padlock, no port number), “home network only” or “home network + VPN”, and a VPN badge in the header. Nothing is opened on the router. WireGuard: status only. Guide: chapter 8.
+- **Remote access over VPN (1.4):** Settings → VPN shows the Tailscale status, the panel's address in your VPN with a QR code for the phone, the devices in your VPN and whether Tailscale is up to date; log in or change the account from the panel, **HTTPS in the VPN** with Tailscale's own certificate (padlock, no port number), “home network only” or “home network + VPN”, and a VPN badge in the header. Nothing is opened on the router. WireGuard: status only. Guide: [Stage 6 – VPN](docs/guide.en.md).
 - Works on phones.
 
 ## Requirements
@@ -118,7 +118,7 @@ The key is stored only locally in `config.json`. Without a key the app works nor
 
 ## Your own disks
 
-The default paths in `config.example.json` are the author's layout, so yours will most likely differ.
+The paths in `config.example.json` are only an example – the setup wizard replaces them with your disks at the first login.
 
 1. Check where your disks are mounted with `df -h`, e.g. `/mnt/disk1`.
 2. In **Settings → Disks** enter for each disk:
@@ -218,4 +218,4 @@ sudo systemctl restart plex-downloader         # restart
 
 ## Security
 
-The app is meant for a home network. Do not expose port 8800 to the internet. For remote access use a VPN: Tailscale (Settings → VPN, guide chapter 8) or WireGuard.
+The app is meant for a home network. Do not expose port 8800 to the internet. For remote access use a VPN: Tailscale (Settings → VPN, [guide, Stage 6](docs/guide.en.md)) or WireGuard.

@@ -1,4 +1,4 @@
-"""Silnik pobierania: sterowanie aria2c przez JSON-RPC, kolejka, finalizacja i sprzątanie."""
+"""Download engine: controls aria2c over JSON-RPC, queue, finishing and cleanup."""
 import errno
 import json
 import logging
@@ -36,7 +36,7 @@ class Aria2Error(Exception):
 
 
 class Aria2:
-    """Minimalny klient JSON-RPC aria2 (tylko localhost, bez proxy)."""
+    """Minimal aria2 JSON-RPC client (localhost only, no proxy)."""
 
     def __init__(self, port, secret):
         self.url = "http://127.0.0.1:%d/jsonrpc" % int(port)
@@ -84,7 +84,7 @@ def _human_error(msg):
 
 
 def probe(url, timeout=12):
-    """Sprawdza link: nazwę pliku, rozmiar, obsługę wznawiania (Range)."""
+    """Checks a link: file name, size, resume support (Range)."""
     headers = {"User-Agent": UA}
     resp = None
     try:
@@ -93,7 +93,7 @@ def probe(url, timeout=12):
     except urllib.error.HTTPError as e:
         if e.code not in (400, 403, 405, 501):
             raise
-    if resp is None:  # serwer nie lubi HEAD – próbujemy GET z Range na 1 bajt
+    if resp is None:  # the server does not like HEAD – try GET with a 1-byte Range
         h = dict(headers, Range="bytes=0-0")
         resp = urllib.request.urlopen(urllib.request.Request(url, headers=h), timeout=timeout)
     with resp:
@@ -108,12 +108,12 @@ def probe(url, timeout=12):
             size = int(hdr["Content-Length"])
         resumable = hdr.get("Accept-Ranges", "").lower() == "bytes" or bool(cr)
         ctype = (hdr.get("Content-Type") or "").split(";")[0].strip().lower()
-        # strona WWW zamiast pliku (logowanie, weryfikacja wieku, wygasły link) – zwykle po przekierowaniu
+        # a web page instead of a file (login, age check, expired link) – usually after a redirect
         page = ctype in ("text/html", "application/xhtml+xml")
         from_final = naming.filename_from_url(final_url)
         from_url = naming.filename_from_url(url)
-        # nazwa z adresu po przekierowaniu tylko wtedy, gdy wygląda na plik wideo
-        # (inaczej np. „L2Rsb2Fk…” – zakodowany adres strony logowania)
+        # the name from the redirected address only when it looks like a video file
+        # (otherwise e.g. “L2Rsb2Fk…” – an encoded login page address)
         if page or not naming.split_ext(from_final)[1]:
             from_final = ""
         fname = (("" if page else naming.filename_from_content_disposition(hdr.get("Content-Disposition")))
@@ -126,7 +126,7 @@ def probe(url, timeout=12):
 
 
 def disk_status(d):
-    """Stan dysku: zamontowany?, wolne/całkowite miejsce, czy foldery istnieją."""
+    """Disk state: mounted?, free/total space, do the folders exist."""
     cfg = config.get()
     mount = d.get("mount") or ""
     paths = d.get("paths") or {}
@@ -166,7 +166,7 @@ class Manager:
         self._db.execute("CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY, created REAL, data TEXT)")
         self._db.commit()
 
-    # ---------- persistencja ----------
+    # ---------- persistence ----------
     def _save(self, job):
         with self.lock:
             self._db.execute("INSERT OR REPLACE INTO jobs (id, created, data) VALUES (?, ?, ?)",
@@ -260,7 +260,7 @@ class Manager:
             self.proc.terminate()
 
     def _restore(self):
-        """Po restarcie wznawia przerwane pobierania (aria2 kontynuuje z pliku .aria2)."""
+        """After a restart resumes interrupted downloads (aria2 continues from the .aria2 file)."""
         with self.lock:
             for job in list(self.jobs.values()):
                 st = job["status"]
@@ -280,7 +280,7 @@ class Manager:
         if not self.engine_ok:
             return
         if job.get("gid"):
-            try:  # aria2 nadal prowadzi to zadanie (np. przeżyło restart aplikacji) – nie dublujemy
+            try:  # aria2 still runs this task (e.g. it survived an app restart) – do not duplicate it
                 self.aria2.call("tellStatus", job["gid"], ["status"])
                 return
             except Exception:
@@ -292,7 +292,7 @@ class Manager:
             job.update(status="error", error=_("Could not resume: %s") % e)
         self._save(job)
 
-    # ---------- API zadań ----------
+    # ---------- task API ----------
     def add(self, url, disk_id, category_id, folder, filename, kind, display, size=None):
         if not self.engine_ok:
             raise ValueError(_("The download engine (aria2c) is not running: %s") % self.engine_error)
@@ -344,7 +344,7 @@ class Manager:
         return job
 
     def busy_paths(self):
-        """Foldery, do których trwa pobieranie – menedżer plików ich nie rusza."""
+        """Folders being downloaded into – the file manager does not touch them."""
         with self.lock:
             return [j["folder"] for j in self.jobs.values()
                     if j["status"] not in ("done", "error")]
@@ -403,7 +403,7 @@ class Manager:
             try:
                 self.aria2.call("forceRemove", job["gid"])
             except Aria2Error:
-                pass  # zadanie mogło się właśnie zakończyć błędem – poll i tak posprząta
+                pass  # the task may have just failed – poll cleans up anyway
 
     def retry(self, job_id):
         with self.lock:
@@ -431,7 +431,7 @@ class Manager:
                 if job["status"] == "done":
                     self._delete(job["id"])
 
-    # ---------- pętla monitorująca ----------
+    # ---------- monitoring loop ----------
     def _poll_loop(self):
         while not self._stop.is_set():
             try:
@@ -442,7 +442,7 @@ class Manager:
 
     def _poll(self):
         if not self.engine_ok or not self.aria2.alive():
-            # aria2 padło lub nie wystartowało – próbujemy podnieść i wznowić zadania
+            # aria2 crashed or did not start – try to bring it up and resume the tasks
             try:
                 self._start_aria2()
                 self.engine_ok = True
@@ -503,7 +503,7 @@ class Manager:
             elif a == "error":
                 self._fail(job, _human_error(st.get("errorMessage")))
                 return
-            elif a == "removed":  # usunięte spoza aplikacji
+            elif a == "removed":  # removed outside the app
                 self._finish_cancel(job)
                 return
             if job["status"] != prev:
@@ -537,12 +537,12 @@ class Manager:
         if tmp and os.path.basename(os.path.dirname(tmp)) == TMP_DIRNAME:
             shutil.rmtree(tmp, ignore_errors=True)
             try:
-                os.rmdir(os.path.dirname(tmp))  # tylko jeśli pusty
+                os.rmdir(os.path.dirname(tmp))  # only if empty
             except OSError:
                 pass
 
     def _finalize(self, job):
-        """Przenosi gotowy plik z folderu tymczasowego do biblioteki (atomowo, ten sam dysk)."""
+        """Moves a finished file from the temporary folder into the library (atomic, same disk)."""
         src = os.path.join(job["tmp_dir"], job["filename"])
         dst_dir = job["folder"]
         dst = os.path.join(dst_dir, job["filename"])
@@ -562,7 +562,7 @@ class Manager:
             except OSError as e:
                 if e.errno != errno.EXDEV:
                     raise
-                part = dst + ".part"  # inny system plików: kopia + atomowa zmiana nazwy
+                part = dst + ".part"  # another file system: copy + atomic rename
                 try:
                     shutil.copyfile(src, part)
                     os.rename(part, dst)
@@ -572,7 +572,7 @@ class Manager:
                     raise
         except Exception as e:
             log.exception("Finalization failed")
-            for p in created:  # usuwamy tylko foldery utworzone przez nas i tylko puste
+            for p in created:  # remove only folders we created, and only empty ones
                 try:
                     os.rmdir(p)
                 except OSError:

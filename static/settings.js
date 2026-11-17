@@ -1,4 +1,4 @@
-/* Plex Downloader – pływające okno ustawień z zakładkami */
+/* Plex Downloader – floating settings window with tabs */
 (() => {
   "use strict";
   const { $, $$, t, LOCALE, api, el, icon, modal, toast, makeDraggable, centerWindow, fmtSize, copyText } = window.PD;
@@ -6,12 +6,12 @@
   if (!dlg) return;
   makeDraggable(dlg);
 
-  let cfg = null;      // ustawienia w trakcie edycji
+  let cfg = null;      // settings being edited
   let tmpSeq = 0;
   const key = (c) => c.id || c.tmp;
   const KIND = { movie: t("movie"), tv: t("TV show"), other: t("other") };
 
-  // ------------------------------------------------------------------ zakładki
+  // ------------------------------------------------------------------ tabs
   function showTab(name) {
     syncFromDom();
     $$(".tabs button", dlg).forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
@@ -28,7 +28,7 @@
   $$("[data-close]", dlg).forEach((b) => b.addEventListener("click", () => dlg.close()));
   $$("[data-goto]", dlg).forEach((b) => b.addEventListener("click", () => showTab(b.dataset.goto)));
 
-  // ------------------------------------------------------------------ dyski
+  // ------------------------------------------------------------------ disks
   function renderDisks() {
     const box = $("#diskRows");
     box.replaceChildren();
@@ -89,7 +89,7 @@
     });
     return row;
   }
-  // „Utwórz” przy pustym folderze kategorii: proponowana ścieżka obok pozostałych folderów dysku
+  // “Create” next to an empty category folder: suggested path next to the disk's other folders
   function suggestParent(row) {
     const count = {};
     $$("input[data-cat]", row).forEach((i) => {
@@ -134,7 +134,7 @@
     rows[rows.length - 1].scrollIntoView({ behavior: "smooth", block: "center" });
   });
 
-  // szablon „Karta SD (niezalecane)”: punkt montowania / i foldery w ~/Plex/…
+  // “SD card (not recommended)” template: mount point / and folders in ~/Plex/…
   $("#addSdDisk").addEventListener("click", async () => {
     syncFromDom();
     const home = (cfg.home || "/home/pi").replace(/\/+$/, "");
@@ -161,7 +161,7 @@
     } catch (e) { toast(e.message, true); }
   });
 
-  // ------------------------------------------------------------------ kategorie
+  // ------------------------------------------------------------------ categories
   function renderCats() {
     const box = $("#catRows");
     box.replaceChildren();
@@ -202,7 +202,7 @@
     $("input", rows[rows.length - 1]).focus();
   });
 
-  // ------------------------------------------------------------------ serwery Plex
+  // ------------------------------------------------------------------ Plex servers
   function renderPlexRows() {
     const box = $("#plexRows");
     box.replaceChildren();
@@ -234,7 +234,7 @@
     });
   }
   async function loadPlexStatus() {
-    try { renderPlexList((await api("/api/status")).plex); } catch (e) { /* bez znaczenia */ }
+    try { renderPlexList((await api("/api/status")).plex); } catch (e) { /* not important */ }
   }
   $("#plexDiscover").addEventListener("click", async (e) => {
     const b = e.currentTarget; b.disabled = true;
@@ -248,7 +248,7 @@
     b.disabled = false;
   });
 
-  // ------------------------------------------------------------------ okładki
+  // ------------------------------------------------------------------ posters
   function renderThumbDisks() {
     const sel = $("#thumbDisk");
     const cur = sel.value;
@@ -278,7 +278,7 @@
     } catch (e) { $("#thumbMsg").className = "form-msg bad"; $("#thumbMsg").textContent = e.message; }
   });
 
-  // ------------------------------------------------------------------ kopie zapasowe
+  // ------------------------------------------------------------------ backups
   const fmtDate = (ts) => { const d = new Date(ts * 1000); return d.toLocaleDateString(LOCALE) + " " + d.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }); };
   const bsel = new Set();
   function updBackupTools() {
@@ -349,7 +349,7 @@
     } catch (e) { toast(e.message, true); }
     loadBackups();
   });
-  // ------------------------------------------------------------------ eksport / import ustawień
+  // ------------------------------------------------------------------ settings export / import
   $("#expBtn").addEventListener("click", () => {
     const a = el("a"); a.href = "/api/settings/export" + ($("#expTmdb").checked ? "?tmdb=1" : "");
     a.download = ""; document.body.appendChild(a); a.click(); a.remove();
@@ -390,7 +390,7 @@
       const box = el("div", "imp-sec");
       const lab = el("label", "check");
       const cb = el("input"); cb.type = "checkbox"; boxes[n] = cb;
-      // dyski z innego urządzenia (żaden nie jest tu zamontowany) – domyślnie odznaczone
+      // disks from another device (none is mounted here) – unticked by default
       cb.checked = sec.changes.length > 0 && !(sec.disks && sec.disks.length && sec.disks.every((d) => !d.mounted));
       lab.append(cb, " ", el("b", null, SECTION[n]()));
       if (!sec.changes.length) lab.appendChild(el("span", "tag", t("no changes")));
@@ -464,7 +464,7 @@
   });
 
 
-  // ------------------------------------------------------------------ konto: interfejs, dziennik, komendy
+  // ------------------------------------------------------------------ account: interface, log, commands
   async function setInterface(data) {
     try {
       await api("/api/interface", data);
@@ -542,7 +542,7 @@
     });
   }
 
-  // okno dziennika (rozmiar i położenie jak okno Ustawień)
+  // log window (size and position like the Settings window)
   const logWin = $("#logWin");
   makeDraggable(logWin);
   $$("[data-close-log]", logWin).forEach((b) => b.addEventListener("click", () => logWin.close()));
@@ -589,7 +589,7 @@
     } catch (e) { m.className = "form-msg bad"; m.textContent = e.message; }
   });
 
-  // ------------------------------------------------------------------ odczyt formularza
+  // ------------------------------------------------------------------ reading the form
   function syncFromDom() {
     if (!cfg) return;
     $$("#catRows .cat-row").forEach((row) => {
@@ -614,7 +614,7 @@
     }
   }
 
-  // ------------------------------------------------------------------ otwarcie / zapis
+  // ------------------------------------------------------------------ open / save
   async function load() {
     cfg = await api("/api/settings");
     cfg.categories.forEach((c) => { c.tmp = c.id; });
@@ -624,7 +624,7 @@
     $("#sSpeed").value = cfg.max_speed_mbps;
     $("#sMount").checked = !!cfg.require_mount;
     $("#sAutodisc").checked = !!cfg.plex_autodiscover;
-    // klucz TMDB: pole puste i zamaskowane; zapisany klucz widać dopiero po „Pokaż klucz”
+    // TMDB key: field empty and masked; the saved key shows only after “Show key”
     const tk = $("#sTmdb");
     tk.value = ""; tk.type = "password"; tk.dataset.dirty = "";
     tk.placeholder = cfg.tmdb_key_set ? t("Saved key: {mask}", { mask: cfg.tmdb_key_mask }) : t("paste the key from themoviedb.org");

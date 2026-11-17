@@ -33,7 +33,7 @@ Historia zmian: [CHANGELOG.md](CHANGELOG.md) · Plan kolejnych wersji: [ROADMAP.
 - **Okładki:** zapisywane w folderze filmu jako `Tytuł (Rok).thumb.jpg` (z TMDB). Gdy TMDB nic nie zwróci, plik nie powstaje i widać obrazek zastępczy. Wyszukiwanie w TMDB można wyłączyć dla wybranej kategorii (np. domowe wideo).
 - **Serwery Plex w nagłówku (1.2):** automatyczne wykrywanie w sieci (GDM) i status online/offline, także dla serwerów dodanych ręcznie.
 - **Kopie zapasowe ustawień (1.2):** punkt przywracania po każdej zmianie, przechowywany 30 dni (ostatni zawsze zostaje). Przywrócenie nie zmienia loginu ani hasła.
-- **Dostęp zdalny przez VPN (1.4):** Ustawienia → VPN pokazują stan Tailscale, adres panelu w Twoim VPN z kodem QR dla telefonu, urządzenia w VPN i to, czy Tailscale jest aktualny; logowanie i zmiana konta z panelu, **HTTPS w VPN** z certyfikatem Tailscale (kłódka, bez numeru portu), „tylko sieć domowa” albo „sieć domowa + VPN” oraz plakietka VPN w nagłówku. Na routerze nic nie jest otwierane. WireGuard: tylko status. Poradnik: rozdział 8.
+- **Dostęp zdalny przez VPN (1.4):** Ustawienia → VPN pokazują stan Tailscale, adres panelu w Twoim VPN z kodem QR dla telefonu, urządzenia w VPN i to, czy Tailscale jest aktualny; logowanie i zmiana konta z panelu, **HTTPS w VPN** z certyfikatem Tailscale (kłódka, bez numeru portu), „tylko sieć domowa” albo „sieć domowa + VPN” oraz plakietka VPN w nagłówku. Na routerze nic nie jest otwierane. WireGuard: tylko status. Instrukcja: [Etap 6 – VPN](docs/guide.pl.md).
 - **Eksport i import ustawień (1.3):** plik JSON bez loginu, hasła i kluczy (klucz TMDB opcjonalnie); przy imporcie widać, co się zmieni, i można wybrać sekcje.
 - **Pływające okno ustawień z zakładkami (1.2)** i podpowiedzi ⓘ przy opcjach.
 - Przyciski **Google** i **Zwiastun (YouTube)** w karcie filmu.
@@ -122,21 +122,9 @@ Filmy i seriale na dyskach nigdy nie są ruszane.
 
 Klucz jest zapisywany wyłącznie lokalnie w `config.json`. Bez klucza aplikacja działa normalnie, tylko bez karty podglądu.
 
-## Domyślne dyski (`config.example.json`)
+## Własne dyski
 
-| Przycisk | Filmy | Seriale | Dla dzieci |
-|---|---|---|---|
-| Pendrive 256GB | `/plex_media/Plex/Movies` | `/plex_media/Plex/TV Shows` | `/plex_media/Plex/Kids` |
-| Dysk SSD 512GB | `/plex_media_512/Plex 512/Movies` | `/plex_media_512/Plex 512/TV Shows` | `/plex_media_512/Plex 512/Kids` |
-| Dysk SSD 1024GB | `/plex_media_1024/Plex 1T/Movies` | `/plex_media_1024/Plex 1T/TV Shows` | `/plex_media_1024/Plex 1T/Kids` |
-
-Aktualizacja z wersji 1.0/1.1 przenosi starą konfigurację automatycznie. Jeśli obok folderu `Movies` istnieje folder `Kids`, zostaje od razu przypisany do kategorii „Dla dzieci”.
-
-Ścieżki zmienisz w **Ustawieniach** albo w `config.json`.
-
-## Własne dyski (inna instalacja niż autora)
-
-Aplikacja **nie wykrywa dysków automatycznie**. Domyślne ścieżki to konfiguracja autora, więc u Ciebie najpewniej będą inne.
+Aplikacja **nie wykrywa dysków automatycznie**. Ścieżki w `config.example.json` to tylko przykład – kreator przy pierwszym logowaniu zastąpi je Twoimi dyskami.
 
 1. Sprawdź, gdzie są zamontowane Twoje dyski, poleceniem `df -h`. Zobaczysz np. `/mnt/dysk1`.
 2. W panelu wejdź w **Ustawienia → Dyski** i dla każdego dysku wpisz:
@@ -236,4 +224,4 @@ sudo systemctl restart plex-downloader         # restart
 
 ## Bezpieczeństwo
 
-Aplikacja jest przeznaczona do sieci domowej. Nie wystawiaj portu 8800 do internetu. Do zdalnego dostępu użyj VPN: Tailscale (Ustawienia → VPN, poradnik rozdział 8) albo WireGuard.
+Aplikacja jest przeznaczona do sieci domowej. Nie wystawiaj portu 8800 do internetu. Do zdalnego dostępu użyj VPN: Tailscale (Ustawienia → VPN, [instrukcja, Etap 6](docs/guide.pl.md)) albo WireGuard.
