@@ -48,7 +48,7 @@ class VpnGateTests(unittest.TestCase):
         self.assertEqual(self.get("192.168.1.20").status_code, 200)
         self.assertEqual(self.get("100.84.203.117").status_code, 403)
         # HTTPS in the VPN arrives through tailscale serve from localhost
-        self.assertEqual(self.get("127.0.0.1", {"Host": "raspi400.tail4d031a.ts.net"}).status_code, 403)
+        self.assertEqual(self.get("127.0.0.1", {"Host": "plexpi.tail1234.ts.net"}).status_code, 403)
         self.assertEqual(self.get("127.0.0.1").status_code, 200)
         r = self.c.get("/api/state", environ_base={"REMOTE_ADDR": "100.84.203.117"})
         self.assertEqual(r.status_code, 403)

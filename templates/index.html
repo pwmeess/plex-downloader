@@ -9,7 +9,7 @@
 {% include "_header.html" %}
 
 <main class="layout">
-  <!-- formularz -->
+  <!-- form -->
   <section class="card">
     <h2>{{ _("Add a new download") }}</h2>
     <form id="addForm" autocomplete="off">
@@ -48,7 +48,7 @@
         </div>
       </div>
 
-      <!-- opcje zaawansowane (nazewnictwo Plex) -->
+      <!-- advanced options (Plex naming) -->
       <div class="adv">
         <label class="check adv-toggle"><input type="checkbox" id="advOn"> {{ _("Advanced options – Plex tags") }}
           <button type="button" class="info-i" data-tip="{{ _("Extra tags in the name following the Plex rules: movie edition (e.g. director's cut, remaster), file version (e.g. 1080p, 4K – several versions in one folder) and the TMDB ID, which guarantees an exact match.") }}" data-href="https://support.plex.tv/articles/multiple-editions/">i</button></label>
@@ -87,7 +87,7 @@
   </section>
 
   <div class="col">
-    <!-- kolejka -->
+    <!-- queue -->
     <section class="card jobs-card">
       <div class="card-head">
         <h2>{{ _("Download manager") }}</h2>
@@ -97,7 +97,7 @@
       <div class="jobs" id="jobs"></div>
     </section>
 
-    <!-- podgląd filmu (TMDB) -->
+    <!-- movie preview (TMDB) -->
     <section class="card info-card" id="infoCard" hidden>
       <div class="info-head">
         <h2 id="infoHeading">{{ _("Movie preview") }}</h2>

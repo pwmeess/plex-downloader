@@ -1,4 +1,4 @@
-"""Parsowanie nazw plików z URL i budowanie ścieżek zgodnych z konwencją Plexa."""
+"""Parses file names from URLs and builds paths that follow the Plex naming convention."""
 import os
 import re
 from urllib.parse import unquote, urlparse
@@ -10,7 +10,7 @@ VIDEO_EXTS = {
     ".mpg", ".mpeg", ".webm", ".flv", ".divx", ".ogm", ".vob",
 }
 
-# Tokeny, od których w nazwie zaczynają się "śmieci" (jakość, kodek, wersja językowa).
+# Tokens where the "junk" in a name starts (quality, codec, language version).
 _JUNK = re.compile(
     r"(?i)\b(480p|576p|720p|1080p|1080i|2160p|4k|uhd|hdr|hdr10|dv|bluray|blu-ray|brrip|bdrip|"
     r"bdremux|remux|web[ -]?dl|webrip|web|hdtv|hdrip|dvdrip|dvdscr|dvd|cam|ts|x264|x265|h264|"
@@ -18,13 +18,13 @@ _JUNK = re.compile(
     r"lektor|napisy|subbed|subtitles?|softsub|hardsub|engsub|vostfr|multi|proper|repack|extended|"
     r"unrated|limited|internal|remastered|imax)\b"
 )
-# „(720)”, „[1080]” – rozdzielczość bez litery p, traktowana jak znacznik jakości
+# “(720)”, “[1080]” – resolution without the letter p, treated as a quality tag
 _RES_BRACKET = re.compile(r"(?i)[(\[]\s*(480|576|720|1080|2160)\s*[pi]?\s*[)\]]")
-# Adres strony doklejony na początku nazwy: „SITE.COM - Tytuł…”, „www.site.net_Tytuł…”
+# Site address glued to the start of a name: “SITE.COM - Title…”, “www.site.net_Title…”
 _SITE_PREFIX = re.compile(
     r"(?i)^\s*(?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:com|net|org|to|tv|cc|io|me|info|biz|ws|xyz|"
     r"pl|eu|se|ru|co|site|online|top|club|link|lol|li|is|nu|ag|sx|vip)\s*[-_\u2013]\s*")
-# „Episode 2”, „Ep 02”, „Odcinek 2”, opcjonalnie „Season 1” / „Sezon 1”
+# “Episode 2”, “Ep 02”, “Odcinek 2” (Polish), optionally “Season 1” / “Sezon 1”
 _EPISODE = re.compile(r"(?i)\b(?:episode|ep|odcinek|odc)[ ._-]*(\d{1,3})\b")
 _SEASON = re.compile(r"(?i)\b(?:season|sezon|series)[ ._-]*(\d{1,2})\b")
 _YEAR = re.compile(r"\b(19\d{2}|20\d{2})\b")
@@ -32,11 +32,11 @@ _TV = re.compile(r"(?i)\bS(\d{1,2})[ ._-]?E(\d{1,3})(?:[ ._-]?E\d{1,3})?\b|\b(\d
 _FORBIDDEN = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 _TAG = re.compile(r"\s*\{(edition|imdb|tmdb|tvdb)-([^}]*)\}", re.I)
 
-# Popularne edycje (Plex: {edition-Nazwa}, maks. 32 znaki) – podpowiedzi w formularzu
+# Common editions (Plex: {edition-Name}, max. 32 characters) – suggestions in the form
 EDITIONS = ["Director's Cut", "Extended Edition", "Theatrical Cut", "Final Cut", "Unrated",
             "Special Edition", "Ultimate Edition", "Collector's Edition", "Anniversary Edition",
             "Remastered", "IMAX", "Criterion", "Despecialized", "VHS", "Blu-ray", "Open Matte"]
-# Popularne oznaczenia wersji (Plex: „Tytuł (Rok) - 1080p.mkv” – kilka wersji w jednym folderze)
+# Common version labels (Plex: “Title (Year) - 1080p.mkv” – several versions in one folder)
 VERSIONS = ["4K", "2160p", "1080p", "720p", "SD", "HDR", "Dolby Vision", "Blu-ray", "Remux",
             "Lektor PL", "Napisy PL", "Dubbing PL", "Wersja oryginalna"]
 _EDITION_HINTS = [
@@ -54,7 +54,7 @@ _EDITION_HINTS = [
 
 
 def sanitize(name):
-    """Usuwa znaki niedozwolone w nazwach plików (także dla Samby/Windows)."""
+    """Removes characters not allowed in file names (also for Samba/Windows)."""
     name = _FORBIDDEN.sub(" ", name or "")
     name = re.sub(r"\s+", " ", name).strip(" .")
     if name in ("", ".", ".."):
@@ -83,7 +83,7 @@ def filename_from_content_disposition(value):
     if not m:
         return ""
     name = m.group(1).strip()
-    # część serwerów koduje nazwę procentowo także w zwykłym filename= („Tytul%20Filmu.mp4”)
+    # some servers percent-encode the name even in a plain filename= (“Movie%20Title.mp4”)
     if re.search(r"%[0-9A-Fa-f]{2}", name):
         name = unquote(name)
     return name
@@ -98,25 +98,25 @@ def split_ext(filename):
 
 def _clean(text):
     text = re.sub(r"[._]+", " ", text)
-    text = re.sub(r"\[[^\]]*\]", " ", text)          # [grupa]
+    text = re.sub(r"\[[^\]]*\]", " ", text)          # [group]
     text = re.sub(r"\s+-\s*$", "", text.strip())
     text = re.sub(r"[\s\-(]+$", "", text)
     return re.sub(r"\s+", " ", text).strip()
 
 
 def clean_tag(text, limit=32):
-    """Tekst do znacznika {edition-…} / sufiksu wersji: bez klamer i znaków zakazanych."""
+    """Text for an {edition-…} tag / version suffix: no braces and no forbidden characters."""
     text = sanitize(re.sub(r"[{}]", " ", text or ""))
     return text[:limit].strip()
 
 
 def strip_tags(name):
-    """„Blade Runner (1982) {edition-Final Cut} {tmdb-78}” → „Blade Runner (1982)”."""
+    """“Blade Runner (1982) {edition-Final Cut} {tmdb-78}” → “Blade Runner (1982)”."""
     return _TAG.sub("", name or "").strip()
 
 
 def parse_name(name):
-    """Rozbija nazwę folderu/pliku Plex: tytuł, rok, edycja, ID."""
+    """Splits a Plex folder/file name: title, year, edition, ID."""
     out = {"title": "", "year": None, "edition": "", "tmdb": None, "imdb": None, "tvdb": None}
     for key, val in _TAG.findall(name or ""):
         key = key.lower()
@@ -144,9 +144,9 @@ def detect_edition(filename):
 
 
 def guess(filename):
-    """Zgaduje typ (film/serial) i nazwę z nazwy pliku.
+    """Guesses the type (movie/show) and the name from a file name.
 
-    Zwraca dict: kind, title, year, name (film: "Tytuł (YYYY)"), show, season, episode.
+    Returns a dict: kind, title, year, name (movie: "Title (YYYY)"), show, season, episode.
     """
     stem, ext = split_ext(filename)
     stem = _SITE_PREFIX.sub("", stem) or stem
@@ -168,7 +168,7 @@ def guess(filename):
             return result
 
     ep = _EPISODE.search(plain)
-    # „Star Wars Episode 1 The Phantom Menace 1999” to film: rok po słowie Episode → nie serial
+    # “Star Wars Episode 1 The Phantom Menace 1999” is a movie: a year after the word Episode → not a show
     if ep and not _YEAR.search(plain[ep.end():]):
         se = _SEASON.search(plain)
         cut = min(ep.start(), se.start()) if se else ep.start()
@@ -214,10 +214,10 @@ def _tags(edition=None, ids=None):
 
 
 def movie_target(base, name, ext, edition=None, version=None, ids=None):
-    """base/Tytuł (YYYY) {tmdb-…} {edition-…}/Tytuł (YYYY) {…} - wersja.ext
+    """base/Title (YYYY) {tmdb-…} {edition-…}/Title (YYYY) {…} - version.ext
 
-    Edycja (Plex Pass) trafia do folderu i pliku – zgodnie z zaleceniem Plex.
-    Wersja (np. „1080p”) tylko do nazwy pliku – kilka wersji w jednym folderze.
+    The edition (Plex Pass) goes into the folder and the file name – as Plex recommends.
+    The version (e.g. “1080p”) only into the file name – several versions in one folder.
     """
     name = sanitize(strip_tags(name))
     if not name:
@@ -231,7 +231,7 @@ def movie_target(base, name, ext, edition=None, version=None, ids=None):
 
 
 def tv_target(base, show, season, episode, episode_title, ext, ids=None):
-    """base/Serial {tmdb-…}/Season 01/Serial - S01E02[ - Tytuł odcinka].ext"""
+    """base/Show {tmdb-…}/Season 01/Show - S01E02[ - Episode title].ext"""
     show = sanitize(strip_tags(show))
     if not show:
         raise ValueError(_("Enter the TV show name."))

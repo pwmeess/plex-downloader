@@ -1,4 +1,4 @@
-"""Bezpieczeństwo menedżera plików: ścieżki, weryfikacja kopii, usuwanie."""
+"""File manager safety: paths, copy verification, deleting."""
 import json
 import os
 import shutil
@@ -50,7 +50,7 @@ class FMTests(unittest.TestCase):
             if op["status"] not in ("queued", "running"):
                 return op
             time.sleep(0.05)
-        self.fail("operacja nie zakończyła się")
+        self.fail("the operation did not finish")
 
     def test_extras_not_counted(self):
         d = self.make(self.a, "Extras (2010)")
@@ -143,28 +143,28 @@ class FMTests(unittest.TestCase):
     def test_scan_disk_names(self):
         """Folder names only: plural / spelling variants, non-video folders skipped, odd names suggested."""
         m = os.path.join(self.tmp, "scan3")
-        for d in ("Plex 512/Movies", "Plex 512/TV-Shows", "Plex 512/Home Videos", "Plex 512/Movies02",
-                  "Plex 512/Music/Artist/Album", "Zdjęcia/2020", "Muzyka"):
+        for d in ("Media/Movies", "Media/TV-Shows", "Media/Home Videos", "Media/Movies02",
+                  "Media/Music/Artist/Album", "Zdjęcia/2020", "Muzyka"):
             os.makedirs(os.path.join(m, d))
         cats = [{"id": "movies", "label": "Filmy", "folder": "Movies"}, {"id": "tv", "label": "Seriale", "folder": "TV Shows"},
                 {"id": "kids", "label": "Dla dzieci", "folder": "Kids"},
                 {"id": "home", "label": "Domowe wideo", "folder": "Home Video"}]
         res, extras = self.fm.scan_disk(m, cats)
-        self.assertEqual(res["movies"]["path"], os.path.join(m, "Plex 512", "Movies"))
-        self.assertEqual(res["tv"]["path"], os.path.join(m, "Plex 512", "TV-Shows"))
-        self.assertEqual(res["home"]["path"], os.path.join(m, "Plex 512", "Home Videos"))
+        self.assertEqual(res["movies"]["path"], os.path.join(m, "Media", "Movies"))
+        self.assertEqual(res["tv"]["path"], os.path.join(m, "Media", "TV-Shows"))
+        self.assertEqual(res["home"]["path"], os.path.join(m, "Media", "Home Videos"))
         self.assertEqual(res["kids"]["status"], "missing")
         self.assertEqual([(x["name"], x["guess"]) for x in extras], [("Movies02", "movies")])
 
     def test_scan_paths_other_device(self):
         """A path copied from another Pi is moved onto this mount point; folder names from other disks count."""
         m = os.path.join(self.tmp, "scan2")
-        os.makedirs(os.path.join(m, "Plex 1T", "Home Video")); os.makedirs(os.path.join(m, "Plex 1T", "reddot"))
+        os.makedirs(os.path.join(m, "Library", "Home Video")); os.makedirs(os.path.join(m, "Library", "live-shows"))
         cats = [{"id": "home", "label": "Domowe wideo", "folder": "Domowe wideo"},
-                {"id": "red", "label": "Red", "folder": "Red", "names": ["reddot"]}]
-        r = self.fm.scan_paths(m, cats, {"home": "/plex_media_1024/Plex 1T/Home Video"})
-        self.assertEqual(r["home"], {"path": os.path.join(m, "Plex 1T", "Home Video"), "status": "found"})
-        self.assertEqual(r["red"]["path"], os.path.join(m, "Plex 1T", "reddot"))
+                {"id": "live", "label": "Concerts", "folder": "Concerts", "names": ["live-shows"]}]
+        r = self.fm.scan_paths(m, cats, {"home": "/media/ssd1/Library/Home Video"})
+        self.assertEqual(r["home"], {"path": os.path.join(m, "Library", "Home Video"), "status": "found"})
+        self.assertEqual(r["live"]["path"], os.path.join(m, "Library", "live-shows"))
 
     def test_actlog_rotation(self):
         import actlog
@@ -208,10 +208,10 @@ class FMTests(unittest.TestCase):
         finally:
             self.fm.Ops._hash = orig
         self.assertEqual(op["status"], "error")
-        self.assertTrue(os.path.isfile(os.path.join(src, "Film Zly (2002).mkv")), "oryginał musi zostać")
-        self.assertFalse(os.path.exists(os.path.join(self.b, "Film Zly (2002)")), "brak niepełnej kopii")
+        self.assertTrue(os.path.isfile(os.path.join(src, "Film Zly (2002).mkv")), "the original must stay")
+        self.assertFalse(os.path.exists(os.path.join(self.b, "Film Zly (2002)")), "no partial copy")
         tmp = os.path.join(os.path.dirname(self.b), ".plexdl-tmp")
-        self.assertFalse(os.path.isdir(tmp) and os.listdir(tmp), "folder tymczasowy posprzątany")
+        self.assertFalse(os.path.isdir(tmp) and os.listdir(tmp), "temporary folder cleaned up")
 
     def test_conflict_blocks(self):
         self.make(self.a, "Duplikat (2003)")

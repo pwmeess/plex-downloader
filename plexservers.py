@@ -1,4 +1,4 @@
-"""Wykrywanie i monitorowanie serwerów Plex w sieci lokalnej (tylko odczyt statusu)."""
+"""Discovery and monitoring of Plex servers on the local network (status read only)."""
 import logging
 import re
 import socket
@@ -11,16 +11,16 @@ import config
 
 log = logging.getLogger("plexdl")
 GDM_ADDR = ("239.0.0.250", 32414)
-CHECK_EVERY = 30      # s – sprawdzanie stanu
-DISCOVER_EVERY = 300  # s – ponowne wyszukiwanie w sieci
+CHECK_EVERY = 30      # s – status check
+DISCOVER_EVERY = 300  # s – new network discovery
 _opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
 def lan_ip():
-    """Adres IP Raspberry Pi w sieci lokalnej (bez wysyłania jakiegokolwiek ruchu)."""
+    """The Raspberry Pi IP address in the local network (without sending any traffic)."""
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        s.connect(("192.0.2.1", 9))  # TEST-NET – tylko wybór interfejsu
+        s.connect(("192.0.2.1", 9))  # TEST-NET – only picks the interface
         return s.getsockname()[0]
     except OSError:
         return "127.0.0.1"
@@ -29,7 +29,7 @@ def lan_ip():
 
 
 def identity(host, port, timeout=3):
-    """Zapytanie /identity – nie wymaga logowania ani tokenu."""
+    """/identity request – needs no login or token."""
     url = "http://%s:%d/identity" % (host, int(port))
     with _opener.open(url, timeout=timeout) as resp:
         root = ET.fromstring(resp.read())
@@ -37,7 +37,7 @@ def identity(host, port, timeout=3):
 
 
 def gdm_discover(timeout=2.0):
-    """Wyszukuje serwery Plex w sieci protokołem GDM (jak aplikacje Plex)."""
+    """Finds Plex servers on the network with the GDM protocol (like the Plex apps)."""
     found = {}
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     try:
@@ -141,14 +141,14 @@ class Monitor:
                 st.update(identity(c["host"], c["port"]), online=True)
             except Exception:
                 if c["source"] == "local":
-                    continue  # brak Plexa na tym Pi – nie pokazujemy
+                    continue  # no Plex on this Pi – not shown
             key = st["machine_id"] or "%s:%s" % (st["display_host"], st["port"])
-            if key in seen:  # ten sam serwer wykryty kilkoma drogami
+            if key in seen:  # the same server found in several ways
                 prev = seen[key]
                 if c["source"] == "manual":
                     prev.update(name=c["name"], source="manual", id=c["id"])
                 elif c["source"] == "auto" and prev["source"] == "local":
-                    prev["name"] = c["name"]  # nazwa serwera z Plexa zamiast nazwy hosta
+                    prev["name"] = c["name"]  # the server name from Plex instead of the host name
                 continue
             seen[key] = st
             out.append(st)

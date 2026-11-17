@@ -1,4 +1,4 @@
-/* Plex Downloader – Menedżer plików: dwie kolumny, okładki, przeciąganie, przenoszenie, usuwanie */
+/* Plex Downloader – File manager: two columns, posters, drag and drop, moving, deleting */
 (() => {
   "use strict";
   const { $, $$, store, t, api, fmtSize, fmtSpeed, fmtEta, el, icon, catIcon, modal, toast } = window.PD;
@@ -7,7 +7,7 @@
   let disks = [], categories = [];
   const panes = {};
 
-  // ------------------------------------------------------------------ kolumna
+  // ------------------------------------------------------------------ column
   class Pane {
     constructor(root) {
       this.root = root;
@@ -230,7 +230,7 @@
   }
   let dragFrom = null;
 
-  // ------------------------------------------------------------------ przenoszenie
+  // ------------------------------------------------------------------ moving
   function planBody(plan, extraTop) {
     const body = el("div", "plan");
     if (extraTop) body.appendChild(extraTop);
@@ -263,7 +263,7 @@
     return body;
   }
 
-  // „Pomiń weryfikację SHA-256” – tylko przy przenoszeniu na inny dysk, domyślnie odznaczone
+  // “Skip SHA-256 verification” – only when moving to another disk, unticked by default
   function applySkip(root, on) {
     if (root) $$(".plan-how", root).forEach((h) => h.classList.toggle("skip", on));
   }
@@ -299,7 +299,7 @@
     startMove(src, req);
   }
 
-  // serial: cały / wybrany sezon / wybrane odcinki
+  // show: whole / selected season / selected episodes
   async function moveShow(src, dst, show) {
     let eps;
     try { eps = await api(`/api/fm/episodes?disk=${encodeURIComponent(src.disk)}&cat=${encodeURIComponent(src.cat)}&name=${encodeURIComponent(show)}`); }
@@ -367,7 +367,7 @@
     } catch (e) { toast(e.message, true); }
   }
 
-  // ------------------------------------------------------------------ edycja nazwy Plex i plakatu
+  // ------------------------------------------------------------------ editing the Plex name and poster
   function lbl(text, tip) {
     const l = el("label", "small-label", text);
     if (tip) { const b = el("button", "info-i", "i"); b.type = "button"; b.dataset.tip = tip; l.appendChild(b); }
@@ -730,7 +730,7 @@
       buttons: [{ label: t("Cancel"), value: false }, { label: t("Change"), cls: "btn-accent", value: apply }] });
   }
 
-  // ------------------------------------------------------------------ usuwanie
+  // ------------------------------------------------------------------ deleting
   async function deleteItems(pane, names) {
     if (!names.length) return;
     const items = pane.items.filter((i) => names.includes(i.name));
@@ -759,7 +759,7 @@
     } catch (e) { toast(e.message, true); }
   }
 
-  // ------------------------------------------------------------------ operacje w tle
+  // ------------------------------------------------------------------ background operations
   let opsTimer = null, lastActive = 0;
   const PHASE = { copy: t("Copying"), verify: t("SHA-256 verification"), move: t("Moving"), finish: t("Finishing") };
   async function pollOps(force) {
@@ -771,7 +771,7 @@
       renderOps(r.ops);
       if (lastActive && active < lastActive) { panes.left.reload(); panes.right.reload(); refreshDisks(); }
       lastActive = active;
-    } catch (e) { /* bez znaczenia */ }
+    } catch (e) { /* not important */ }
     opsTimer = setTimeout(pollOps, active || force ? 1000 : 6000);
   }
   function renderOps(ops) {
@@ -808,7 +808,7 @@
       if (o.current) parts.push(o.current);
       meta.textContent = parts.join(" · ");
       row.appendChild(meta);
-      // podsumowanie: co i skąd dokąd przeniesiono
+      // summary: what was moved, from where to where
       if (o.type === "move") {
         const done = (o.log || []).filter((l) => l.ok);
         if (done.length && o.status !== "running") {
@@ -830,7 +830,7 @@
   }
   $("#opsClear").addEventListener("click", () => api("/api/fm/ops/clear", {}).then(() => pollOps()));
 
-  // ------------------------------------------------------------------ dane
+  // ------------------------------------------------------------------ data
   async function refreshDisks() {
     const s = await api("/api/state");
     disks = s.disks; categories = s.categories;

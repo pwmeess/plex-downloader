@@ -107,7 +107,7 @@
     try {
       const r = await api("/api/wizard/scan", { mount: d.mount, categories: cats(), hints: W.fileDisks || [] });
       if (r.match && !d.labelSet) d.label = r.match;   // button name of the matching disk from the settings file
-      // missing folders go next to the ones that were found (e.g. „Plex 1T/Kids”), otherwise into „Plex/”
+      // missing folders go next to the ones that were found (e.g. “Media/Kids”), otherwise into “Plex/”
       const found = Object.values(r.result).filter((x) => x.status === "found").map((x) => x.path);
       d.foundCount = found.length;
       // no category folder yet: suggest them inside the disk's „Plex” folder (if there is one)

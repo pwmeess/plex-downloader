@@ -78,7 +78,7 @@ button, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
 [hidden] { display: none !important; }
 
-/* ---------- nagłówek ---------- */
+/* ---------- header ---------- */
 .topbar {
   display: flex; align-items: center; gap: 18px;
   padding: 14px 28px;
@@ -126,7 +126,7 @@ a.btn-ghost, a.btn-soft { text-decoration: none; }
 .btn-danger:hover { border-color: var(--err); }
 svg.i { width: 18px; height: 18px; flex: none; }
 
-/* ---------- układ ---------- */
+/* ---------- layout ---------- */
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -197,7 +197,7 @@ svg.i { width: 18px; height: 18px; flex: none; }
 }
 .preview b { color: var(--text); font-weight: 500; }
 
-/* ---------- dyski ---------- */
+/* ---------- disks ---------- */
 .disks { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 26px; }
 .disk {
   position: relative;
@@ -236,7 +236,7 @@ svg.i { width: 18px; height: 18px; flex: none; }
 .form-msg.bad { color: var(--err); }
 .form-msg.ok { color: var(--ok); }
 
-/* ---------- lista zadań ---------- */
+/* ---------- task list ---------- */
 .jobs-card { padding: 0; overflow: hidden; }
 .jobs-card .card-head { padding: 26px 26px 18px; border-bottom: 1px solid var(--line); margin: 0; }
 .jobs { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
@@ -273,7 +273,7 @@ svg.i { width: 18px; height: 18px; flex: none; }
 .icon-btn { background: transparent; border: 0; color: var(--dim); padding: 4px; border-radius: 6px; display: inline-grid; }
 .icon-btn:hover { color: var(--text); background: var(--input); }
 
-/* ---------- podgląd filmu (TMDB) ---------- */
+/* ---------- movie preview (TMDB) ---------- */
 .col { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
 .info-card { padding: 22px 24px 24px; }
 .info-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
@@ -313,7 +313,7 @@ svg.i { width: 18px; height: 18px; flex: none; }
 .info-alts button:hover { border-color: var(--accent); }
 .info-alts button.on { border-color: var(--accent); color: var(--accent); }
 
-/* ---------- okna (ustawienia, potwierdzenia) ---------- */
+/* ---------- windows (settings, confirmations) ---------- */
 dialog.window {
   position: fixed; margin: 0; left: 50%; top: 50%; transform: translate(-50%, -50%);
   width: min(900px, calc(100vw - 32px)); max-height: calc(100vh - 40px);
@@ -441,7 +441,7 @@ select.input option { background: var(--card); color: var(--text); }
 .ph-list { font-size: 13.5px; padding-left: 18px; margin-top: 16px; }
 .ph-list li { margin: 4px 0; }
 
-/* ---------- podpowiedzi ⓘ i powiadomienia ---------- */
+/* ---------- ⓘ tooltips and notifications ---------- */
 .info-i { display: inline-grid; place-items: center; width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid var(--dim); background: transparent; color: var(--muted); font: italic 700 10.5px/1 Georgia, serif; padding: 0; vertical-align: middle; flex: none; }
 .info-i:hover { border-color: var(--accent); color: var(--accent); }
 .tip-pop { position: fixed; z-index: 1000; background: var(--bg-2); border: 1px solid #3c475a; border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,.5); font-size: 13.5px; color: var(--text); overflow: hidden; }
@@ -456,7 +456,7 @@ select.input option { background: var(--card); color: var(--text); }
 .toast.bad { border-left-color: var(--err); }
 .toast.out { opacity: 0; transform: translateY(8px); }
 
-/* ---------- opcje zaawansowane ---------- */
+/* ---------- advanced options ---------- */
 .adv { margin: -6px 0 18px; }
 .adv-toggle { margin-top: 0; }
 .adv-body { margin-top: 12px; padding: 14px; border-radius: 10px; background: var(--shade); border: 1px solid var(--line); }
@@ -469,7 +469,7 @@ select.input option { background: var(--card); color: var(--text); }
 .info-links .youtube svg { color: #ff3d3d; }
 .info-links a svg { width: 15px; height: 15px; }
 
-/* ---------- menedżer plików ---------- */
+/* ---------- file manager ---------- */
 .fm-wrap { max-width: 1500px; margin: 0 auto; padding: 22px 28px; }
 .fm-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .fm-top h1 { font-size: 22px; margin: 0; display: flex; align-items: center; gap: 10px; letter-spacing: -.015em; }
@@ -608,7 +608,7 @@ p.bad, .hint.bad { color: var(--err); }
 .lang-code { font-family: var(--mono); font-size: 12.5px; color: var(--accent); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
 .lang-btn .def { margin-left: auto; font-size: 12px; color: var(--muted); font-weight: 500; }
 
-/* ---------- logowanie ---------- */
+/* ---------- login ---------- */
 .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 20px; }
 .login-card { width: min(400px, 100%); }
 .login-card .brand { justify-content: center; margin-bottom: 26px; font-size: 22px; }
@@ -618,7 +618,7 @@ p.bad, .hint.bad { color: var(--err); }
 .login-note code { font-family: var(--mono); font-size: 12.5px; background: var(--input); padding: 2px 6px; border-radius: 5px; color: var(--text); word-break: break-all; }
 .foot-ver { text-align: center; color: var(--dim); font-size: 12.5px; padding: 0 0 24px; }
 
-/* ---------- telefon ---------- */
+/* ---------- phone ---------- */
 @media (max-width: 980px) {
   .layout { grid-template-columns: 1fr; padding: 16px; gap: 16px; }
   .col { gap: 16px; }
@@ -690,12 +690,12 @@ h3.fold-h { display: flex; align-items: center; gap: 8px; }
 @keyframes flash { 0%, 40% { box-shadow: 0 0 0 2px var(--accent); } 100% { box-shadow: 0 0 0 2px transparent; } }
 
 /* 1.2.6 */
-/* tekst wprowadzający z ikonką ⓘ w jednej linii (pre-line z .win-body łamał linię przed ikonką) */
+/* intro text with the ⓘ icon on one line (pre-line from .win-body broke the line before the icon) */
 .win-body .panel-intro { white-space: normal; }
 .panel-intro .info-i { margin-left: 4px; }
-/* telefon: przyciski kategorii zawijają się zamiast rozpychać stronę */
+/* phone: category buttons wrap instead of widening the page */
 .segmented.cats { flex-wrap: wrap; max-width: 100%; }
-/* okno przenoszenia: „Pomiń weryfikację SHA-256” */
+/* move window: “Skip SHA-256 verification” */
 .skip-verify { display: flex; align-items: center; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
 .skip-verify .check { margin-top: 0; }
 #sTmdb + .check { margin-top: 8px; }
@@ -817,7 +817,7 @@ h3.fold-h { display: flex; align-items: center; gap: 8px; }
 .ed-count { margin-left: auto; font-size: 12px; }
 .ed-count.bad { color: var(--err); }
 
-/* 1.3.0-beta2: eksport / import ustawień, szablon karty SD */
+/* 1.3.0-beta2: settings export / import, SD card template */
 .disk-add { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .io-box { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 0 0 14px; }
 .io-box h3, .bk-title { font-size: 13px; font-weight: 600; margin: 0 0 8px; display: flex; align-items: center; gap: 6px; }
@@ -834,7 +834,7 @@ h3.fold-h { display: flex; align-items: center; gap: 8px; }
 .cat-path .mk-folder[hidden] { display: none; }
 .mkdir-box .input { width: 100%; margin-bottom: 10px; }
 .mkdir-prev { font-family: var(--mono); font-size: 13px; color: var(--accent); overflow-wrap: anywhere; margin: 4px 0 8px; }
-/* kreator: zmiana nazwy / dodanie kategorii, „nie na tym dysku” */
+/* wizard: rename / add a category, “not on this disk” */
 .wz-paths .wz-path { grid-template-columns: 150px minmax(0, 1fr) 170px 30px; }
 .wz-cat { display: flex; align-items: center; gap: 4px; font-size: 13.5px; color: var(--muted); min-width: 0; }
 .wz-cat span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -850,7 +850,7 @@ h3.fold-h { display: flex; align-items: center; gap: 8px; }
   .wz-paths .wz-path .wz-cat { grid-column: 1 / -1; }
   .wz-paths .wz-path .wz-st { grid-column: 1 / -1; order: 5; }
 }
-/* kreator: plik ustawień */
+/* wizard: settings file */
 .wz-import { margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--line); }
 .wz-import-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .wz-import .btn-soft svg { width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; }
@@ -864,7 +864,7 @@ h3.fold-h { display: flex; align-items: center; gap: 8px; }
 .wz-file-disks .plan-list { list-style: disc; padding: 0; }
 .wz-file-disks .plan-list li { display: list-item; }
 .wz-file-disks .mono { font-family: var(--mono); font-size: 12.5px; margin-left: 6px; }
-/* Menedżer plików: edycja nazwy i plakatu */
+/* File manager: editing the name and poster */
 .fm-card .acts { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: none; }
 .fm-card .acts button { width: 28px; height: 28px; display: grid; place-items: center; padding: 0; }
 .fm-card .edit { background: none; border: 0; color: var(--muted); border-radius: 6px; opacity: .85; }
@@ -932,7 +932,7 @@ dialog.window.modal .win-body { flex: 1 1 auto; }
 .fe-err { color: var(--err); font-weight: 600; }
 dialog.window.modal .win-foot { flex-wrap: wrap; }
 @media (max-width: 640px) { .fe-time { grid-template-columns: 1fr auto; } .fe-time .small-label { grid-column: 1 / -1; } }
-/* oczekiwanie na kadry: 3 kropki wypełniane po kolei */
+/* waiting for frames: 3 dots filled one after another */
 .fe-wait { display: flex; align-items: center; gap: 12px; color: var(--muted); padding: 6px 0 14px; }
 .fe-dots { display: inline-flex; gap: 6px; flex: none; }
 .fe-dots i { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--accent); animation: fe-dot 1.5s steps(1, end) infinite; }
@@ -945,7 +945,7 @@ dialog.window.modal .win-foot { flex-wrap: wrap; }
 .fe-file { grid-template-columns: minmax(0, 1fr) 150px 150px; }
 .fe-new.muted { color: var(--muted); font-family: inherit; }
 @media (max-width: 640px) { .fe-file { grid-template-columns: 1fr 1fr; } .fe-file span { grid-column: 1 / -1; } }
-/* kreator – poprawki po pierwszym teście na Pi Zero */
+/* wizard – fixes after the first test on a Pi Zero */
 .wz-loading { display: flex; align-items: center; gap: 12px; color: var(--muted); margin: 6px 0 4px; }
 .wz-skip { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--line); }
 .wz-probe { display: flex; align-items: center; gap: 8px; }
@@ -955,7 +955,7 @@ dialog.window.modal .win-foot { flex-wrap: wrap; }
 .wz-card:has(.wz-loading) .wz-nav, .wz-card:has(.wz-loading) #wzRedo { visibility: hidden; }
 .wz-extras { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 4px 0 2px; font-size: 13px; }
 .wz-top .wz-exit { width: auto; margin: 0 0 0 auto; padding: 7px 16px; font-size: 14px; text-decoration: none; }
-/* instrukcja /guide */
+/* guide /guide */
 .guide-top { position: sticky; top: 0; z-index: 5; background: var(--bg); }
 .guide-top .spacer { flex: 1; }
 .guide-top .btn-primary, .guide-top .btn-soft { width: auto; margin: 0; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }

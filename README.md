@@ -118,7 +118,7 @@ The key is stored only locally in `config.json`. Without a key the app works nor
 
 ## Your own disks
 
-The default paths in `config.example.json` are the author's layout, so yours will most likely differ.
+The paths in `config.example.json` are only an example – the setup wizard replaces them with your disks at the first login.
 
 1. Check where your disks are mounted with `df -h`, e.g. `/mnt/disk1`.
 2. In **Settings → Disks** enter for each disk:

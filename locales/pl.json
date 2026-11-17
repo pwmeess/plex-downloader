@@ -207,7 +207,7 @@
  "Update paths": "Aktualizuj ścieżki",
  "Caption (e.g. SMB share)": "Podpis (np. udział SMB)",
  "Mount point (to read free space)": "Punkt montowania (do odczytu wolnego miejsca)",
- "The mount point is the directory where the system sees the disk (check it with df -h). It is used to read free space. Category folders are the Plex library paths, e.g. /plex_media/Plex/Movies.": "Punkt montowania to katalog, w którym system widzi dysk (sprawdzisz go poleceniem df -h). Służy do odczytu wolnego miejsca. Foldery kategorii to ścieżki bibliotek Plex, np. /plex_media/Plex/Movies.",
+ "The mount point is the directory where the system sees the disk (check it with df -h). It is used to read free space. Category folders are the Plex library paths, e.g. /mnt/ssd1/Plex/Movies.": "Punkt montowania to katalog, w którym system widzi dysk (sprawdzisz go poleceniem df -h). Służy do odczytu wolnego miejsca. Foldery kategorii to ścieżki bibliotek Plex, np. /mnt/ssd1/Plex/Movies.",
  "The type sets the naming: Movie saves files as Title (Year)/Title (Year).mkv, TV show as Show/Season 01/Show - S01E01.mkv, Other keeps the name you enter (e.g. home videos). In Plex add a separate library for each category.": "Typ określa nazewnictwo: Film zapisuje pliki jako Tytuł (Rok)/Tytuł (Rok).mkv, Serial jako Serial/Season 01/Serial - S01E01.mkv, Inne zachowuje wpisaną nazwę (np. domowe wideo). W Plex dodaj osobną bibliotekę dla każdej kategorii.",
  "Folder name used by the Update paths button in the Disks tab, e.g. Kids.": "Nazwa folderu używana przez przycisk Aktualizuj ścieżki w zakładce Dyski, np. Kids.",
  "Search TMDB for posters": "Szukaj plakatów w TMDB",

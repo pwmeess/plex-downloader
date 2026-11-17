@@ -1,22 +1,22 @@
-# konfiguracja lokalna (hasło, klucze sesji)
+# local configuration (password, session keys)
 config.json
 config.json.tmp
 backups/
 logs/
 
-# baza zadań
+# task database
 *.db
 *.db-journal
 *.db.lock
 *.sqlite
 
-# środowisko Pythona
+# Python environment
 venv/
 .venv/
 __pycache__/
 *.pyc
 
-# sesje / logi
+# sessions / logs
 *.session
 *.log
 flask_session/

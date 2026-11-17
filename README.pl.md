@@ -122,21 +122,9 @@ Filmy i seriale na dyskach nigdy nie są ruszane.
 
 Klucz jest zapisywany wyłącznie lokalnie w `config.json`. Bez klucza aplikacja działa normalnie, tylko bez karty podglądu.
 
-## Domyślne dyski (`config.example.json`)
+## Własne dyski
 
-| Przycisk | Filmy | Seriale | Dla dzieci |
-|---|---|---|---|
-| Pendrive 256GB | `/plex_media/Plex/Movies` | `/plex_media/Plex/TV Shows` | `/plex_media/Plex/Kids` |
-| Dysk SSD 512GB | `/plex_media_512/Plex 512/Movies` | `/plex_media_512/Plex 512/TV Shows` | `/plex_media_512/Plex 512/Kids` |
-| Dysk SSD 1024GB | `/plex_media_1024/Plex 1T/Movies` | `/plex_media_1024/Plex 1T/TV Shows` | `/plex_media_1024/Plex 1T/Kids` |
-
-Aktualizacja z wersji 1.0/1.1 przenosi starą konfigurację automatycznie. Jeśli obok folderu `Movies` istnieje folder `Kids`, zostaje od razu przypisany do kategorii „Dla dzieci”.
-
-Ścieżki zmienisz w **Ustawieniach** albo w `config.json`.
-
-## Własne dyski (inna instalacja niż autora)
-
-Aplikacja **nie wykrywa dysków automatycznie**. Domyślne ścieżki to konfiguracja autora, więc u Ciebie najpewniej będą inne.
+Ścieżki w `config.example.json` to tylko przykład – kreator przy pierwszym logowaniu zastąpi je Twoimi dyskami.
 
 1. Sprawdź, gdzie są zamontowane Twoje dyski, poleceniem `df -h`. Zobaczysz np. `/mnt/dysk1`.
 2. W panelu wejdź w **Ustawienia → Dyski** i dla każdego dysku wpisz:

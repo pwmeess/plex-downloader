@@ -1,11 +1,11 @@
-"""Menedżer plików: przeglądanie bibliotek, przenoszenie między folderami/dyskami, usuwanie, okładki.
+"""File manager: browsing libraries, moving between folders/disks, deleting, posters.
 
-Zasady bezpieczeństwa:
-- operujemy wyłącznie na elementach folderów kategorii skonfigurowanych w Ustawieniach,
-- nazwy nie mogą zawierać ścieżek; ścieżka po rozwiązaniu musi leżeć w folderze kategorii,
-- przenoszenie między dyskami: kopia do folderu tymczasowego → weryfikacja SHA-256 →
-  zmiana nazwy na docelową → dopiero wtedy usunięcie oryginału,
-- elementy, do których trwa pobieranie, są zablokowane.
+Safety rules:
+- only items inside the category folders configured in Settings are touched,
+- names may not contain paths; the resolved path must lie inside a category folder,
+- moving between disks: copy to a temporary folder → SHA-256 verification →
+  rename to the target → only then delete the original,
+- items being downloaded are locked.
 """
 import hashlib
 import logging
@@ -27,9 +27,9 @@ from i18n import _
 log = logging.getLogger("plexdl")
 CHUNK = 4 * 1024 * 1024
 THUMB = ".thumb.jpg"
-THUMB_EXTS = (".thumb.jpg", ".thumb.png")  # .png – okładki z wersji 1.2.0
+THUMB_EXTS = (".thumb.jpg", ".thumb.png")  # .png – posters from version 1.2.0
 SKIP = {"@eaDir", "$RECYCLE.BIN", "System Volume Information", "lost+found", "#recycle", ".Trash-1000"}
-# foldery dodatków Plexa (zwiastuny itp.) – nie liczą się jako osobne filmy
+# Plex extras folders (trailers etc.) – not counted as separate movies
 EXTRA_DIRS = {"trailers", "featurettes", "behind the scenes", "deleted scenes", "interviews",
               "scenes", "shorts", "other", "extras", "specials", "subs", "subtitles"}
 SUB_EXTS = {".srt", ".ass", ".ssa", ".sub", ".idx", ".vtt", ".smi"}
@@ -42,7 +42,7 @@ class FMError(Exception):
     pass
 
 
-# ------------------------------------------------------------------ ścieżki
+# ------------------------------------------------------------------ paths
 def location(disk_id, cat_id, need_ok=True):
     d = config.disk(disk_id)
     if not d:
@@ -79,7 +79,7 @@ def item_path(base, name):
 
 
 def sub_path(root, rel):
-    """Ścieżka pliku wewnątrz folderu serialu (np. „Season 01/Show - S01E02.mkv”)."""
+    """Path of a file inside a show folder (e.g. “Season 01/Show - S01E02.mkv”)."""
     parts = [p for p in (rel or "").split("/") if p]
     if not parts or len(parts) > 3:
         raise FMError(_("Invalid name: %r") % rel)
@@ -109,12 +109,12 @@ def _is_video(name):
     return bool(ext) and not EXTRA_SUFFIX.search(stem)
 
 
-# ------------------------------------------------------------------ lista
+# ------------------------------------------------------------------ listing
 _size_cache = {}
 
 
 def scan_item(path, kind):
-    """Rozmiar, liczba głównych plików wideo (lub odcinków) i czy folder zawiera dodatki."""
+    """Size, number of main video files (or episodes) and whether the folder has extras."""
     now = time.time()
     try:
         mtime = os.stat(path).st_mtime
@@ -135,7 +135,7 @@ def scan_item(path, kind):
                 if x.startswith(".") or x in SKIP:
                     continue
                 if x.lower() in EXTRA_DIRS or (kind != "tv" and rel_depth == 0):
-                    extras = True  # podfolder w folderze filmu = dodatki (zwiastuny itp.)
+                    extras = True  # a subfolder in a movie folder = extras (trailers etc.)
                 keep.append(x)
             dirs[:] = keep
             in_extra = any(p.lower() in EXTRA_DIRS for p in os.path.relpath(root, path).split(os.sep))
@@ -155,7 +155,7 @@ def scan_item(path, kind):
                     else:
                         videos += 1
         if kind != "tv" and videos > 1:
-            extras = True  # kilka wersji filmu w jednym folderze
+            extras = True  # several versions of the movie in one folder
     res = {"size": total, "videos": videos, "extras": extras}
     _size_cache[path] = (mtime, now, res)
     return res
@@ -207,7 +207,7 @@ def list_items(disk_id, cat_id, busy=()):
 
 
 def list_episodes(disk_id, cat_id, show):
-    """Odcinki serialu pogrupowane według sezonów (do przenoszenia wybranych odcinków)."""
+    """Episodes of a show grouped by season (for moving selected episodes)."""
     _disk, cat, base = location(disk_id, cat_id)   # not "_": that is the translation function
     if cat["kind"] != "tv":
         raise FMError(_("Episodes can only be selected in TV show categories."))
@@ -235,7 +235,7 @@ def list_episodes(disk_id, cat_id, show):
 
 
 def _sidecars(path):
-    """Pliki towarzyszące odcinkowi (napisy itp.) o tym samym początku nazwy."""
+    """Files that belong to an episode (subtitles etc.) with the same name prefix."""
     d, f = os.path.split(path)
     stem = os.path.splitext(f)[0]
     out = []
@@ -245,7 +245,7 @@ def _sidecars(path):
     return out
 
 
-# ------------------------------------------------------------------ plan przenoszenia
+# ------------------------------------------------------------------ move plan
 def _check_kinds(sc, dc):
     if sc["kind"] != dc["kind"]:
         raise FMError(_("Cannot move between categories of different types (%s → %s): movies, TV shows and other videos use different naming in Plex.") % (sc["label"], dc["label"]))
@@ -295,7 +295,7 @@ def plan_move(src_disk, src_cat, names, dst_disk, dst_cat, busy=()):
 
 
 def plan_episodes(src_disk, src_cat, show, rels, dst_disk, dst_cat, busy=()):
-    """Przeniesienie wybranych odcinków serialu – na dysku docelowym powstaje ten sam układ folderów."""
+    """Moves selected episodes of a show – the same folder layout is created on the target disk."""
     sd, sc, sbase = location(src_disk, src_cat)
     dd, dc, dbase = location(dst_disk, dst_cat)
     _check_kinds(sc, dc)
@@ -346,7 +346,7 @@ def _space(plan):
     plan["ok"] = not plan["problems"] and bool(plan["items"])
 
 
-# ------------------------------------------------------------------ operacje w tle
+# ------------------------------------------------------------------ background operations
 class Ops:
     def __init__(self):
         self.lock = threading.RLock()
@@ -369,7 +369,7 @@ class Ops:
 
     @staticmethod
     def _rate(op):
-        """Prędkość z ostatnich ~5 s (lekko: liczona tylko przy odpytaniu przez przeglądarkę)."""
+        """Speed over the last ~5 s (cheap: computed only when the browser asks)."""
         now = time.time()
         s = op["_samples"]
         s.append((now, op["done"]))
@@ -433,16 +433,16 @@ class Ops:
             op["finished"] = time.time()
             op["current"] = ""
 
-    # ---- przenoszenie
+    # ---- moving
     def move(self, plan, verify=True):
-        """verify=False: kopia bez drugiego odczytu (SHA-256); przed usunięciem oryginału
-        porównywany jest tylko rozmiar plików."""
+        """verify=False: copy without the second read (SHA-256); before the original is deleted
+        only the file sizes are compared."""
         if not plan["ok"]:
             raise FMError("; ".join(plan["problems"]) or _("The operation cannot be performed."))
         src_label = "%s / %s" % (plan["src"]["disk_label"], plan["src"]["category_label"])
         dst_label = "%s / %s" % (plan["dst"]["disk_label"], plan["dst"]["category_label"])
         verify = bool(verify) and not plan["same_fs"]
-        # pasek postępu: kopia (+ weryfikacja); osobne liczniki copied / verified dla każdego etapu
+        # progress bar: copy (+ verification); separate copied / verified counters for each stage
         total = plan["total"] * (2 if verify else 1)
         return self._new("move", dst_label, total, plan=plan, items_total=len(plan["items"]),
                          same_fs=plan["same_fs"], src_label=src_label, dst_label=dst_label,
@@ -495,7 +495,7 @@ class Ops:
 
     @staticmethod
     def _finish_episodes(sroot, droot):
-        # okładka serialu także na dysku docelowym
+        # the show poster on the target disk too
         name = os.path.basename(sroot)
         for ext in THUMB_EXTS:
             s, d = os.path.join(sroot, name + ext), os.path.join(droot, name + ext)
@@ -504,14 +504,14 @@ class Ops:
                     shutil.copy2(s, d)
                 except OSError:
                     pass
-        # puste foldery sezonów po stronie źródłowej
+        # empty season folders on the source side
         for root, dirs, files in os.walk(sroot, topdown=False):
             if root != sroot and not os.listdir(root):
                 try:
                     os.rmdir(root)
                 except OSError:
                     pass
-        # serial bez żadnego pliku poza okładką i plikami systemowymi → usuwamy folder źródłowy
+        # a show with no files left except the poster and system files → remove the source folder
         rest = [f for f in os.listdir(sroot) if not f.endswith(THUMB_EXTS) and f != ".DS_Store"]
         if not rest:
             shutil.rmtree(sroot, ignore_errors=True)
@@ -519,7 +519,7 @@ class Ops:
     def _copy_verify_swap(self, op, src, dst, dbase):
         tmp = os.path.join(tmp_root(dbase), "move-" + op["id"], os.path.basename(dst))
         os.makedirs(os.path.dirname(tmp), exist_ok=True)
-        files = []  # (ścieżka względna, rozmiar, sha256)
+        files = []  # (relative path, size, sha256)
         try:
             op["phase"] = "copy"
             if os.path.isdir(src):
@@ -529,7 +529,7 @@ class Ops:
                     for f in fnames:
                         r = os.path.normpath(os.path.join(rel, f))
                         files.append((r,) + self._copy_file(op, os.path.join(src, r), os.path.join(tmp, r)))
-                # daty folderów jak w oryginale (od najgłębszych)
+                # folder dates as in the original (deepest first)
                 for root, dirs, _f in os.walk(src, topdown=False):
                     rel = os.path.relpath(root, src)
                     try:
@@ -556,7 +556,7 @@ class Ops:
             shutil.rmtree(os.path.dirname(tmp), ignore_errors=True)
             raise
         shutil.rmtree(os.path.dirname(tmp), ignore_errors=True)
-        try:  # kopia jest kompletna i sprawdzona – usuwamy oryginał
+        try:  # the copy is complete and verified – delete the original
             if os.path.isdir(src) and not os.path.islink(src):
                 shutil.rmtree(src)
             else:
@@ -602,7 +602,7 @@ class Ops:
                 op["verified"] = op.get("verified", 0) + len(buf)
         return h.hexdigest()
 
-    # ---- okładki: odświeżenie dla całego dysku
+    # ---- posters: refresh for a whole disk
     def refresh_thumbs(self, disk_id):
         d = config.disk(disk_id)
         if not d:
@@ -657,10 +657,10 @@ def _fix_perms(path):
         else:
             os.chmod(path, 0o664)
     except OSError:
-        pass  # NTFS/exFAT – uprawnienia ustala montowanie
+        pass  # NTFS/exFAT – permissions are set by the mount options
 
 
-# ------------------------------------------------------------------ usuwanie
+# ------------------------------------------------------------------ deleting
 def delete(disk_id, cat_id, names, busy=()):
     d, cat, base = location(disk_id, cat_id)
     removed, problems = [], []
@@ -685,9 +685,9 @@ def delete(disk_id, cat_id, names, busy=()):
     return {"removed": removed, "problems": problems}
 
 
-# ------------------------------------------------------------------ edycja nazwy (Plex) i własny plakat
+# ------------------------------------------------------------------ editing the (Plex) name and own poster
 def _version_of(stem, bases):
-    """Wersja z nazwy pliku: „Tytuł (2009) {tmdb-1} - 1080p” → „1080p”."""
+    """Version from a file name: “Title (2009) {tmdb-1} - 1080p” → “1080p”."""
     s = naming.strip_tags(stem)
     for b in bases:
         if b and s == b:
@@ -727,7 +727,7 @@ def _main_videos(path):
 
 
 def item_details(disk_id, cat_id, name):
-    """Dane do okna „Edytuj”: tytuł, rok, edycja, TMDB ID i wersje plików wideo."""
+    """Data for the “Edit” window: title, year, edition, TMDB ID and video file versions."""
     _d, cat, base = location(disk_id, cat_id)
     path = item_path(base, name)
     is_dir = os.path.isdir(path)
@@ -767,7 +767,7 @@ def _rename_plan(base, name, kind, title, year, tmdb, edition, versions, episode
     tags = naming._tags(None if kind == "tv" else edition, {"tmdb": tmdb} if tmdb else None)
     new_root = new_base + tags
     old_label = name if is_dir else naming.split_ext(name)[0]
-    inner = []    # (stara nazwa, nowa nazwa) w folderze filmu / ścieżki względne w serialu
+    inner = []    # (old name, new name) in a movie folder / relative paths in a show
     if is_dir and kind != "tv":
         taken = {}
         mains = _main_videos(path)
@@ -785,11 +785,11 @@ def _rename_plan(base, name, kind, title, year, tmdb, edition, versions, episode
             if new_stem + ext in taken.values():
                 raise FMError(_("Two files would get the same name: %s") % (new_stem + ext))
             taken[f] = new_stem + ext
-            for g in sorted(os.listdir(path)):   # plik + napisy / plakat o tym samym początku nazwy
+            for g in sorted(os.listdir(path)):   # file + subtitles / poster with the same name prefix
                 if g == f or (g.startswith(stem + ".") and not _is_video(g) and not g.endswith(THUMB_EXTS)
                               and os.path.isfile(os.path.join(path, g))):
                     taken.setdefault(g, new_stem + (ext if g == f else g[len(stem):]))
-        for g in sorted(os.listdir(path)):       # plakat folderu i inne pliki „Nazwa folderu.*”
+        for g in sorted(os.listdir(path)):       # folder poster and other “Folder name.*” files
             if g not in taken and g.startswith(name + ".") and os.path.isfile(os.path.join(path, g)):
                 taken[g] = new_root + g[len(name):]
         inner = [(a, b) for a, b in taken.items() if a != b]
@@ -809,7 +809,7 @@ def _rename_plan(base, name, kind, title, year, tmdb, edition, versions, episode
         ver = naming.clean_tag((versions or {}).get(name, _version_of(stem, [naming.strip_tags(stem)])), 40)
         new_stem = new_root + (" - " + ver if ver else "")
         new_name = new_stem + ext
-        for g in sorted(os.listdir(base)):       # napisy i plakat obok luźnego pliku
+        for g in sorted(os.listdir(base)):       # subtitles and poster next to a loose file
             if g.startswith(stem + ".") and g != name and not _is_video(g):
                 inner.append((g, new_stem + g[len(stem):]))
     if len(new_name.encode("utf-8")) > 240:
@@ -822,7 +822,7 @@ def _rename_plan(base, name, kind, title, year, tmdb, edition, versions, episode
 
 
 def _free(src, dst):
-    """Cel jest wolny albo to ten sam plik (zmiana tylko wielkości liter)."""
+    """The target is free or it is the same file (only the letter case changes)."""
     if not os.path.lexists(dst):
         return True
     try:
@@ -834,7 +834,7 @@ def _free(src, dst):
 def _ren(src, dst):
     if src == dst:
         return
-    if src.lower() == dst.lower():   # exFAT/SMB: sama zmiana wielkości liter przez nazwę pośrednią
+    if src.lower() == dst.lower():   # exFAT/SMB: a case-only rename goes through an intermediate name
         mid = src + ".plexdl-ren"
         os.rename(src, mid)
         os.rename(mid, dst)
@@ -844,7 +844,7 @@ def _ren(src, dst):
 
 def rename_item(disk_id, cat_id, name, title, year=None, tmdb=None, edition="", versions=None,
                 episodes=True, dry=False, busy=(), extras=None):
-    """Zmienia nazwę filmu/serialu wg zasad Plex: folder, pliki wideo, napisy i plakat."""
+    """Renames a movie / show by the Plex rules: folder, video files, subtitles and poster."""
     d, cat, base = location(disk_id, cat_id)
     plan = _rename_plan(base, name, cat["kind"], title, year, tmdb, edition, versions, episodes, extras)
     path, new_name, inner = plan["path"], plan["new_name"], plan["inner"]
@@ -869,7 +869,7 @@ def rename_item(disk_id, cat_id, name, title, year=None, tmdb=None, edition="", 
         if new_name != name:
             _ren(path, new_path)
     except OSError as e:
-        for b, a in reversed(done):   # wycofanie częściowych zmian
+        for b, a in reversed(done):   # roll back partial changes
             try:
                 _ren(b, a)
             except OSError:
@@ -949,7 +949,7 @@ def frame_candidates(disk_id, cat_id, name, n=6, shuffle=False, at=None):
 
 
 def save_thumb(disk_id, cat_id, name, data):
-    """Własny plakat (JPEG przygotowany w przeglądarce) zamiast okładki z TMDB."""
+    """Own poster (JPEG prepared in the browser) instead of the TMDB poster."""
     _d, cat, base = location(disk_id, cat_id)
     path = item_path(base, name)
     if not data or data[:3] != b"\xff\xd8\xff" or len(data) > 4 * 1024 * 1024:
@@ -969,16 +969,16 @@ def refresh_thumb(disk_id, cat_id, name):
     return {"ok": True}
 
 
-# ------------------------------------------------------------------ okładki
+# ------------------------------------------------------------------ posters
 _thumb_locks = {}
 _thumb_sem = threading.Semaphore(3)
 _thumb_fail = {}
-FAIL_TTL = 24 * 3600  # brak wyniku w TMDB → nie pytamy ponownie przez dobę
+FAIL_TTL = 24 * 3600  # no TMDB result → do not ask again for a day
 
 
 def fetch_thumb(kind, base, name, is_dir, force=False):
-    """Pobiera plakat z TMDB i zapisuje jako „Tytuł (Rok).thumb.jpg” w folderze filmu.
-    Gdy TMDB nic nie zwraca – plik nie powstaje (widok pokaże obrazek zastępczy)."""
+    """Downloads the poster from TMDB and saves it as “Title (Year).thumb.jpg” in the movie folder.
+    When TMDB returns nothing, no file is created (the view shows a placeholder)."""
     key = os.path.join(base, name)
     lock = _thumb_locks.setdefault(key, threading.Lock())
     with lock:
@@ -1058,7 +1058,7 @@ def delete_thumbs(disk_id):
     return count
 
 
-# ------------------------------------------------------------------ „Aktualizuj ścieżki”
+# ------------------------------------------------------------------ “Update paths”
 # Folder names are compared after _norm(): lower case, no accents, letters and digits only, no plural “s”
 # („Home Videos” = „Home Video”, „TV-Shows” = „TV Shows”). Only names are read – never the contents.
 ALIASES = {
@@ -1142,7 +1142,7 @@ def scan_disk(mount, categories, current=None):
                 if e.path not in used and _norm(e.name) in {_norm(w) for w in weak}:
                     hits.setdefault(cid, []).append(e.path)
                     used.add(e.path)
-    # several matches → the one next to the other category folders (e.g. all in „Plex 1T/”)
+    # several matches → the one next to the other category folders (e.g. all in “Plex/”)
     parents = {}
     for paths in hits.values():
         for p in paths:
@@ -1174,7 +1174,7 @@ def scan_disk(mount, categories, current=None):
 
 
 def find_plex_dir(mount):
-    """Folder „Plex” (dowolna wielkość liter) bezpośrednio na dysku – tam kreator proponuje foldery kategorii."""
+    """A “Plex” folder (any letter case) directly on the disk – the wizard suggests category folders there."""
     try:
         for e in sorted(os.scandir(mount), key=lambda e: e.name.lower()):
             if e.is_dir(follow_symlinks=False) and e.name.lower() in ("plex", "plex media", "plex_media", "plexmedia"):
@@ -1185,8 +1185,8 @@ def find_plex_dir(mount):
 
 
 def _rebase(path, mount):
-    """Ścieżka z innego urządzenia (np. /plex_media_1024/Plex 1T/Home Video z Pi z Plexem) przeniesiona
-    na ten punkt montowania (/mnt/plex_1024/Plex 1T/Home Video) – jeśli taki folder tu istnieje."""
+    """A path from another device (e.g. /media/disk1/Plex/Home Video on the Pi with Plex) moved
+    onto this mount point (/mnt/ssd1/Plex/Home Video) – if that folder exists here."""
     parts = [x for x in (path or "").split("/") if x]
     for k in range(1, len(parts)):
         cand = os.path.join(mount, *parts[k:])
@@ -1201,7 +1201,7 @@ def scan_paths(mount, categories, current=None):
 
 
 def cleanup_tmp():
-    """Po restarcie: usuwa niedokończone kopie (oryginały nie były jeszcze ruszane)."""
+    """After a restart: removes unfinished copies (the originals were not touched yet)."""
     for d in config.get().get("disks", []):
         for base in (d.get("paths") or {}).values():
             root = tmp_root(base)

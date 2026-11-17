@@ -17,10 +17,10 @@
   </nav>
 
   <div class="win-body">
-    <!-- DYSKI -->
+    <!-- DISKS -->
     <section class="tab-panel" data-panel="disks">
       <p class="panel-intro">{{ _("Each disk has a folder for each category. An empty field means the category is not available on that disk.") }}
-        <button type="button" class="info-i" data-tip="{{ _('The mount point is the directory where the system sees the disk (check it with df -h). It is used to read free space. Category folders are the Plex library paths, e.g. /plex_media/Plex/Movies.') }}" data-href="https://support.plex.tv/articles/naming-and-organizing-your-movie-media-files/">i</button></p>
+        <button type="button" class="info-i" data-tip="{{ _('The mount point is the directory where the system sees the disk (check it with df -h). It is used to read free space. Category folders are the Plex library paths, e.g. /mnt/ssd1/Plex/Movies.') }}" data-href="https://support.plex.tv/articles/naming-and-organizing-your-movie-media-files/">i</button></p>
       <div id="diskRows"></div>
       <div class="disk-add">
         <button class="btn-soft small" type="button" id="addDisk">+ {{ _("Add disk") }}</button>
@@ -29,7 +29,7 @@
       </div>
     </section>
 
-    <!-- KATEGORIE -->
+    <!-- CATEGORIES -->
     <section class="tab-panel" data-panel="cats" hidden>
       <p class="panel-intro">{{ _("Categories are the buttons above the download form and in the File manager, e.g. Movies, TV Shows, Kids, Concerts.") }}
         <button type="button" class="info-i" data-tip="{{ _('The type sets the naming: Movie saves files as Title (Year)/Title (Year).mkv, TV show as Show/Season 01/Show - S01E01.mkv, Other keeps the name you enter (e.g. home videos). In Plex add a separate library for each category.') }}" data-href="https://support.plex.tv/articles/naming-and-organizing-your-tv-show-files/">i</button></p>
@@ -39,7 +39,7 @@
       <button class="btn-soft small" type="button" id="addCat">+ {{ _("Add category") }}</button>
     </section>
 
-    <!-- POBIERANIE -->
+    <!-- DOWNLOADS -->
     <section class="tab-panel" data-panel="dl" hidden>
       <div class="grid-3">
         <div><label for="sConn">{{ _("Connections per file (1–16)") }} <button type="button" class="info-i" data-tip="{{ _('How many parallel connections aria2 opens for one file. More connections usually speed up premium servers; 6 is a safe value.') }}">i</button></label><input class="input" id="sConn" type="number" min="1" max="16"></div>
@@ -50,7 +50,7 @@
         <button type="button" class="info-i" data-tip="{{ _('Protects the SD card: when a disk disconnects, its folder becomes an ordinary directory on the card and a download could fill it up. Turn it off only if your library is on the SD card itself.') }}">i</button></label>
     </section>
 
-    <!-- SERWERY PLEX -->
+    <!-- PLEX SERVERS -->
     <section class="tab-panel" data-panel="plex" hidden>
       <label class="check"><input type="checkbox" id="sAutodisc"> {{ _("Discover Plex servers on the network automatically") }}
         <button type="button" class="info-i" data-tip="{{ _('Every few minutes the Downloader sends a GDM query (like the Plex apps do) and checks the server /identity address. No Plex login is needed and nothing is changed on the server.') }}">i</button></label>
@@ -62,7 +62,7 @@
       <button class="btn-soft small" type="button" id="addPlex">+ {{ _("Add server") }}</button>
     </section>
 
-    <!-- PODGLĄD I OKŁADKI -->
+    <!-- PREVIEW AND POSTERS -->
     <section class="tab-panel" data-panel="preview" hidden>
       <div><label class="small-label" for="sTmdb">{{ _("TMDB API key (API Key or API Read Access Token)") }}
         <button type="button" class="info-i" data-tip="{{ _('Free key from themoviedb.org → Settings → API. Used for the movie preview card and the posters in the File manager. Stored locally only.') }}" data-href="https://www.themoviedb.org/settings/api">i</button></label>
@@ -89,7 +89,7 @@
       <span class="form-msg" id="thumbMsg"></span>
     </section>
 
-    <!-- KOPIE ZAPASOWE -->
+    <!-- BACKUPS -->
     <section class="tab-panel" data-panel="backups" hidden>
       <p class="panel-intro">{{ _("Every settings change creates a restore point. Backups older than 30 days are removed automatically, but the latest one is always kept.") }}
         <button type="button" class="info-i" data-tip="{{ _('Restoring a backup changes disks, categories, Plex servers and options. Username, password and session keys stay unchanged for security. Backups are in the backups/ folder on the Raspberry Pi.') }}">i</button></p>
@@ -116,7 +116,7 @@
         <button type="button" class="linklike" id="gotoFix">{{ _("Go to terminal commands") }} →</button></p>
     </section>
 
-    <!-- KONTO -->
+    <!-- ACCOUNT -->
     <section class="tab-panel" data-panel="account" hidden>
       <h3 class="first">{{ _("Interface") }}</h3>
       <div class="grid-2">
@@ -168,7 +168,7 @@
   </div>
 </dialog>
 
-<!-- okno dziennika -->
+<!-- log window -->
 <dialog id="logWin" class="window term" aria-labelledby="logTitle">
   <div class="win-head" data-drag>
     <h2 id="logTitle">{{ _("Activity log") }}</h2>
