@@ -132,7 +132,6 @@ Release steps: `1.5.0-beta0` (= 1.4.0, done) → `1.5.0-beta1` (where to watch, 
 
 - [x] Where to watch: streaming availability in the movie preview (subscription / free / rent / buy), country in Settings → Account; data TMDB, availability JustWatch (1.5.0-beta1).
 - [x] New `fix.sh` menu with submenus, autostart for the panel, uninstall together with chosen add-ons (1.5.0-beta3).
-- [ ] `setup.sh`: window menu (whiptail) and a simple installation wizard.
 
 - [ ] TV shows: “Episodes / Whole show” switch on the selection bar; a whole show into an existing show folder is merged; conflicts: Skip existing (default) / Overwrite / Cancel.
 - [ ] Episode view in the File manager: shared thumbnail, S01E01 labels, edit only season and episode, delete.

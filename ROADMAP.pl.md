@@ -130,7 +130,6 @@ Kolejne kroki: `1.5.0-beta0` (= 1.4.0, gotowe) → `1.5.0-beta1` (gdzie obejrze�
 
 - [x] Gdzie obejrzeć: dostępność w serwisach streamingowych w podglądzie filmu (abonament / za darmo / wypożyczenie / kupno), kraj w Ustawienia → Konto; dane TMDB, dostępność JustWatch (1.5.0-beta1).
 - [x] Nowe menu `fix.sh` z podmenu, autostart panelu, deinstalacja razem z wybranymi dodatkami (1.5.0-beta3).
-- [ ] `setup.sh`: menu w oknie (whiptail) i prosty kreator instalacji.
 
 - [ ] Seriale: przełącznik „Odcinki / Całość” na pasku zaznaczenia; całość do istniejącego folderu serialu łączy się z nim; konflikt: Pomiń istniejące (domyślnie) / Nadpisz / Anuluj.
 - [ ] Widok odcinków w Menedżerze plików: wspólna miniatura, opis S01E01, edycja tylko sezonu i odcinka, usuwanie.
