@@ -2,6 +2,11 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
+## 1.5.0-beta4 – 2026-11-23 (BETA)
+
+- **Original title (year) to copy:** at the bottom of the movie / TV show preview, e.g. `The Silence of the Lambs (1991)`, with a copy button – handy when searching for the file.
+- **Update check on BETA:** a BETA installation now checks the BETA line too – “New BETA available (…) – run ./fix.sh → 1”, or “BETA … is up to date”. When a stable version newer than this BETA is out, the panel says so (back to stable: `fix.sh` → 5). Stable installations still see stable versions only.
+
 ## 1.5.0-beta3 – 2026-11-23 (BETA)
 
 - **New repair menu `fix.sh`** – shorter main menu with submenus: 1 Update · 2 Server · 3 Repair and reinstall (reinstall, clean reinstall, another version) · 4 Add-ons · 5 BETA version · 6 Uninstall · 7 Language / Język · 8 Cancel.

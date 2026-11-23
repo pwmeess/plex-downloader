@@ -648,7 +648,10 @@
     u.className = "upd-status"; u.textContent = t("checking for updates…");
     try {
       const r = await api("/api/version");
-      if (r.available) { u.className = "upd-status new"; u.textContent = "⬆ " + t("Update available ({v}) – run {cmd}", { v: r.latest, cmd: r.cmd }); }
+      if (r.available && r.kind === "stable") { u.className = "upd-status new"; u.textContent = "⬆ " + t("Stable version {v} available – back to stable: {cmd}", { v: r.latest, cmd: r.cmd }); }
+      else if (r.available && r.kind === "beta") { u.className = "upd-status new"; u.textContent = "⬆ " + t("New BETA available ({v}) – run {cmd}", { v: r.latest, cmd: r.cmd }); }
+      else if (r.available) { u.className = "upd-status new"; u.textContent = "⬆ " + t("Update available ({v}) – run {cmd}", { v: r.latest, cmd: r.cmd }); }
+      else if (r.available === false && r.channel === "beta") { u.className = "upd-status ok"; u.textContent = "✓ " + t("BETA {v} is up to date", { v: r.version }); }
       else if (r.available === false) { u.className = "upd-status ok"; u.textContent = "✓ " + t("Version {v} is up to date", { v: r.version }); }
       else { u.textContent = `${t("Version")} ${r.version} · ${r.message}`; }
       u.title = r.commit ? "commit " + r.commit : "";

@@ -799,5 +799,11 @@
  "Where to watch – country": "Gdzie obejrzeć – kraj",
  "Where to watch: country changed": "Gdzie obejrzeć: zmiana kraju",
  "availability:": "dostępność:",
- "Copied": "Skopiowano"
+ "Copied": "Skopiowano",
+ "Stable version %s is available.": "Dostępna jest wersja stabilna %s.",
+ "New BETA available (%s).": "Dostępna jest nowa BETA (%s).",
+ "Stable version {v} available – back to stable: {cmd}": "Dostępna wersja stabilna {v} – powrót do stabilnej: {cmd}",
+ "New BETA available ({v}) – run {cmd}": "Dostępna nowa BETA ({v}) – uruchom {cmd}",
+ "BETA {v} is up to date": "BETA {v} jest aktualna",
+ "Original title (year)": "Tytuł oryginalny (rok)"
 }

@@ -312,6 +312,8 @@ svg.i { width: 18px; height: 18px; flex: none; }
 .info-alts button { background: var(--input); border: 1px solid var(--line); border-radius: 99px; padding: 4px 11px; font-size: 13px; color: var(--text); }
 .info-alts button:hover { border-color: var(--accent); }
 .info-alts button.on { border-color: var(--accent); color: var(--accent); }
+.info-copy { margin-top: 14px; }
+.info-copy code { user-select: all; }
 
 /* ---------- windows (settings, confirmations) ---------- */
 dialog.window {

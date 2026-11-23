@@ -1,7 +1,7 @@
 /* Plex Downloader – main page: download form, queue, movie preview */
 (() => {
   "use strict";
-  const { $, $$, store, t, LOCALE, api, fmtSize, fmtSpeed, fmtEta, el, icon, catIcon, toast } = window.PD;
+  const { $, $$, store, t, LOCALE, api, fmtSize, fmtSpeed, fmtEta, el, icon, catIcon, toast, copyText } = window.PD;
 
   const VIDEO_EXTS = [".mkv", ".mp4", ".avi", ".m4v", ".mov", ".wmv", ".ts", ".m2ts", ".mpg",
     ".mpeg", ".webm", ".flv", ".divx", ".ogm", ".vob"];
@@ -253,6 +253,7 @@
     st.infoItem = null;
     $("#infoBody").hidden = true;
     $("#infoAlts").hidden = true;
+    $("#infoCopy").hidden = true;
     if (bad) { const sp = el("span", "bad", msg); setInfoState(sp); } else setInfoState(msg);
     updatePreviewSoft();
   }
@@ -345,7 +346,27 @@
       });
       alts.hidden = false;
     } else alts.hidden = true;
+    renderCopyTitle(it);
     updatePreviewSoft();
+  }
+
+  // ---- original title (year) ready to copy – handy for searching for the file
+  function renderCopyTitle(it) {
+    const box = $("#infoCopy");
+    const name = it.original_title || it.title || "";
+    box.replaceChildren();
+    if (!name) { box.hidden = true; return; }
+    const text = name + (it.year ? ` (${it.year})` : "");
+    const b = el("button", "icon-btn copy"); b.type = "button"; b.title = t("Copy"); b.appendChild(icon("copy"));
+    b.addEventListener("click", async () => {
+      const ok = await copyText(text);
+      b.replaceChildren(icon(ok ? "check" : "copy"));
+      toast(ok ? t("Copied to clipboard.") : t("Could not copy – select the text and copy it manually."), !ok);
+      setTimeout(() => b.replaceChildren(icon("copy")), 1800);
+    });
+    const code = el("div", "cmd-code"); code.append(el("code", null, text), b);
+    box.append(el("div", "cmd-label", t("Original title (year)")), code);
+    box.hidden = false;
   }
 
   // ---- "Where to watch": streaming availability in the chosen country (TMDB watch/providers = JustWatch data)

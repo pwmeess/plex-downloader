@@ -1203,13 +1203,19 @@ def api_version():
     return resp
 
 
-def _ver_tuple(v):
-    m = re.match(r"\s*(\d+)\.(\d+)\.(\d+)", v or "")
-    return tuple(int(x) for x in m.groups()) if m else (0, 0, 0)
+def _ver_key(v):
+    """'1.5.0-beta3' → (1, 5, 0, 0, 3); '1.5.0' → (1, 5, 0, 1, 0) – a stable version is newer than its BETAs."""
+    m = re.match(r"\s*(\d+)\.(\d+)\.(\d+)(?:-beta(\d*))?", v or "")
+    if not m:
+        return (0, 0, 0, 0, 0)
+    major, minor, patch, beta = m.groups()
+    return (int(major), int(minor), int(patch)) + ((0, int(beta or 0)) if beta is not None else (1, 0))
 
 
 def _api_version():
-    """Checks the stable line only (main branch on GitHub) – beta versions are not announced."""
+    """Stable installation: checks the stable line only (main branch) – BETA versions are not announced.
+    BETA installation: checks the beta branch (newer BETA → fix.sh → 1) and the stable line
+    (a stable version newer than this BETA → fix.sh → 5 brings you back to stable)."""
     def git(*args):
         return subprocess.run(["git", "-C", BASE_DIR] + list(args), capture_output=True,
                               text=True, timeout=25)
@@ -1221,12 +1227,21 @@ def _api_version():
             return jsonify(version=VERSION, available=None,
                            message=_("Could not connect to GitHub."))
         stable = git("show", "origin/main:VERSION").stdout.strip()
-        beta = "beta" in VERSION.lower()
-        newer = bool(stable) and _ver_tuple(stable) > _ver_tuple(VERSION)
-        cmd = "./fix.sh" if beta else "./update.sh"
-        return jsonify(version=VERSION, latest=stable if newer else VERSION, available=newer, cmd=cmd,
-                       message=(_("Update available (%s). Run %s on the Raspberry Pi.") % (stable, cmd))
-                       if newer else _("You have the latest version."))
+        if "beta" not in VERSION.lower():
+            newer = bool(stable) and _ver_key(stable) > _ver_key(VERSION)
+            return jsonify(version=VERSION, channel="stable", latest=stable if newer else VERSION,
+                           available=newer, cmd="./update.sh",
+                           message=(_("Update available (%s). Run %s on the Raspberry Pi.") % (stable, "./update.sh"))
+                           if newer else _("You have the latest version."))
+        git("fetch", "--quiet", "origin", "+refs/heads/beta:refs/remotes/origin/beta")
+        beta = git("show", "origin/beta:VERSION").stdout.strip()
+        if stable and _ver_key(stable) > _ver_key(VERSION) and _ver_key(stable) >= _ver_key(beta):
+            return jsonify(version=VERSION, channel="beta", kind="stable", latest=stable, available=True,
+                           cmd="./fix.sh → 5", message=_("Stable version %s is available.") % stable)
+        newer = bool(beta) and _ver_key(beta) > _ver_key(VERSION)
+        return jsonify(version=VERSION, channel="beta", kind="beta", latest=beta if newer else VERSION,
+                       available=newer, cmd="./fix.sh → 1",
+                       message=(_("New BETA available (%s).") % beta) if newer else _("You have the latest version."))
     except Exception as e:
         return jsonify(version=VERSION, available=None, message=str(e))
 

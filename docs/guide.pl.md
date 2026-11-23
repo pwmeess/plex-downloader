@@ -547,6 +547,8 @@ Zanim coś pobierzesz, sprawdź, czy film nie jest już w Twoim serwisie streami
 
 Kliknięcie logo otwiera stronę z ofertami dla tego tytułu. **Kraj** ustawiasz w **Ustawienia → Konto → Gdzie obejrzeć – kraj** (*Automatycznie* = według języka panelu: polski → Polska, angielski → USA). Dane pochodzą z TMDB, dostępność z JustWatch. Do tej funkcji potrzebny jest klucz TMDB (Etap 3).
 
+Na dole podglądu jest pole **Tytuł oryginalny (rok)**, np. `The Silence of the Lambs (1991)`. Przycisk kopiowania obok wkłada ten tekst do schowka — wygodne, gdy szukasz pliku pod oryginalną nazwą.
+
 ### Menedżer plików {#file-manager}
 
 Dwie kolumny z plakatami — porządkujesz kolekcję metodą „przeciągnij i upuść” albo przyciskiem **Przenieś**:

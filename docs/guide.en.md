@@ -547,6 +547,8 @@ Before you download something, check whether the movie is already on your stream
 
 Clicking a logo opens the offers page for the title. Set the **country** in **Settings → Account → Where to watch – country** (*Automatic* = by the panel language: Polish → Poland, English → United States). Data comes from TMDB, availability from JustWatch. This feature needs a TMDB key (Stage 3).
 
+At the bottom of the preview there is an **Original title (year)** field, e.g. `The Silence of the Lambs (1991)`. The copy button next to it puts this text on the clipboard — handy when you search for the file under its original name.
+
 ### File manager {#file-manager}
 
 Two columns with posters — organise your collection by drag and drop or with the **Move** button:
