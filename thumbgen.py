@@ -51,7 +51,7 @@ def _run(args, timeout=120):
     except subprocess.TimeoutExpired:
         raise FrameError(_("Reading the frame took too long."))
     except OSError:
-        raise FrameError(_("ffmpeg is not installed – add it with fix.sh → Additional modules."))
+        raise FrameError(_("ffmpeg is not installed – add it with fix.sh → Add-ons."))
     return p.stdout
 
 
@@ -92,7 +92,7 @@ def _times(path, n, shuffle):
 def best(path):
     """Automatic poster: the most detailed of several frames."""
     if not available():
-        raise FrameError(_("ffmpeg is not installed – add it with fix.sh → Additional modules."))
+        raise FrameError(_("ffmpeg is not installed – add it with fix.sh → Add-ons."))
     with _sem:
         times = _times(path, 4, False)
         scored = sorted(((score(path, t), t) for t in times), reverse=True)
@@ -102,7 +102,7 @@ def best(path):
 def candidates(path, n=6, shuffle=False):
     """Several posters to choose from in the Edit window: [(time, jpeg), …], best first."""
     if not available():
-        raise FrameError(_("ffmpeg is not installed – add it with fix.sh → Additional modules."))
+        raise FrameError(_("ffmpeg is not installed – add it with fix.sh → Add-ons."))
     n = max(1, min(8, int(n)))
     with _sem:
         times = _times(path, n, shuffle)
@@ -131,7 +131,7 @@ def times_around(t, d, n=6, step=5.0):
 def frames_at(path, t, n=6):
     """Several posters around the time typed in the Edit window, in time order."""
     if not available():
-        raise FrameError(_("ffmpeg is not installed – add it with fix.sh → Additional modules."))
+        raise FrameError(_("ffmpeg is not installed – add it with fix.sh → Add-ons."))
     with _sem:
         d = duration(path)
         out = []

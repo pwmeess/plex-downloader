@@ -61,7 +61,7 @@
 <li><strong>Plex Downloader</strong> — a panel you open in an ordinary web browser. It downloads video files from direct links (several connections at once, resumes after a restart), names them the way Plex expects (e.g. <code>Title (Year)/Title (Year).mkv</code> or <code>Show/Season 01/Show S01E02.mkv</code>) and lets you manage files and posters.</li>
 </ul>
 <h3 id="scenarios">Three ways to install</h3>
-<table>
+<table class="keep">
 <thead>
 <tr>
 <th>Installation</th>
@@ -102,7 +102,7 @@
 <p>A Raspberry Pi has no system drive — the system runs from a microSD card. You prepare the card on your own computer with the free <strong>Raspberry Pi Imager</strong>.</p>
 <p><strong>Step 1:</strong> download and install Raspberry Pi Imager from <strong>raspberrypi.com/software</strong> (Windows, macOS, Linux). Put the microSD card into your computer (card reader or adapter).</p>
 <p><strong>Step 2:</strong> in the program choose:</p>
-<table>
+<table class="keep">
 <thead>
 <tr>
 <th>Imager field</th>
@@ -125,7 +125,7 @@
 </tbody>
 </table>
 <p><strong>Step 3: settings (the most important step).</strong> When Imager asks whether to apply your own settings (<em>Customisation / Edit settings</em>), choose <strong>yes</strong> and fill in:</p>
-<table>
+<table class="keep">
 <thead>
 <tr>
 <th>Setting</th>
@@ -196,7 +196,7 @@
 <p>Save the file. From now on <code>ssh plex</code> opens the Raspberry Pi console straight away.</p>
 <h2 id="disk"><span class="stage">STAGE 2</span><span class="h2t">Preparing the drive for movies and TV shows</span></h2>
 <p>Before installing Plex and Downloader, prepare the space for your files. On Linux a drive does not get a letter (like <code>D:</code> on Windows) — it is attached to a folder of your choice, e.g. <code>/mnt/ssd1</code>. That folder is called the <strong>mount point</strong>. Choose the scenario that matches your drive:</p>
-<table>
+<table class="keep">
 <thead>
 <tr>
 <th>Your drive</th>
@@ -293,7 +293,7 @@ sudo mkfs.ext4 -L PLEX_DISK /dev/sda1
 </code></pre>
 <p>Save the file: <strong>Ctrl+O</strong>, <strong>Enter</strong>, <strong>Ctrl+X</strong>.</p>
 <p><strong>What the fields of the line mean:</strong></p>
-<table>
+<table class="keep">
 <thead>
 <tr>
 <th>Field</th>
@@ -415,7 +415,7 @@ chmod +x setup.sh update.sh fix.sh
 <p><strong>Recommended — the <code>fix.sh</code> menu:</strong></p>
 <pre><code class="language-bash">cd ~/plex-downloader &amp;&amp; ./fix.sh
 </code></pre>
-<p>In the menu choose <strong>7 Additional modules → Plex Media Server → Install</strong>. The script adds the official Plex repository, installs the server and shows its address.</p>
+<p>In the menu choose <strong>4 Add-ons → Plex Media Server → Install</strong>. The script adds the official Plex repository, installs the server and shows its address.</p>
 <p><strong>Alternative — by hand (the whole block):</strong></p>
 <pre><code class="language-bash">sudo apt update
 sudo apt install -y curl gnupg
@@ -433,7 +433,7 @@ sudo apt install -y plexmediaserver
 <li>Give the server a name, e.g. <code>Home Plex</code>, and continue.</li>
 <li>Click <strong>Add Library</strong> and for each library choose the type, name and folder (<strong>Browse for media folder</strong> → choose the folder → <strong>Add</strong>):</li>
 </ol>
-<table>
+<table class="keep">
 <thead>
 <tr>
 <th>Library type</th>
@@ -490,7 +490,7 @@ sudo apt install -y plexmediaserver
 </blockquote>
 <p><strong>Step 1 (router):</strong> give both Raspberry Pis fixed IP addresses (DHCP reservation — see Stage 0).</p>
 <h3 id="samba">4.1. On the Pi with Plex: sharing the drive (Samba)</h3>
-<p>Install the Samba file server: <code>cd ~/plex-downloader &amp;&amp; ./fix.sh</code> → <strong>7 Additional modules → Samba → Install</strong> (or <code>sudo apt install -y samba</code>). Open its configuration file:</p>
+<p>Install the Samba file server: <code>cd ~/plex-downloader &amp;&amp; ./fix.sh</code> → <strong>4 Add-ons → Samba → Install</strong> (or <code>sudo apt install -y samba</code>). Open its configuration file:</p>
 <pre><code class="language-bash">sudo nano /etc/samba/smb.conf
 </code></pre>
 <p>Go to the very end of the file and add the section (each setting on its own line):</p>
@@ -513,7 +513,7 @@ sudo systemctl restart smbd
 </code></pre>
 <p><code>smbpasswd</code> asks twice for a new Samba password (it can differ from the Pi login password — remember it).</p>
 <h3 id="cifs">4.2. On the Pi with Downloader: mounting the share</h3>
-<p>Install support for network shares and create the mount point (or <code>cd ~/plex-downloader &amp;&amp; ./fix.sh</code> → <strong>7 → SMB client – mount shares (cifs-utils)</strong>):</p>
+<p>Install support for network shares and create the mount point (or <code>cd ~/plex-downloader &amp;&amp; ./fix.sh</code> → <strong>4 Add-ons → SMB client – mount shares (cifs)</strong>):</p>
 <pre><code class="language-bash">sudo apt update
 sudo apt install -y cifs-utils
 sudo mkdir -p /mnt/ssd1
@@ -534,7 +534,7 @@ password=YOUR_SAMBA_PASSWORD
 <p>Add the share permanently to <code>/etc/fstab</code> on the Pi with Downloader (<code>sudo nano /etc/fstab</code>). <strong>This is one line</strong> — it may wrap in this guide, but in the file it must be a single line. The space in the share name <code>Plex SSD1</code> is written as <code>\040</code>:</p>
 <pre><code class="language-text">//192.168.1.10/Plex\040SSD1  /mnt/ssd1  cifs  credentials=/home/pi/.smbcredentials,uid=pi,gid=pi,iocharset=utf8,vers=3.0,_netdev,nofail  0  0
 </code></pre>
-<table>
+<table class="keep">
 <thead>
 <tr>
 <th>Part</th>
@@ -579,7 +579,7 @@ df -h /mnt/ssd1
 </code></pre>
 <h3 id="paths">4.3. Paths in the wizard</h3>
 <p>Run the wizard in the Downloader panel and choose <strong>Plex on another device</strong>. <strong>The golden rule:</strong> in Plex Downloader you always enter the paths of <strong>the device the panel runs on</strong>. In our example the share is mounted at <code>/mnt/ssd1</code>, so movies are in <code>/mnt/ssd1/Movies</code>. You change nothing in Plex.</p>
-<table>
+<table class="keep">
 <thead>
 <tr>
 <th></th>
@@ -614,7 +614,7 @@ df -h /mnt/ssd1
 </ul>
 <h3 id="where-to-watch">Where to watch — availability on streaming services</h3>
 <p>Before you download something, check whether the movie is already on your streaming service. <strong>Type just the title</strong> into the name field (e.g. <code>The Silence of the Lambs (1991)</code>) — no link needed. After a moment the preview card shows the services' logos in the <strong>Where to watch</strong> section, in four groups:</p>
-<table>
+<table class="keep">
 <thead>
 <tr>
 <th>Group</th>
@@ -668,7 +668,7 @@ df -h /mnt/ssd1
 <h3 id="vpn-install">6.1. Installing Tailscale on the Raspberry Pi</h3>
 <ol>
 <li>In the terminal start the repair menu: <code>cd ~/plex-downloader &amp;&amp; ./fix.sh</code></li>
-<li>Choose <strong>7 Additional modules → Tailscale VPN (recommended) → Install</strong>. The script installs Tailscale and allows the panel to log in to Tailscale itself.</li>
+<li>Choose <strong>4 Add-ons → Tailscale VPN (recommended) → Install</strong>. The script installs Tailscale and allows the panel to log in to Tailscale itself.</li>
 <li>You can skip the login question at the end — it is easier to log in from the browser.</li>
 </ol>
 <blockquote class="tip">
@@ -690,10 +690,10 @@ df -h /mnt/ssd1
 <h3 id="vpn-access">6.4. Access control, autostart and WireGuard</h3>
 <ul>
 <li><strong>Where the panel is available:</strong> <strong>Home network + VPN</strong> (default) or <strong>Home network only</strong> — then the panel is blocked over VPN, while Tailscale keeps working e.g. for SSH and Plex. You can switch back only from home.</li>
-<li><strong>Tailscale version</strong> has an <strong>up to date</strong> / <strong>out of date</strong> tag (a red <strong>security update</strong> = an urgent security fix). Update: <code>fix.sh</code> → 7 → Tailscale → <strong>Update</strong>.</li>
+<li><strong>Tailscale version</strong> has an <strong>up to date</strong> / <strong>out of date</strong> tag (a red <strong>security update</strong> = an urgent security fix). Update: <code>fix.sh</code> → 4 → Tailscale → <strong>Update</strong>.</li>
 <li><strong>Log out / change account</strong> — the Raspberry Pi leaves the Tailscale network; then <strong>Log in</strong> gives a new link.</li>
-<li><strong>Autostart:</strong> <code>cd ~/plex-downloader &amp;&amp; ./fix.sh</code> → 7 → Tailscale → <strong>Autostart: on → turn off</strong> (it does not start after a restart). To disconnect for a while: <code>sudo tailscale down</code>, back: <code>sudo tailscale up</code> or <strong>Connect</strong> in the panel.</li>
-<li><strong>WireGuard</strong> — for people with their own WireGuard server (needs UDP port 51820 forwarded on the router and a hand-made <code>/etc/wireguard/wg0.conf</code>). Tools: <code>cd ~/plex-downloader &amp;&amp; ./fix.sh</code> → 7 → <strong>WireGuard VPN</strong>. The VPN tab shows active connections and addresses.</li>
+<li><strong>Autostart:</strong> <code>cd ~/plex-downloader &amp;&amp; ./fix.sh</code> → 4 → Tailscale → <strong>Autostart: on → turn off</strong> (it does not start after a restart). To disconnect for a while: <code>sudo tailscale down</code>, back: <code>sudo tailscale up</code> or <strong>Connect</strong> in the panel.</li>
+<li><strong>WireGuard</strong> — for people with their own WireGuard server (needs UDP port 51820 forwarded on the router and a hand-made <code>/etc/wireguard/wg0.conf</code>). Tools: <code>cd ~/plex-downloader &amp;&amp; ./fix.sh</code> → 4 → <strong>WireGuard VPN</strong>. The VPN tab shows active connections and addresses.</li>
 </ul>
 <blockquote class="info">
 <p>WireGuard support has been checked only in <strong>synthetic tests</strong> (simulated system commands, no real connection). If something works differently for you, please report it on GitHub (Issues).</p>
@@ -707,7 +707,7 @@ df -h /mnt/ssd1
 <p>If the panel or an extra service misbehaves, run:</p>
 <pre><code class="language-bash">cd ~/plex-downloader &amp;&amp; ./fix.sh
 </code></pre>
-<table>
+<table class="keep">
 <thead>
 <tr>
 <th>Menu option</th>
@@ -717,35 +717,39 @@ df -h /mnt/ssd1
 <tbody>
 <tr>
 <td>1 Update</td>
-<td>The newest panel version (like <code>./update.sh</code>).</td>
+<td>The newest version of the line you are on (stable – like <code>./update.sh</code>, or BETA).</td>
 </tr>
 <tr>
-<td>2 Reinstall</td>
+<td>2 Server</td>
+<td>Status, stop / start, restart of the panel, autostart on / off.</td>
+</tr>
+<tr>
+<td>3 Repair and reinstall → 1 Reinstall</td>
 <td>Rebuilds the Python environment and program files; <strong>keeps the settings</strong>.</td>
 </tr>
 <tr>
-<td>3 Clean reinstall</td>
+<td>3 Repair and reinstall → 2 Clean reinstall</td>
 <td>Factory settings for the panel (you must type <code>YES</code>). Movies on the drives are not touched.</td>
 </tr>
 <tr>
-<td>4 / 5 BETA version</td>
-<td>Switch to the test version or back to the stable one.</td>
-</tr>
-<tr>
-<td>6 Server</td>
-<td>Status, start, stop, restart of the panel.</td>
-</tr>
-<tr>
-<td>7 Additional modules</td>
-<td>Plex Media Server, Samba, SMB client, ffmpeg, Tailscale, WireGuard: install, update, autostart on / off, uninstall.</td>
-</tr>
-<tr>
-<td>8 Install another version</td>
+<td>3 Repair and reinstall → 3 Install another version</td>
 <td>Back to an older release (from 1.2.5) with an automatic copy of the settings in <code>.version-snapshots</code>.</td>
 </tr>
 <tr>
-<td>9 Uninstall</td>
-<td>Removes the Plex Downloader service and files (movies stay untouched).</td>
+<td>4 Add-ons</td>
+<td>Plex Media Server, Samba, SMB client, ffmpeg, Tailscale, WireGuard: install, update, autostart on / off, uninstall.</td>
+</tr>
+<tr>
+<td>5 BETA version</td>
+<td>Switch to the test version or back to the stable one.</td>
+</tr>
+<tr>
+<td>6 Uninstall</td>
+<td>Removes Plex Downloader, optionally together with chosen add-ons (movies stay untouched).</td>
+</tr>
+<tr>
+<td>7 Language / Język</td>
+<td>Changes the menu language.</td>
 </tr>
 </tbody>
 </table>
@@ -757,7 +761,7 @@ df -h
 free -h
 uptime
 </code></pre>
-<table>
+<table class="keep">
 <thead>
 <tr>
 <th>Command</th>
@@ -813,7 +817,7 @@ sudo systemctl restart systemd-journald
 <li>The files <code>config.json</code> (TMDB key) and <code>~/.smbcredentials</code> (Samba password) contain confidential data — never share them.</li>
 </ul>
 <h2 id="faq"><span class="stage">FAQ</span><span class="h2t">When something does not work — common problems</span></h2>
-<table>
+<table class="keep">
 <thead>
 <tr>
 <th>Symptom</th>
@@ -823,7 +827,7 @@ sudo systemctl restart systemd-journald
 <tbody>
 <tr>
 <td>The panel does not open (<code>http://…:8800</code>)</td>
-<td>Is the Raspberry Pi on and does it have the same address (<code>hostname -I</code>)? Service status: <code>cd ~/plex-downloader &amp;&amp; ./fix.sh</code> → <strong>6 Server</strong>. Log: <code>journalctl -u plex-downloader -n 50 --no-pager</code>.</td>
+<td>Is the Raspberry Pi on and does it have the same address (<code>hostname -I</code>)? Service status: <code>cd ~/plex-downloader &amp;&amp; ./fix.sh</code> → <strong>2 Server</strong>. Log: <code>journalctl -u plex-downloader -n 50 --no-pager</code>.</td>
 </tr>
 <tr>
 <td>I cannot connect over SSH</td>
@@ -852,7 +856,7 @@ sudo systemctl restart systemd-journald
 </tbody>
 </table>
 <h2 id="glossary"><span class="stage">GLOSSARY</span><span class="h2t">Glossary</span></h2>
-<table>
+<table class="keep">
 <thead>
 <tr>
 <th>Term</th>

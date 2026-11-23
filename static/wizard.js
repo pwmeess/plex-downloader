@@ -600,8 +600,8 @@
       fcb.checked = W.opts && "thumbs_frames" in W.opts ? !!W.opts.thumbs_frames : !!S.thumbs_frames;
       fcb.addEventListener("change", () => { W.opts = W.opts || {}; W.opts.thumbs_frames = fcb.checked; saveW(); });
       fl.append(fcb, document.createTextNode(" " + t("Generate posters myself from video frames (needs ffmpeg)")));
-      fr.append(fl, info(t("For home videos and titles without a TMDB match (or without a TMDB key) the File manager makes a poster from a frame of the video: several frames are checked and the clearest one is used. Needs ffmpeg – installed by setup.sh, or with fix.sh → Additional modules.\n\nNot recommended to switch on right away: it takes about 10–15 s per movie on a Pi 4 / Pi 400 (longer on a Pi Zero), so the first opening of a large category is slow.\n\nYou can always make a poster from a frame for a single movie: File manager → pen icon (Edit) → Frame from the video.")));
-      if (!S.ffmpeg) fr.appendChild(el("p", "muted small", t("ffmpeg is not installed yet – add it with fix.sh → Additional modules.")));
+      fr.append(fl, info(t("For home videos and titles without a TMDB match (or without a TMDB key) the File manager makes a poster from a frame of the video: several frames are checked and the clearest one is used. Needs ffmpeg – installed by setup.sh, or with fix.sh → Add-ons.\n\nNot recommended to switch on right away: it takes about 10–15 s per movie on a Pi 4 / Pi 400 (longer on a Pi Zero), so the first opening of a large category is slow.\n\nYou can always make a poster from a frame for a single movie: File manager → pen icon (Edit) → Frame from the video.")));
+      if (!S.ffmpeg) fr.appendChild(el("p", "muted small", t("ffmpeg is not installed yet – add it with fix.sh → Add-ons.")));
       box.appendChild(fr);
       return box;
     },

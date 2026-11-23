@@ -36,6 +36,7 @@ pre { background: #f6f7f9; border: 0.5pt solid #d7dce3; border-left: 2.5pt solid
 pre code { background: none; padding: 0; font-size: 8.4pt; line-height: 1.45; }
 table { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt; font-size: 9pt; }
 tr { page-break-inside: avoid; } thead { display: table-header-group; }
+table.keep { page-break-inside: avoid; }
 th { background: #111; color: #fff; font-weight: 700; }
 th, td { border: 0.5pt solid #c9d0da; padding: 4pt 6pt; text-align: left; vertical-align: top; }
 tr:nth-child(even) td { background: #fafbfc; }
@@ -98,6 +99,11 @@ def _polish(body):
     body = re.sub(r"<p>(.*?)\s*\{\.([a-z-]+)\}</p>", r'<p class="\2">\1</p>', body)
     # the first table after the contents title is the contents table
     body = re.sub(r'(<p class="toc-title">.*?</p>\s*)<table>', r'\1<table class="toc-table">', body, count=1, flags=re.S)
+    # short tables (up to 12 rows) are not split between PDF pages
+    def keep(m):
+        t = m.group(0)
+        return t.replace("<table>", '<table class="keep">', 1) if t.count("<tr>") <= 13 else t
+    body = re.sub(r"<table>.*?</table>", keep, body, flags=re.S)
     # anchors in the middle of a line, e.g. "… folders** {#wizard-disks} – …"
     body = re.sub(r"\s*\{#([a-z0-9-]+)\}", r'<span class="anchor" id="\1"></span>', body)
     return body

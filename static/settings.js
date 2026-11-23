@@ -514,7 +514,7 @@
     const cmds = [
       [t("Connect from your computer (Terminal / PowerShell)"), `ssh ${cfg.system_user || "pi"}@${cfg.ip || "<raspberry-pi-ip>"}`],
       [t("Update Plex Downloader"), `cd ${dir} && ./update.sh`],
-      [t("Repair menu: update, reinstall, factory reset, server, additional modules, uninstall"), `cd ${dir} && ./fix.sh`, "fix"],
+      [t("Repair menu: update, server, reinstall, factory reset, add-ons, BETA, uninstall"), `cd ${dir} && ./fix.sh`, "fix"],
       [t("Service status"), "systemctl status plex-downloader"],
       [t("Restart the service"), "sudo systemctl restart plex-downloader"],
       [t("Live service logs"), "journalctl -u plex-downloader -f"],
@@ -632,7 +632,7 @@
     $$("input[name=thumbs]").forEach((r) => { r.checked = r.value === cfg.thumbs_mode; });
     $("#sFrames").checked = !!cfg.thumbs_frames;
     $("#ffmpegState").textContent = cfg.ffmpeg ? t("ffmpeg {v} installed", { v: cfg.ffmpeg })
-      : t("ffmpeg is not installed yet – add it with fix.sh → Additional modules.");
+      : t("ffmpeg is not installed yet – add it with fix.sh → Add-ons.");
     $("#aUser").value = cfg.username; $("#aCur").value = ""; $("#aNew").value = "";
   }
 
@@ -856,7 +856,7 @@
       out.push(stateBox("off", t("Tailscale is not installed."), t("Without a VPN the panel works only in your home network.")));
       const ol = el("ol", "vpn-steps");
       ol.append(
-        step(t("On the Raspberry Pi run the repair menu and choose Additional modules → Tailscale VPN → Install. At the end it asks whether to log in – you can do that here as well."), fixCmd),
+        step(t("On the Raspberry Pi run the repair menu and choose 4 Add-ons → Tailscale VPN → Install. At the end it asks whether to log in – you can do that here as well."), fixCmd),
         step(t("Install the Tailscale app on your phone or computer and log in to the same account.")),
         step(t("Come back to this tab: the panel address in the VPN and a QR code for the phone will be here.")));
       out.push(ol);
@@ -883,7 +883,7 @@
         kv.append(el("dt", null, t("Tailscale version")), dd);
         if (v.outdated) {
           const upd = el("dd", "vpn-upd");
-          upd.append(document.createTextNode(t("Update on the Raspberry Pi: fix.sh → Additional modules → Tailscale → Update, or:") + " "), el("code", null, "sudo apt-get update && sudo apt-get install --only-upgrade tailscale"));
+          upd.append(document.createTextNode(t("Update on the Raspberry Pi: fix.sh → Add-ons → Tailscale → Update, or:") + " "), el("code", null, "sudo apt-get update && sudo apt-get install --only-upgrade tailscale"));
           kv.append(el("dt"), upd);
         }
       }

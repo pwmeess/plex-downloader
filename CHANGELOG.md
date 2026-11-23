@@ -2,6 +2,17 @@
 
 All notable changes to Plex Downloader. Stable versions live on the `main` branch, BETA versions on the `beta` branch (installed only with `fix.sh`).
 
+## 1.5.0-beta3 – 2026-11-23 (BETA)
+
+- **New repair menu `fix.sh`** – shorter main menu with submenus: 1 Update · 2 Server · 3 Repair and reinstall (reinstall, clean reinstall, another version) · 4 Add-ons · 5 BETA version · 6 Uninstall · 7 Language / Język · 8 Cancel.
+- **Update** (option 1) updates the line you are on – stable or BETA.
+- **Server:** autostart on / off for the panel (with “also stop now?”).
+- **Add-ons:** the list shows the installed version (✔) or “none”; a warning before stopping or removing Tailscale (a connection over the VPN drops).
+- **Uninstall together with add-ons:** a list to tick (nothing ticked at the start); you decide separately about the Plex library database; Tailscale is removed last.
+- Buttons in the menu language (OK / Back / Cancel), the same window width everywhere, texts that do not break lines, full commands on the final screens (e.g. `cd ~/plex-downloader && ./setup.sh`).
+- The language is taken from the panel settings – the question appears only when none is saved yet.
+- Guides, README and panel hints use the new option numbers (e.g. factory reset: `fix.sh` → 3 → 2).
+
 ## 1.5.0-beta2 – 2026-11-15 (BETA)
 
 - **New guides (EN/PL, in the panel and as PDF):** rewritten step by step for people who have never used a terminal – stages 0–7 in the order you do things: preparing the SD card (Raspberry Pi Imager), SSH and SSH keys, the drive (new from the shop as ext4, with data from Windows/Mac, formatting on a computer with Windows Explorer or macOS Disk Utility), permanent mounting with a complete fstab line for ext4 / NTFS / exFAT and every field explained, installing Plex Downloader and Plex, the wizard, a free TMDB key step by step, two devices (Samba / CIFS), everyday use (incl. Where to watch), VPN, updates, diagnostics; FAQ and a glossary.

@@ -89,7 +89,7 @@ Nagłówek okna Ustawień pokazuje, czy na GitHubie są nowe zmiany.
 ## Wersje: stabilna i BETA
 
 - **Stabilna** (gałąź `main`): instaluje ją `setup.sh` i aktualizuje `update.sh`. Panel sprawdza i ogłasza tylko wersje stabilne.
-- **BETA** (gałąź `beta`): nowe, mniej przetestowane funkcje (przygotowywana jest tam kolejna wersja). Instaluje się ją i aktualizuje wyłącznie przez `fix.sh` (opcja 4). Przed pierwszym przejściem na BETA `fix.sh` zapisuje obecne ustawienia, a przy wyjściu z BETA (opcja 5) wraca do wersji stabilnej, usuwa ustawienia eksperymentalne i przywraca zapisane.
+- **BETA** (gałąź `beta`): nowe, mniej przetestowane funkcje (przygotowywana jest tam kolejna wersja). Instaluje się ją przez `fix.sh` → 5, a aktualizuje przez `fix.sh` → 1. Przed pierwszym przejściem na BETA `fix.sh` zapisuje obecne ustawienia, a przy wyjściu z BETA (`fix.sh` → 5) wraca do wersji stabilnej, usuwa ustawienia eksperymentalne i przywraca zapisane.
 
 ## Naprawa: `fix.sh`
 
@@ -98,18 +98,19 @@ cd ~/plex-downloader
 ./fix.sh
 ```
 
-Menu otwiera się w oknie jak `raspi-config` (strzałki + Enter). Na bardzo małym ekranie albo po `./fix.sh --text` jest wyświetlane jako zwykły tekst z tymi samymi numerami. Najpierw pyta o język, potem pokazuje menu:
+Menu otwiera się w oknie jak `raspi-config` (strzałki + Enter). W terminalu mniejszym niż 80 × 20 albo po `./fix.sh --text` jest wyświetlane jako zwykły tekst z tymi samymi numerami. Język jest brany z ustawień panelu (pytanie pojawia się tylko wtedy, gdy żaden nie jest zapisany). Menu główne:
 
-1. **Update (check and install)** – sprawdza GitHuba i instaluje nową wersję stabilną,
-2. **Reinstall (keep settings)** – pobiera kod od nowa i odbudowuje środowisko, ustawienia zostają,
-3. **Clean reinstall** – kasuje ustawienia, kopie, dzienniki i listę pobrań, potem instaluje wersję stabilną od zera (potwierdzenie słowem YES/TAK),
-4. **Install / update the latest BETA** – instaluje lub aktualizuje wersję BETA,
-5. **Leave BETA** – powrót do wersji stabilnej z usunięciem ustawień eksperymentalnych (bez dodatkowych pytań),
-6. **Server** – status (usługa, autostart, adres panelu, ostatnie wpisy logu), wstrzymanie serwera (autostart bez zmian) albo ponowne uruchomienie bez restartu Pi, restart procesu serwera,
-7. **Moduły dodatkowe** (1.3) – programy współpracujące z Plex Downloaderem: **Plex Media Server**, **Samba** (udostępnianie folderów przez SMB), **klient SMB** (`cifs-utils`, montowanie udziałów), **ffmpeg** (plakaty z kadrów filmu), **Tailscale VPN** (zalecany) i **WireGuard VPN**. Po wybraniu modułu najpierw widać jego status, potem tylko sensowne opcje: zainstaluj, zaktualizuj, zatrzymaj (do restartu, autostart bez zmian) / uruchom, uruchom ponownie, autostart wł./wył. (zostaje po restarcie), odinstaluj całkowicie. Odinstalowanie Plexa zostawia filmy; baza Plexa jest usuwana tylko po Twojej zgodzie.
-8. **Zainstaluj inną wersję** (1.3) – wybór wersji stabilnej od 1.2.5 z listy z krótkim opisem; ustawienia zostają (najpierw kopia do `.version-snapshots`), nagłówek menu pokazuje, że zainstalowana jest starsza wersja, a opcja 1 albo `./update.sh` wraca do najnowszej,
-9. **Uninstall** – usuwa usługę z autostartu, opcjonalnie także folder aplikacji,
-10. **Cancel**.
+1. **Aktualizacja (sprawdź i zainstaluj)** – sprawdza GitHuba i instaluje najnowszą wersję linii, na której jesteś: stabilnej albo BETA, gdy zainstalowana jest BETA,
+2. **Serwer: status, wstrzymaj / uruchom, restart** – status (usługa, autostart, adres panelu, ostatnie wpisy logu), wstrzymanie serwera (autostart bez zmian) albo ponowne uruchomienie bez restartu Pi, restart, autostart wł./wył.,
+3. **Naprawa i reinstalacja**:
+   1. **Reinstalacja (zachowaj ustawienia)** – pobiera kod od nowa i odbudowuje środowisko,
+   2. **Czysta reinstalacja (usuwa ustawienia)** – kasuje ustawienia, kopie, dzienniki i listę pobrań, potem instaluje wersję stabilną od zera (potwierdzenie słowem TAK),
+   3. **Zainstaluj inną wersję** – wersja stabilna od 1.2.5 z listy z krótkim opisem; ustawienia zostają (najpierw kopia do `.version-snapshots`), nagłówek menu pokazuje, że zainstalowana jest starsza wersja, a opcja 1 albo `./update.sh` wraca do najnowszej,
+4. **Dodatki: Plex, SMB, ffmpeg, VPN** – **Plex Media Server**, **Samba** (udostępnianie folderów przez SMB), **klient SMB** (`cifs-utils`, montowanie udziałów), **ffmpeg** (plakaty z kadrów filmu), **Tailscale VPN** (zalecany) i **WireGuard VPN**. Lista pokazuje zainstalowaną wersję (✔) albo „brak”. Po wybraniu dodatku najpierw widać jego status, potem tylko sensowne opcje: zainstaluj, zaktualizuj, zatrzymaj (do restartu, autostart bez zmian) / uruchom, uruchom ponownie, autostart wł./wył. (zostaje po restarcie), odinstaluj całkowicie. Odinstalowanie Plexa zostawia filmy; baza biblioteki Plexa jest usuwana tylko po Twojej zgodzie,
+5. **Wersja BETA** – przejście na najnowszą BETA albo wyjście z BETA (powrót do stabilnej),
+6. **Odinstaluj** – sam Plex Downloader albo razem z wybranymi dodatkami (lista do zaznaczenia; na starcie nic nie jest zaznaczone); opcjonalnie także folder aplikacji,
+7. **Language / Język**,
+8. **Anuluj**.
 
 Filmy i seriale na dyskach nigdy nie są ruszane.
 

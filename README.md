@@ -83,7 +83,7 @@ The header of the Settings window shows whether a newer stable version is availa
 ## Stable and BETA versions
 
 - **Stable** (branch `main`): installed by `setup.sh` and updated by `update.sh`. The panel only announces stable versions.
-- **BETA** (branch `beta`): new, less tested features (the next version is prepared there). Installed and updated only with `fix.sh` (option 4). Before the first switch to BETA, `fix.sh` saves your settings; leaving BETA (option 5) returns to stable, removes the experimental settings and restores the saved ones.
+- **BETA** (branch `beta`): new, less tested features (the next version is prepared there). Installed with `fix.sh` → 5 and updated with `fix.sh` → 1. Before the first switch to BETA, `fix.sh` saves your settings; leaving BETA (`fix.sh` → 5) returns to stable, removes the experimental settings and restores the saved ones.
 
 ## Repair menu: `fix.sh`
 
@@ -92,18 +92,19 @@ cd ~/plex-downloader
 ./fix.sh
 ```
 
-The menu opens in a window like `raspi-config` (arrow keys + Enter). On a very small screen, or with `./fix.sh --text`, it is shown as plain text with the same numbers. It asks for the language first, then shows:
+The menu opens in a window like `raspi-config` (arrow keys + Enter). In a terminal smaller than 80 × 20, or with `./fix.sh --text`, it is shown as plain text with the same numbers. The language is taken from the panel settings (the question appears only when none is saved yet). Main menu:
 
-1. **Update (check and install)** – checks GitHub and installs a new stable version,
-2. **Reinstall (keep settings)** – fetches the code again and rebuilds the environment, settings stay,
-3. **Clean reinstall** – deletes settings, backups, logs and the download list, then installs the stable version from scratch (confirm with YES),
-4. **Install / update the latest BETA**,
-5. **Leave BETA** – back to stable, experimental settings removed (no extra questions),
-6. **Server** – check status (service, autostart, panel address, last log lines), stop the server (autostart stays on) or start it again without restarting the Pi, restart the server process,
-7. **Additional modules** (1.3) – programs that work with Plex Downloader: **Plex Media Server**, **Samba** (sharing folders over SMB), **SMB client** (`cifs-utils`, mounting shares), **ffmpeg** (posters from video frames), **Tailscale VPN** (recommended) and **WireGuard VPN**. Choosing a module shows its status first, then only the actions that make sense: install, update, stop (until the next restart, autostart stays on) / start, restart, autostart on / off (stays after a restart), uninstall completely. Uninstalling Plex keeps your movies; the Plex database is deleted only if you agree.
-8. **Install another version** (1.3) – choose a stable version since 1.2.5 from a list with short descriptions; your settings are kept (and copied to `.version-snapshots` first), the menu header shows when an older version is installed, and option 1 or `./update.sh` brings you back to the newest,
-9. **Uninstall** – removes the service from autostart, optionally also the app folder,
-10. **Cancel**.
+1. **Update (check and install)** – checks GitHub and installs the newest version of the line you are on: stable, or BETA when BETA is installed,
+2. **Server: status, stop / start, restart** – status (service, autostart, panel address, last log lines), stop the server (autostart stays on) or start it again without restarting the Pi, restart, autostart on / off,
+3. **Repair and reinstall**:
+   1. **Reinstall (keep settings)** – fetches the code again and rebuilds the environment,
+   2. **Clean reinstall (deletes settings)** – deletes settings, backups, logs and the download list, then installs the stable version from scratch (confirm by typing YES),
+   3. **Install another version** – a stable version since 1.2.5 from a list with short descriptions; your settings are kept (and copied to `.version-snapshots` first), the menu header shows when an older version is installed, and option 1 or `./update.sh` brings you back to the newest,
+4. **Add-ons: Plex, SMB, ffmpeg, VPN** – **Plex Media Server**, **Samba** (sharing folders over SMB), **SMB client** (`cifs-utils`, mounting shares), **ffmpeg** (posters from video frames), **Tailscale VPN** (recommended) and **WireGuard VPN**. The list shows the installed version (✔) or “none”. Choosing an add-on shows its status first, then only the actions that make sense: install, update, stop (until the next restart, autostart stays on) / start, restart, autostart on / off (stays after a restart), uninstall completely. Uninstalling Plex keeps your movies; the Plex library database is deleted only if you agree,
+5. **BETA version** – switch to the newest BETA, or leave BETA (back to stable),
+6. **Uninstall** – Plex Downloader alone, or together with chosen add-ons (a list to tick; nothing is ticked at the start); optionally also the app folder,
+7. **Language / Język**,
+8. **Cancel**.
 
 Movies and TV shows on the disks are never touched.
 

@@ -9,7 +9,7 @@ main() {
   BRANCH="$(git rev-parse --abbrev-ref HEAD)"
   if [ "$BRANCH" != "main" ]; then
     echo "This installation runs a BETA version ($(cat VERSION))."
-    echo "Use ./fix.sh to update BETA or to return to the stable version."
+    echo "Use the repair menu: cd ~/plex-downloader && ./fix.sh  (1 = update BETA, 5 = back to stable)."
     exit 1
   fi
 

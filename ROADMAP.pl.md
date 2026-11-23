@@ -2,13 +2,13 @@
 
 🇬🇧 [English](ROADMAP.md) · 🇵🇱 **Polski** · Historia zmian: [CHANGELOG.md](CHANGELOG.md)
 
-Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.4.0** · BETA: **1.5.0-beta2**
+Ostatnia aktualizacja: 23 listopada 2026 · stabilna: **1.4.0** · BETA: **1.5.0-beta3**
 
 ## Stałe zasady (sprawdzać przy każdej wersji)
 
 - **Języki:** angielski domyślny (także README, CHANGELOG i ten plan – z wersją polską obok), polski w `locales/pl.json`. Każdy nowy tekst w interfejsie od razu dostaje tłumaczenie.
 - **Opisy:** w interfejsie tylko krótkie etykiety. Dłuższe wyjaśnienia trafiają do podpowiedzi ⓘ (chmurki).
-- **Skrypty:** `setup.sh` i `fix.sh` zaczynają od wyboru języka (1 English domyślny, 2 Polski). `update.sh` jest tylko po angielsku.
+- **Skrypty:** `setup.sh` zaczyna od wyboru języka (1 English domyślny, 2 Polski); `fix.sh` bierze język z ustawień panelu (pyta tylko, gdy żaden nie jest zapisany; opcja 7 go zmienia). `update.sh` jest tylko po angielsku.
 - **Bezpieczeństwo danych:** żaden skrypt ani funkcja nie usuwa filmów ani seriali bez wyraźnego potwierdzenia w panelu. Przywrócenie kopii ustawień nie zmienia loginu ani hasła.
 - **Trzy scenariusze instalacji** (każdą nową funkcję, kreator i instrukcję sprawdzać pod każdym z nich):
   1. **Zalecany:** Plex i Downloader na jednym Pi, biblioteka na dyskach zewnętrznych (SSD, pendrive).
@@ -47,6 +47,7 @@ Ostatnia aktualizacja: 11 listopada 2026 · stabilna: **1.4.0** · BETA: **1.5.0
 | 1.5.0-beta0 | 1.4.0 z nowym numerem wersji; baza dla 1.5 (bez nowych funkcji) |
 | 1.5.0-beta1 | Gdzie obejrzeć (dostępność w serwisach streamingowych wg kraju, TMDB + JustWatch) |
 | 1.5.0-beta2 | Nowe poradniki krok po kroku (EN/PL), przyciski Kopiuj w poradniku w panelu |
+| 1.5.0-beta3 | Nowe menu `fix.sh` z podmenu (zaprojektowane w Whiptail Studio): aktualizacja, serwer, naprawa i reinstalacja, dodatki, BETA, deinstalacja z dodatkami |
 
 ## Do poprawy
 
@@ -124,9 +125,11 @@ Zapowiedzi VPN (zakładka i przycisk w nagłówku) są widoczne tylko w BETA; w 
 
 ## 1.5 – seriale, dodawanie plików z komputera i z pendrive'a
 
-Kolejne kroki: `1.5.0-beta0` (= 1.4.0, gotowe) → `1.5.0-beta1` (gdzie obejrzeć, gotowe) → `1.5.0-beta2` (poradniki, gotowe) → … → `1.5.0`.
+Kolejne kroki: `1.5.0-beta0` (= 1.4.0, gotowe) → `1.5.0-beta1` (gdzie obejrzeć, gotowe) → `1.5.0-beta2` (poradniki, gotowe) → `1.5.0-beta3` (nowe menu `fix.sh`, gotowe) → … → `1.5.0`.
 
 - [x] Gdzie obejrzeć: dostępność w serwisach streamingowych w podglądzie filmu (abonament / za darmo / wypożyczenie / kupno), kraj w Ustawienia → Konto; dane TMDB, dostępność JustWatch (1.5.0-beta1).
+- [x] Nowe menu `fix.sh` z podmenu, autostart panelu, deinstalacja razem z wybranymi dodatkami (1.5.0-beta3).
+- [ ] `setup.sh`: menu w oknie (whiptail) i prosty kreator instalacji.
 
 - [ ] Seriale: przełącznik „Odcinki / Całość” na pasku zaznaczenia; całość do istniejącego folderu serialu łączy się z nim; konflikt: Pomiń istniejące (domyślnie) / Nadpisz / Anuluj.
 - [ ] Widok odcinków w Menedżerze plików: wspólna miniatura, opis S01E01, edycja tylko sezonu i odcinka, usuwanie.

@@ -77,7 +77,7 @@
       </div>
       <div class="frames-opt">
         <label class="check"><input type="checkbox" id="sFrames"> {{ _("Generate posters myself from video frames (needs ffmpeg)") }}</label>
-        <button type="button" class="info-i" data-tip="{{ _('For home videos and titles without a TMDB match (or without a TMDB key) the File manager makes a poster from a frame of the video: several frames are checked and the clearest one is used. Needs ffmpeg – installed by setup.sh, or with fix.sh → Additional modules.\n\nNot recommended to switch on right away: it takes about 10–15 s per movie on a Pi 4 / Pi 400 (longer on a Pi Zero), so the first opening of a large category is slow.\n\nYou can always make a poster from a frame for a single movie: File manager → pen icon (Edit) → Frame from the video.') }}">i</button>
+        <button type="button" class="info-i" data-tip="{{ _('For home videos and titles without a TMDB match (or without a TMDB key) the File manager makes a poster from a frame of the video: several frames are checked and the clearest one is used. Needs ffmpeg – installed by setup.sh, or with fix.sh → Add-ons.\n\nNot recommended to switch on right away: it takes about 10–15 s per movie on a Pi 4 / Pi 400 (longer on a Pi Zero), so the first opening of a large category is slow.\n\nYou can always make a poster from a frame for a single movie: File manager → pen icon (Edit) → Frame from the video.') }}">i</button>
         <span class="muted small" id="ffmpegState"></span>
       </div>
       <p class="hint">{{ _("The poster is saved in the movie folder as") }} <code>Title (Year).thumb.jpg</code>. {{ _("Plex does not use it – it has its own posters.") }}</p>
@@ -112,7 +112,7 @@
         <button class="btn-soft small btn-danger" type="button" id="backupDel" disabled><svg class="i"><use href="#i-trash"/></svg><span></span></button>
       </div>
       <div id="backupList" class="backup-list"></div>
-      <p class="panel-note reset-note"><svg class="i"><use href="#i-retry"/></svg><span>{{ _("Factory reset (settings like after a fresh install): fix.sh → option 3.") }}</span>
+      <p class="panel-note reset-note"><svg class="i"><use href="#i-retry"/></svg><span>{{ _("Factory reset (settings like after a fresh install): fix.sh → 3 → 2.") }}</span>
         <button type="button" class="linklike" id="gotoFix">{{ _("Go to terminal commands") }} →</button></p>
     </section>
 

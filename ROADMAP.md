@@ -2,13 +2,13 @@
 
 🇬🇧 **English** · 🇵🇱 [Polski](ROADMAP.pl.md) · Changelog: [CHANGELOG.md](CHANGELOG.md)
 
-Last updated: 11 November 2026 · stable: **1.4.0** · BETA: **1.5.0-beta2**
+Last updated: 23 November 2026 · stable: **1.4.0** · BETA: **1.5.0-beta3**
 
 ## Ground rules (checked for every release)
 
 - **Languages:** English is the default (also README, CHANGELOG and this roadmap, each with a Polish version next to it); Polish lives in `locales/pl.json`. Every new interface string gets a translation right away (enforced by a test).
 - **Descriptions:** short labels in the interface; longer explanations go into ⓘ tooltips.
-- **Scripts:** `setup.sh` and `fix.sh` start with a language choice (1 English – default, 2 Polski). `update.sh` is English only.
+- **Scripts:** `setup.sh` starts with a language choice (1 English – default, 2 Polski); `fix.sh` takes the language from the panel settings (and asks only when none is saved; option 7 changes it). `update.sh` is English only.
 - **Data safety:** no script or feature deletes movies or TV shows without an explicit confirmation in the panel. Restoring a settings backup never changes the username or password.
 - **Three installation scenarios** (every new feature, the wizard and the guides are checked against each):
   1. **Recommended:** Plex and Downloader on one Pi, library on external disks (SSD, USB stick).
@@ -49,6 +49,7 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 | 1.5.0-beta0 | 1.4.0 with a new version number; base for 1.5 (no new features) |
 | 1.5.0-beta1 | Where to watch (streaming availability by country, TMDB + JustWatch) |
 | 1.5.0-beta2 | New step-by-step guides (EN/PL), Copy buttons in the panel guide |
+| 1.5.0-beta3 | New `fix.sh` menu with submenus (designed in Whiptail Studio): update, server, repair and reinstall, add-ons, BETA, uninstall with add-ons |
 
 ## To fix
 
@@ -126,9 +127,11 @@ The VPN preview (Settings tab and header badge) is visible only in BETA; it retu
 
 ## 1.5 – TV shows, adding files from a computer and a USB stick
 
-Release steps: `1.5.0-beta0` (= 1.4.0, done) → `1.5.0-beta1` (where to watch, done) → `1.5.0-beta2` (guides, done) → … → `1.5.0`.
+Release steps: `1.5.0-beta0` (= 1.4.0, done) → `1.5.0-beta1` (where to watch, done) → `1.5.0-beta2` (guides, done) → `1.5.0-beta3` (new `fix.sh` menu, done) → … → `1.5.0`.
 
 - [x] Where to watch: streaming availability in the movie preview (subscription / free / rent / buy), country in Settings → Account; data TMDB, availability JustWatch (1.5.0-beta1).
+- [x] New `fix.sh` menu with submenus, autostart for the panel, uninstall together with chosen add-ons (1.5.0-beta3).
+- [ ] `setup.sh`: window menu (whiptail) and a simple installation wizard.
 
 - [ ] TV shows: “Episodes / Whole show” switch on the selection bar; a whole show into an existing show folder is merged; conflicts: Skip existing (default) / Overwrite / Cancel.
 - [ ] Episode view in the File manager: shared thumbnail, S01E01 labels, edit only season and episode, delete.
